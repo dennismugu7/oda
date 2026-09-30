@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import '@oda/ui-tokens/theme.css';
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}

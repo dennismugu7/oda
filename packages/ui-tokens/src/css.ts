@@ -12,10 +12,13 @@ export function toThemeCss(): string {
     '@theme {',
     '  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;',
   ];
-  for (const [name, value] of Object.entries(colors)) lines.push(`  --color-${kebab(name)}: ${value};`);
+  for (const [name, value] of Object.entries(colors))
+    lines.push(`  --color-${kebab(name)}: ${value};`);
   for (const [name, value] of Object.entries(radii))
     lines.push(`  --radius-${kebab(name)}: ${value === 999 ? '9999px' : `${value}px`};`);
-  for (const [name, value] of Object.entries(spacing)) lines.push(`  --spacing-${name}: ${value}px;`);
+  // Spacing is not emitted by name: `--spacing-md` would also redefine `max-w-md`, `w-md`, etc.
+  // The web uses Tailwind's numeric scale, which is the same 4px grid (p-5 = spacing.lg = 20px).
+  lines.push(`  --spacing: ${spacing.xs}px;`);
   for (const [name, t] of Object.entries(typography)) {
     const key = kebab(name);
     lines.push(`  --text-${key}: ${t.size}px;`);

@@ -3,6 +3,7 @@
 oda gives Kenyan social sellers a free shop link. Sellers run their shop from an **Android app**; buyers order through a **mobile web shop**, paying the seller directly on M-Pesa. Read `docs/spec.md` first.
 
 ## Source of truth (read before any work)
+
 1. `docs/spec.md`: what we're building
 2. `docs/order-lifecycle.md`: order state machine + money rules
 3. `docs/data-model.md`: database design
@@ -15,9 +16,11 @@ oda gives Kenyan social sellers a free shop link. Sellers run their shop from an
 If these conflict or are unclear, **stop and ask**. Don't guess on product behaviour.
 
 ## Stack
+
 pnpm + Turborepo · Expo (Android) · Next.js + Tailwind · Neon Postgres + Drizzle · Better Auth (email + password + email OTP) · Cloudflare R2 (presigned uploads) · Resend · Expo push · Sentry · GitHub Actions (CI, cron, backups) · Vercel · EAS. **No Supabase.** See `docs/decisions.md` #10 and #16.
 
 ## Repo layout
+
 ```
 apps/web        Next.js (App Router) + Tailwind: buyer shop, order pages, /admin, legal pages
 apps/seller     Expo (React Native, Expo Router): Android seller app
@@ -29,6 +32,7 @@ docs/           specs (keep updated)
 ```
 
 ## Non-negotiable rules
+
 - **Money** is integer KES. Only `packages/shared/pricing.ts` computes totals, and only on the server from DB prices.
 - **Order status** changes only through the shared state machine, run through `transitionOrder()` in Next.js API route handlers (see `docs/data-model.md` → "Where logic runs"). Never a raw status UPDATE anywhere else.
 - **The database is server-only.** Every access goes through the authorization layer (`apps/web/server/authz.ts` + shop-scoped repositories), with automated authorization tests. Never spread request bodies into DB writes; whitelist fields with zod.
@@ -41,6 +45,7 @@ docs/           specs (keep updated)
 - Don't add dependencies casually. Prefer well-maintained, popular packages; note significant ones in `docs/decisions.md`.
 
 ## Working style
+
 - Work milestone by milestone (`docs/milestones.md`). Start each task by proposing a short plan, and wait for approval on anything that changes the spec or data model.
 - Small, focused commits with clear messages. One milestone = one branch → PR into `main`.
 - Write tests alongside code (Vitest for logic, authorization tests against a real Postgres, Playwright for web flows).
@@ -48,7 +53,9 @@ docs/           specs (keep updated)
 - End every task by updating `docs/progress.md`: done, deviations, open questions, next step.
 
 ## Commands
+
 (Fill these in during M0 and keep them current.)
+
 - `pnpm dev`: …
 - `pnpm test`: …
 - `pnpm lint` / `pnpm typecheck`: …

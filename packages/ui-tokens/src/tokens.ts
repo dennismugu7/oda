@@ -107,5 +107,14 @@ export const shadows = {
   float: { color: '#1C1A2E', opacity: 0.18, radius: 16, offsetY: 6 },
 } as const;
 
-export const tokens = { colors, fontFamily, fontWeight, typography, spacing, radii, sizes, shadows };
+export const tokens = {
+  colors,
+  fontFamily,
+  fontWeight,
+  typography,
+  spacing,
+  radii,
+  sizes,
+  shadows,
+};
 export type Tokens = typeof tokens;

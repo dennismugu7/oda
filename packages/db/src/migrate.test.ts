@@ -9,7 +9,9 @@ describe.skipIf(!url)('database', () => {
   it('is reachable and migrated', async () => {
     const { db, pool } = createDb(url!);
     try {
-      const version = await db.execute<{ server_version_num: string }>(sql`show server_version_num`);
+      const version = await db.execute<{ server_version_num: string }>(
+        sql`show server_version_num`,
+      );
       expect(Number(version.rows[0]?.server_version_num)).toBeGreaterThanOrEqual(170000);
       const applied = await db.execute<{ n: number }>(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,

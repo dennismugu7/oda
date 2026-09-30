@@ -23,8 +23,8 @@
     "db:reset": "docker compose down -v && pnpm db:up && pnpm db:migrate && pnpm db:seed"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.0",
-    "eslint": "^10.11.0",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "prettier": "^3.9.9",
     "typescript-eslint": "^8.71.0",
     "turbo": "^2.11.5",
