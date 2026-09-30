@@ -1,0 +1,14 @@
+node_modules
+pnpm-lock.yaml
+.next
+.expo
+.turbo
+dist
+build
+coverage
+android
+ios
+design
+packages/db/migrations
+playwright-report
+test-results
