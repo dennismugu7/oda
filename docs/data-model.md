@@ -6,11 +6,9 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 ## Accounts & shops
 
 **profiles**: one per auth user
-
 - `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `is_admin bool default false`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists), `deleted_at`
 
 **shops**: one per seller in v1
-
 - `id`, `owner_id → profiles`, `name`, `slug unique`, `logo_path`, `about`, `location_label` (for example "Kilimani, Nairobi"), `business_type` (enum: fashion, shoes_bags, beauty_hair, food_drinks, phones_electronics, home_decor, baby_kids, other), `channels text[]`, `whatsapp_phone`, `calls_enabled bool`, `tiktok_handle`, `instagram_handle`
 - `accepts_pay_before bool default true`, `accepts_pay_on_delivery bool default false` (check: at least one true)
 - `pickup_enabled bool`, `pickup_location`, `pickup_hours`, `free_delivery_threshold int null`
@@ -21,7 +19,6 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **shop_slug_history**: `shop_id`, `old_slug unique`, `changed_at` → used for 301 redirects. A slug in this table can never be taken by another shop (the owner can reclaim their own).
 
 **payment_accounts**
-
 - `id`, `shop_id`, `type` (enum: till, pochi, paybill), `number`, `account_name` (the name M-Pesa shows the buyer before they enter their PIN), `is_active bool` (at most one active per shop: partial unique index)
 - Paybill only: `account_ref_mode` (enum: fixed, order_number), `account_ref text null` (required when `fixed`, e.g. the seller's bank account number for a bank paybill)
 - `verification_status` (enum: unverified, pending, verified, rejected), `verified_by`, `verified_at`, `verification_note`. Changing `type`, `number`, `account_ref` or `account_name` resets it to `pending` (trigger).
@@ -33,7 +30,6 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **categories**: `id`, `shop_id`, `name`, `is_visible bool`, `position int`
 
 **products**
-
 - `id`, `shop_id`, `category_id null`, `name`, `description`, `price int`, `compare_at_price int null` (> price), `status` (enum: available, sold_out, hidden), `sizes text[]`, `colours jsonb` (`[{name, hex}]`), `units_sold int` (trigger; counts qty on orders currently in `confirmed`/`sent`/`delivered`, so a cancellation removes it), `rating_avg`, `rating_count`, `position int`, `deleted_at`
 - Full-text search index on name + description.
 
@@ -42,7 +38,6 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 ## Orders
 
 **orders**
-
 - `id`, `shop_id`, `number int` (unique per shop), `public_token text unique`, `idempotency_key text unique`
 - `status` (see order-lifecycle.md), `payment_method` (enum: pay_before, pay_on_delivery), `payment_status` (enum: unpaid, claimed, paid, refund_due, refunded)
 - Buyer snapshot: `buyer_name`, `buyer_phone`, `buyer_whatsapp bool`, `buyer_email null`
@@ -60,12 +55,10 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **order_events**: audit log: `order_id`, `from_status`, `to_status`, `actor` (buyer, seller, system, admin), `meta jsonb`, `created_at`
 
 ## Reviews
-
 **reviews**: `id`, `order_id unique`, `shop_id`, `buyer_display_name` ("Wanjiku K."), `rating 1-5`, `tags text[]`, `seller_reply`, `replied_at`, `created_at`, `editable_until`
 **review_items**: `review_id`, `order_item_id`, `product_id`, `rating`, `text`, `photo_path`
 
 ## Engagement & ops
-
 **shop_visits_daily**: `shop_id`, `day date`, `source`, `visits int` (upsert; one visitor counted once per day via cookie)
 **notifications**: `id`, `shop_id`, `type` (enum: new_order, payment_claimed, switched_to_pod, buyer_cancelled, order_expired, new_review), `order_id null`, `review_id null`, `title`, `body`, `read_at`, `created_at`
 **feedback**: from sellers: `shop_id`, `kind` (idea, broken, confusing, love, problem), `message`, `screenshot_path`, `reply_on_whatsapp bool`, `status` (enum ticket_status: new, in_progress, closed), `admin_note`
@@ -74,16 +67,13 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **rate_limits** (Postgres table, fixed-window counter via an upsert function): `key`, `window_start`, `count`
 
 ## File storage (Cloudflare R2)
-
 One bucket per environment, with key prefixes:
-
 - `products/{shop_id}/…`, `logos/{shop_id}/…`, `reviews/{order_id}/…`: public read via the bucket's public URL / custom domain
 - `feedback/{shop_id}/…`: private (read only through a short-lived signed URL for admins)
 
 Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads`). The API checks that the caller owns the shop (or holds the order token, for review photos), and enforces content type (JPEG/PNG/WebP) and max size (5 MB). The client uploads straight to R2, then saves the key through the API. Deleting a product/shop deletes its objects (directly, or via the purge job).
 
 ## Authorization (replaces database RLS)
-
 - The database is reachable **only from the server** (`apps/web` API routes and server components). The seller app and the browser never get database credentials.
 - **Every** data access goes through one authorization layer in `apps/web/server/authz.ts`:
   - `requireSeller(req)` → session → `shopId`; every seller query is scoped with `WHERE shop_id = ctx.shopId` via helper repositories (no raw unscoped queries in route handlers).
@@ -94,7 +84,6 @@ Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads
 - **Automated authorization tests** (Vitest against a real Postgres): seller A cannot read or modify seller B's shop, products, orders, customers or uploads; anon cannot read orders without the token; non-admins get 404 on admin routes; server-owned columns can't be changed through any seller endpoint.
 
 ## Where logic runs
-
 - **Everything server-side lives in `apps/web`** (Next.js route handlers under `app/api/…`, plus server components for buyer pages). Handlers import `packages/shared` (zod, pricing, state machine) and `packages/db` (Drizzle).
 - Order transitions run in one DB transaction: `UPDATE orders SET … WHERE id = $1 AND status = $expected RETURNING *` (0 rows → 409 Conflict "this order changed, refresh"), then insert into `order_events`. Implemented once as `transitionOrder()` in `apps/web/server/orders.ts`.
 - **The seller app** calls the API with its Better Auth session (bearer token stored in SecureStore, via Better Auth's Expo integration) for all reads and writes.
