@@ -1,0 +1,20 @@
+# Decisions log
+
+Append-only. Newest at the bottom. Format: date · decision · why · consequences.
+
+1. **2026-09-30 · Payments: buyer pays the seller's own M-Pesa directly; the seller confirms by hand.** Why: matches the seller designs, zero fees while oda is free, no licensing exposure, fastest to build. Consequence: no STK push, no automatic confirmation or refunds in v1. The data model keeps `payment_method` extensible so an aggregator (STK push) can be added in v2.
+2. **2026-09-30 · No deposits in v1.** Payment options are pay-before-delivery (full amount) and/or pay-on-delivery, per shop. Deposits → v2 (easier with an aggregator).
+3. **2026-09-30 · No automated WhatsApp/SMS in v1.** WhatsApp actions open the seller's own WhatsApp with a pre-written message. Buyer tracking happens via the order link; optional buyer email. Seller alerts via Android push. Automated WhatsApp (Business Platform) → v2.
+4. **2026-09-30 · Seller auth is email + password + 6-digit email code only.** No social login.
+5. **2026-09-30 · Shop links live at `oda.mugu-labs.com/{slug}`.** The domain is a config value; old slugs/domains must redirect forever.
+6. **2026-09-30 · Order links use a random token (`/o/{token}`)**, never the sequential order number.
+7. **2026-09-30 · Products have no stock counts in v1.** Status only: Available / Sold out / Hidden. Optional was-price.
+8. **2026-09-30 · Seller app is Android only; light theme only.**
+9. **2026-09-30 · oda is free in v1.** No commission, no subscription.
+10. **2026-09-30 · Stack:** pnpm + Turborepo monorepo; Expo (React Native, TypeScript, Expo Router) for the seller app; Next.js (App Router) + Tailwind for the buyer web + admin; Supabase (Postgres, Auth, Storage, pg_cron; no Edge Functions: server logic lives in Next.js API routes so it can share TypeScript with `packages/shared`); Resend for email; Expo push (FCM); Sentry; Vercel for web hosting; EAS for Android builds. Why: one language (TypeScript) end to end, generous free tiers, well supported by Claude Code. Check before M11: Vercel's free Hobby plan is meant for non-commercial use, so production may need Vercel Pro or another host (for example Cloudflare). Keep the web app host-agnostic (no Vercel-only APIs).
+11. **2026-09-30 · Environments:** local (Docker Postgres) → staging (Neon project + R2 bucket + preview web) → production.
+12. **2026-09-30 · Buyer favourites are stored on the device only.**
+13. **2026-09-30 · Server logic lives in Next.js API routes.** Order mutations go through `transitionOrder()`: a conditional UPDATE on the expected-from status inside a transaction (race-safe). The Expo app uses the same API.
+14. **2026-09-30 · Image sizes are generated on the device** (full ~1600px + thumbnail ~400px). No paid image-transformation service.
+15. **2026-09-30 · A payment claim is not money.** Cancelling a claimed order asks the seller whether the money arrived before creating a refund.
+16. **2026-09-30 · Backend moved off Supabase (supersedes the Supabase parts of #10).** Why: the owner's Supabase account already uses both free project slots for live apps, and Pro isn't affordable. New stack: **Neon** Postgres (free plan, separate staging and prod projects) + **Drizzle ORM**; **Better Auth** (email + password + email OTP) inside apps/web, with its Expo integration; **Cloudflare R2** for images (presigned uploads); **GitHub Actions** for scheduled jobs and nightly `pg_dump` backups. Consequences: authorization is enforced in the server's code (one layer + tests) instead of database RLS; the seller app talks only to our API; a short cold start after 5 min idle on Neon's free plan.
