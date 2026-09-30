@@ -1,8 +1,8 @@
 import type { ExpoConfig } from 'expo/config';
 
 // Android only, light theme only (docs/decisions.md #8).
-// EAS_PROJECT_ID is filled in by `eas init` (step 12 of the M0 plan).
-const easProjectId = process.env.EAS_PROJECT_ID;
+// EAS project created by `eas init` (not a secret).
+const easProjectId = '10f06155-8e5f-441e-b95e-7af4f4c86d38';
 
 const config: ExpoConfig = {
   name: 'oda',
@@ -34,7 +34,8 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: { typedRoutes: true },
-  extra: easProjectId ? { eas: { projectId: easProjectId } } : {},
+  owner: 'dennisxenonxavier',
+  extra: { eas: { projectId: easProjectId } },
 };
 
 export default config;
