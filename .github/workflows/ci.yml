@@ -15,7 +15,7 @@ permissions:
 jobs:
   checks:
     name: Lint, typecheck, test, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     services:
@@ -37,11 +37,11 @@ jobs:
       NEXT_TELEMETRY_DISABLED: 1
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -76,7 +76,7 @@ jobs:
         working-directory: apps/seller
         run: npx --yes expo-doctor@1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
