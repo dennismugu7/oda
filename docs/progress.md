@@ -26,8 +26,9 @@ Newest entries at the top.
 - Welcome (01): pending the Android run.
 
 **Open**
-- Staging: Neon `oda-staging`, Vercel project, R2 bucket `oda-staging`, Expo account / `eas init`.
-- Android run on a physical phone.
+- Staging: Neon `oda-staging`, Vercel project, Expo account / `eas init`.
+- Android run: EAS cloud development build (the local Gradle build was stopped when the machine ran low on memory; not retried).
+- Cloudflare R2 bucket `oda-staging` is deferred to M2, where uploads first need it.
 - Doc ambiguities listed in the M0 plan (§10) still need answers before M2–M8.
 
 ## 2026-09-30 · Planning complete
