@@ -19,7 +19,8 @@ Newest entries at the top.
 
 **Open**
 - First local build + welcome screen (01) on the Redmi 15c, and design comparison.
-- Staging: migrations not yet run on Neon (parked: `packages/db/.env.staging.local` + `db:migrate:staging`, needs the owner at the laptop). Vercel project `oda` created (root `apps/web`, Node 24.x, pooled Neon `DATABASE_URL` for Production + Preview, decision #26); region `fra1` and `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
+- Staging migrations: workflow `migrate-staging` (decision #27) replaces the parked `.env.staging.local` step. Needs repo secret `NEON_STAGING_DATABASE_URL_UNPOOLED`; first runs when PR #1 merges to `main`. Neon has no tables until then.
+- Vercel project `oda` (root `apps/web`, Node 24.x, region `fra1`, pooled Neon `DATABASE_URL` for Production + Preview, decision #26). **Stable preview address for the M0 branch: https://oda-git-m0-foundations-dennismugu7-6048s-projects.vercel.app** (behind Vercel Authentication); `/api/health` returns `db: up` there. An earlier failure was a bad `DATABASE_URL` paste, re-pasted. `ENABLE_EXPERIMENTAL_COREPACK=1` is set for Production only; add it to Preview too. `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
 
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 

@@ -55,6 +55,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
 - `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
 - `pnpm db:reset`: drop the volume, start, migrate, seed. `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
+- Neon staging is migrated only by the `migrate-staging` GitHub Actions workflow (every push to `main`, or Actions → migrate-staging → Run workflow). No Neon credentials on dev machines.
 - `pnpm --filter @oda/ui-tokens generate`: regenerate `theme.css` after editing `tokens.ts`.
 - `pnpm --filter @oda/seller doctor`: expo-doctor. `pnpm --filter @oda/seller deps:check`: every installed Expo-pinned package (transitive too) matches the SDK. Add native modules with `npx expo install`, never `pnpm add`.
 - Android builds run **locally** (decision #23): `pnpm --filter @oda/seller android` (`expo run:android`: prebuild, Gradle, install on the connected phone, start Metro). Quit Docker Desktop first; Gradle memory caps live in `~/.gradle/gradle.properties`. EAS is the fallback: `eas build -p android --profile development` (from `apps/seller`).

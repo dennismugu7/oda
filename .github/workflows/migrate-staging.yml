@@ -1,0 +1,51 @@
+name: migrate-staging
+
+# Applies Drizzle migrations to the Neon staging database (decision #27).
+# Uses Neon's direct (unpooled) connection string: the pooler can't run DDL sessions.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+# Never run two migrations at once; never cancel one halfway.
+concurrency:
+  group: migrate-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Migrate Neon staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check the secret is set
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::Repository secret NEON_STAGING_DATABASE_URL_UNPOOLED is not set (Neon's direct, non-pooled string)."
+            exit 1
+          fi
+          case "$DATABASE_URL_UNPOOLED" in
+            *-pooler.*) echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is the pooled string; use the direct one (no -pooler in the host)."; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter @oda/db
+
+      - name: Migrate
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: pnpm db:migrate
