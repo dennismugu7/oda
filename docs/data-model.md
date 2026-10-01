@@ -88,5 +88,5 @@ Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads
 - Order transitions run in one DB transaction: `UPDATE orders SET … WHERE id = $1 AND status = $expected RETURNING *` (0 rows → 409 Conflict "this order changed, refresh"), then insert into `order_events`. Implemented once as `transitionOrder()` in `apps/web/server/orders.ts`.
 - **The seller app** calls the API with its Better Auth session (bearer token stored in SecureStore, via Better Auth's Expo integration) for all reads and writes.
 - **Scheduled jobs** are protected routes (`/api/cron/expire-orders` hourly, `/api/cron/purge` daily, `/api/cron/backup-check` optional), called by **GitHub Actions** schedules with a secret header. Auto-expire reuses `transitionOrder()`.
-- **Backups:** a daily GitHub Actions job runs `pg_dump` of production and stores it encrypted in a private R2 bucket (keep 14 days). Don't rely only on Neon's built-in restore on the free plan.
-- Neon's free plan scales to zero after 5 minutes idle. Use Neon's serverless driver/pooled connection string and expect a short cold start on the first request.
+- **Backups:** a daily GitHub Actions job runs `pg_dump` and stores it encrypted in a private R2 bucket (keep 14 days): staging from M2, production from M11 (decision #31). Don't rely only on Neon's built-in restore on the free plan.
+- Neon's free plan scales to zero after 5 minutes idle. Use `pg` (node-postgres) with Neon's pooled connection string (decision #17) and expect a short cold start on the first request.

@@ -63,7 +63,7 @@ The same four steps in both apps. Step n is done when the status number (table a
 `payment_claimed` shows step 2 as "in progress" ("Waiting for {shop} to confirm your payment"). Step 5 on the buyer web, "Rate your order", unlocks at `delivered`.
 
 ## Money
-`subtotal = Σ(line.unit_price × qty)` with unit prices read from the DB. `delivery_fee` = the chosen area's fee, or 0 for pickup, or 0 if free delivery applies (area eligible and subtotal ≥ threshold). **Exception:** on seller-created manual orders the seller may override the delivery fee (`deliveryFeeOverride`, ≥ 0). Item prices are never overridden. `total = subtotal + delivery_fee`. Integer KES. Computed only by `packages/shared/pricing.ts` on the server. Line items snapshot the product name, options, unit price and thumbnail at order time.
+`subtotal = Σ(line.unit_price × qty)` with unit prices read from the DB. `delivery_fee` = the chosen area's fee, or 0 for pickup, or 0 if free delivery applies (area eligible and subtotal ≥ threshold). **Exception:** on seller-created manual orders the seller may override the delivery fee (`deliveryFeeOverride`, ≥ 0). Item prices are never overridden. `total = subtotal + delivery_fee`. Integer KES. Computed only by `packages/shared/src/pricing.ts` on the server. Line items snapshot the product name, options, unit price and thumbnail at order time.
 
 ## Order numbers & tokens
 - `orders.number`: sequential per shop, starting at 1001, taken from `shops.order_counter` inside the insert transaction.
