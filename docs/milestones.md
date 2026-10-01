@@ -22,16 +22,20 @@ Monorepo + tooling + an empty but deployed skeleton.
 ## M1 · Database & security
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
-- Nightly backup GitHub Action (`pg_dump` → private R2) against staging.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
 - Seed: shop "Amani Styles" with categories, 12 products and orders in every status (matches the designs).
-- **Accept:** one command rebuilds the local DB from zero and seeds it; authorization tests prove seller isolation and anon lockout; a backup file appears in R2; state machine tests cover every transition in `order-lifecycle.md`.
+- Staging migrations run **before** the Vercel deploy that needs them (fixes the migrate/deploy race in decision #27), e.g. Vercel deploys only after `migrate-staging` succeeds.
+- `scripts/setup-android-windows.ps1`: one command that applies and verifies this machine's local Android build setup (ninja 1.12+ in the SDK's CMake 3.22.1, decision #28; the Gradle limits in `~/.gradle/gradle.properties`, decisions #23, #29, #30), safe to re-run, so an SDK reinstall can be repaired in one step.
+- (Nightly backup moved to M2 with the R2 bucket, decision #31.)
+- **Accept:** one command rebuilds the local DB from zero and seeds it; authorization tests prove seller isolation and anon lockout; state machine tests cover every transition in `order-lifecycle.md`; a migration merged to `main` is applied to Neon staging before the deployment that uses it goes live; re-running the Android setup script on this laptop reports everything in place, and repairs a deliberately reverted ninja.
 
 ## M2 · Seller auth & onboarding
 Screens 01–14, email templates 04 and 06, web `/reset-password` (07, 08).
 - Better Auth (email + password + 6-digit email OTP) in apps/web, Expo client integration, forgot/reset flow, session persistence, resumable onboarding, slug check, photo capture/upload with resizing, payment account setup.
 - Resend configured on staging so emails actually arrive (sending domain: a subdomain of mugu-labs.com).
-- **Accept:** a new email can sign up, verify, finish onboarding and land on Home; the shop exists with 1 product; killing the app mid-onboarding resumes at the same step; reset password works end to end.
+- R2 bucket `oda-staging` (decision #22) and the nightly backup GitHub Action (`pg_dump` of staging → private R2), moved here from M1 (decision #31).
+- One EAS cloud build (`development` or `preview` profile) to prove the EAS fallback still works (decision #23).
+- **Accept:** a backup file appears in R2; one EAS cloud build finishes and installs on the Redmi 15c. A new email can sign up, verify, finish onboarding and land on Home; the shop exists with 1 product; killing the app mid-onboarding resumes at the same step; reset password works end to end. The welcome illustration animates once (~3 s: card, tap ripple on a swatch, order card, headline; see design-changes.md "01-welcome: animated illustration") without visible stutter on a budget Android phone (the Redmi 15c test device), and shows the static card when Android's "Remove animations" is on.
 
 ## M3 · Catalogue management (seller)
 Screens 18-*, 19-shop-tab, 19b-categories, 20b-categories, 20b1-category-detail.

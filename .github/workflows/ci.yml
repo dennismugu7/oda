@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: oda
+          POSTGRES_PASSWORD: oda
+          POSTGRES_DB: oda
+        ports: ['5442:5432']
+        options: >-
+          --health-cmd "pg_isready -U oda -d oda"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+
+    env:
+      DATABASE_URL: postgres://oda:oda@localhost:5442/oda
+      PUBLIC_SHOP_BASE_URL: http://localhost:3000
+      TURBO_TELEMETRY_DISABLED: 1
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Migrate
+        run: pnpm db:migrate
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build web
+        run: pnpm --filter @oda/web build
+
+      - name: Install Playwright browser
+        run: pnpm --filter @oda/web exec playwright install --with-deps chromium
+
+      - name: Playwright smoke
+        run: pnpm --filter @oda/web test:e2e
+
+      # Every installed copy (transitive ones too) must match the Expo SDK's versions.
+      - name: Expo SDK dependency versions
+        run: pnpm --filter @oda/seller deps:check
+
+      - name: Expo doctor
+        working-directory: apps/seller
+        run: npx --yes expo-doctor@1
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7

@@ -10,4 +10,10 @@ build
 coverage
 *.log
 .DS_Store
-supabase/.temp
+next-env.d.ts
+*.tsbuildinfo
+playwright-report
+test-results
+# Expo prebuild output (we use EAS builds / Continuous Native Generation)
+apps/seller/android
+apps/seller/ios
