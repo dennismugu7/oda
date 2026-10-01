@@ -2,6 +2,24 @@
 
 Newest entries at the top.
 
+## 2026-10-01 · M0 Foundations, after the machine crash (branch `m0-foundations`, PR #1)
+
+**Recovery check**
+- No damage: `git fsck` clean, no lock files, working tree clean, branch pushed (`3c73dee`), CI green on it. `node_modules` intact. `oda-postgres` was left Exited (255); `pnpm db:up` brought it back with its volume. All tests pass uncached; lint, typecheck, format and expo-doctor (21/21) pass.
+
+**Done**
+- Found why EAS build `8add4aac` failed: Gradle task `assertWorkletsVersionTask`, "Worklets 0.10.1 is not compatible with Reanimated 4.7.0". Reanimated, Worklets and Gesture Handler are now direct seller dependencies at SDK 57 versions (4.5.1, 0.10.1, ~2.32.0); the Worklets override is removed (decision #24). Gesture Handler 3.3.0 was a second, not-yet-failing mismatch of the same kind.
+- New CI step `pnpm --filter @oda/seller deps:check`; checked against the old lockfile, it fails on Reanimated 4.7.0 and Gesture Handler 3.3.0.
+- Builds switch from EAS cloud to local Gradle, with EAS kept as a fallback (decision #23). Memory caps are in `~/.gradle/gradle.properties`; dev builds are arm64-v8a only; release builds (M11) must add armeabi-v7a.
+- CLAUDE.md Commands: local build, deps check, wireless-debugging connect/reconnect steps.
+
+**Deviations**
+- Android run moves from EAS cloud to local (supersedes the 2026-09-30 "Open" note).
+
+**Open**
+- First local build + welcome screen (01) on the Redmi 15c, and design comparison.
+- Staging: Neon `oda-staging`, then Vercel. Doc ambiguities from the M0 plan (§10) still open.
+
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 
 **Done**
