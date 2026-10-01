@@ -43,6 +43,7 @@ docs/           specs (keep updated)
 ## Working style
 - Work milestone by milestone (`docs/milestones.md`). Start each task by proposing a short plan, and wait for approval on anything that changes the spec or data model.
 - Small, focused commits with clear messages. One milestone = one branch → PR into `main`.
+- Never pipe or chain check commands (lint, format, typecheck, tests) in a way that hides their exit code (e.g. `pnpm format:check | tail -1 && git commit`). Run each check so a failure stops the commit; only commit after every check has exited 0.
 - Write tests alongside code (Vitest for logic, authorization tests against a real Postgres, Playwright for web flows).
 - After building a screen, compare it to its design image and list any visible differences.
 - End every task by updating `docs/progress.md`: done, deviations, open questions, next step.

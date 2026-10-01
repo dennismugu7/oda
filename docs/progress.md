@@ -2,35 +2,41 @@
 
 Newest entries at the top.
 
-## 2026-10-01 · M0 Foundations, after the machine crash (branch `m0-foundations`, PR #1)
+## 2026-10-01 · M0 Foundations: complete, ready for the gate review (branch `m0-foundations`, PR #1)
 
-**Recovery check**
-- No damage: `git fsck` clean, no lock files, working tree clean, branch pushed (`3c73dee`), CI green on it. `node_modules` intact. `oda-postgres` was left Exited (255); `pnpm db:up` brought it back with its volume. All tests pass uncached; lint, typecheck, format and expo-doctor (21/21) pass.
+**Acceptance (milestones.md M0)**
+- `pnpm dev` runs web + app locally: **pass**. Web 200, `/api/health` `db: up`, Metro running and serving the Android bundle (6.4 MB). Not yet exercised: a dev-client build on the phone loading from Metro (the device check used release APKs).
+- Web staging URL shows the placeholder in Poppins and brand colours: **pass** on the Preview deployment https://oda-git-m0-foundations-dennismugu7-6048s-projects.vercel.app (owner's check: Poppins, brand orange, peach card, both buttons; `/api/health` `db: up` against Neon). The public Production deployment only exists after the merge.
+- App opens on Android showing the welcome screen (static): **pass**. Pre-release `m0-preview-2` on the Redmi 15c (owner's check): matches design 01 closely; "oda · now" fully visible; splash wordmark and tick inside Android 12+'s circular safe zone.
+- CI green: **pass**, `467d162` (format, lint, typecheck, migrate, unit tests, web build, Playwright smoke, Expo SDK dependency check, expo-doctor).
 
-**Done**
-- Found why EAS build `8add4aac` failed: Gradle task `assertWorkletsVersionTask`, "Worklets 0.10.1 is not compatible with Reanimated 4.7.0". Reanimated, Worklets and Gesture Handler are now direct seller dependencies at SDK 57 versions (4.5.1, 0.10.1, ~2.32.0); the Worklets override is removed (decision #24). Gesture Handler 3.3.0 was a second, not-yet-failing mismatch of the same kind.
-- New CI step `pnpm --filter @oda/seller deps:check`; checked against the old lockfile, it fails on Reanimated 4.7.0 and Gesture Handler 3.3.0.
-- Builds switch from EAS cloud to local Gradle, with EAS kept as a fallback (decision #23). Memory caps are in `~/.gradle/gradle.properties`; dev builds are arm64-v8a only; release builds (M11) must add armeabi-v7a.
-- CLAUDE.md Commands: local build, deps check, wireless-debugging connect/reconnect steps.
-- Neon `oda-staging` created (Postgres 18, AWS eu-central-1 Frankfurt, no Neon Auth). Local Docker and CI moved to Postgres 18 to match (decision #25); local DB rebuilt with `pnpm db:reset` (18.6, `oda` + `oda_test`); all tests, lint, typecheck, format and Playwright pass uncached.
+**Done today (after the machine crash)**
+- Recovery check: no repo damage; `oda-postgres` restarted; all checks green.
+- EAS build `8add4aac` failure explained and fixed: auto-installed Reanimated 4.7.0 vs the forced Worklets 0.10.1. Reanimated, Worklets and Gesture Handler are now direct deps at SDK 57 versions; Worklets override removed; new CI step `deps:check` catches transitive mismatches (#24).
+- Android builds moved from EAS cloud to local Gradle (#23), EAS kept as fallback. Windows build fixes: NDK 27.1 reinstalled (the crashed build had left it empty); ninja 1.12.1 for paths over 260 characters (#28); memory limits 2560m heap, 1 worker, Kotlin in-process (#29, #30). APKs are published as GitHub pre-releases (`m0-preview-1`, `m0-preview-2`).
+- Postgres 18 everywhere to match Neon (#25). Neon `oda-staging` (Frankfurt). Vercel project `oda` (root `apps/web`, Node 24.x, `fra1`, corepack on for Production + Preview); Production and Preview share the staging DB until M11 (#26). Workflow `migrate-staging` with secret `NEON_STAGING_DATABASE_URL_UNPOOLED` (#27).
+- Welcome screen fixes from the device check: clipped "oda · now" label; splash `imageWidth` 200 → 160 dp (farthest pixel 0.293 of the canvas vs 0.333 safe radius, measured inside the APK).
+- Dev-loop fixes: `oda-postgres` restarts with Docker; `pnpm dev:stop`; Expo's generated `expo-env.d.ts` excluded from Prettier.
+- Docs: CLAUDE.md Commands (local APK build, wireless debugging, `deps:check`, `dev:stop`, staging migrations) and a Working-style rule against hiding check exit codes; design-changes.md + M2 acceptance for the animated welcome illustration and the tick-on-baseline fix.
 
 **Deviations**
-- Android run moves from EAS cloud to local (supersedes the 2026-09-30 "Open" note).
+- No EAS cloud build; the device check used locally built release APKs signed with the debug keystore (testing only).
+- R2 staging bucket moved to M2 (#22).
+- Postgres 18 instead of 17 (#25).
 
-- The M0 welcome-screen check uses a **standalone release APK built locally** (`assembleRelease`, JS bundled in, arm64-v8a only, signed with the default debug keystore: testing only, not for distribution), published as GitHub pre-release `m0-preview-1` in the private repo. No EAS cloud build (queue too slow). Docker Desktop is stopped during Gradle builds.
+**Carried forward**
+- On merge: first `migrate-staging` run (Neon has no tables until then); check the public Production `/api/health` and confirm `fra1` from the `x-vercel-id` header.
+- `PUBLIC_SHOP_BASE_URL` not set in Vercel (not used before M4).
+- Before M1's tables are used on staging: Vercel deploys and `migrate-staging` run in parallel (#27).
+- M2: welcome animation; green tick on the "oda" baseline; Sign in / Create new shop wired; first dev-client build with Metro on the phone.
+- M11: release builds add `armeabi-v7a` (#23) and a real signing key; production Neon project on Postgres 18.
+- `packages/shared` holds only money formatting; state machine, pricing, phone and slug utils are M1 scope.
 
-- **Design comparison, welcome (01), `m0-preview-1` on the Redmi 15c:** matches design 01 closely (owner's check). Differences found and fixed in code, to be confirmed on the next APK:
-  - Notification card showed "oda ·" instead of "oda · now": Android wrapped "now" onto a clipped second line (the label was sized to its own text width). The label now takes the rest of the row (`flex: 1`, one line).
-  - Splash (Android 12+): the system clips the icon to a 192 dp circle on a 288 dp canvas, which cut off the "o" and the tick. `imageWidth` 200 → 160 dp: farthest visible pixel now ~84 dp from centre vs the 96 dp safe radius (~12% margin), measured on the generated mdpi and xxxhdpi drawables.
-- M2 scope added: animated welcome illustration (design-changes.md "01-welcome: animated illustration (M2)", acceptance line in M2).
+**Open questions**
+- M1 acceptance requires "a backup file appears in R2", but the R2 bucket moved to M2 (#22). Create the bucket in M1, or move the backup check to M2?
+- Doc ambiguities from the M0 plan (§10) still need answers before M2.
 
-- `pnpm dev` re-checked after the dependency changes: web 200, `/api/health` `db: up` (after `pnpm db:up`), Metro running and serving the Android bundle. Follow-ups: `oda-postgres` now has `restart: unless-stopped` (verified: back healthy after a Docker Desktop restart, without `db:up`); new `pnpm dev:stop` ends only Node servers left on 3000/8081 (verified after a killed `pnpm dev`).
-- `m0-preview-2` built (3 min, cached native code; Kotlin compiles in-process, decision #30) with the label and splash fixes. The splash drawable inside the APK measures 0.293 of the canvas width vs the 0.333 safe radius.
-
-**Open**
-- Confirm on the Redmi 15c with `m0-preview-2`: "oda · now" fully visible; splash wordmark + tick inside the circle.
-- Staging migrations: workflow `migrate-staging` (decision #27) replaces the parked `.env.staging.local` step. Needs repo secret `NEON_STAGING_DATABASE_URL_UNPOOLED`; first runs when PR #1 merges to `main`. Neon has no tables until then.
-- Vercel project `oda` (root `apps/web`, Node 24.x, region `fra1`, pooled Neon `DATABASE_URL` for Production + Preview, decision #26). **Stable preview address for the M0 branch: https://oda-git-m0-foundations-dennismugu7-6048s-projects.vercel.app** (behind Vercel Authentication); `/api/health` returns `db: up` there. An earlier failure was a bad `DATABASE_URL` paste, re-pasted. `ENABLE_EXPERIMENTAL_COREPACK=1` is set for Production only; add it to Preview too. `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
+**Next:** M0 gate review, then merge PR #1.
 
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 

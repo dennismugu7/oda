@@ -57,6 +57,8 @@ Rules:
 - Must stay smooth on budget phones: animate only `transform` and `opacity` on the UI thread (worklets), no layout animation, no JS-thread timers, no blur/shadow animation.
 - The buttons are usable immediately; the animation never blocks or delays input.
 
+Also in M2, with the animation: **the green tick badge after "oda" sits on the text baseline, like a full stop.** Its bottom aligns with the baseline of "oda", with a small gap after the "a", matching the app icon and the web wordmark's green dot. In the M0 build it sits below the baseline.
+
 ## Buyer web (`design/web/`)
 
 | File | Screen | Changes |
