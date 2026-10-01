@@ -19,7 +19,7 @@ Newest entries at the top.
 
 **Open**
 - First local build + welcome screen (01) on the Redmi 15c, and design comparison.
-- Staging: migrations not yet run on Neon (parked: `packages/db/.env.staging.local` + `db:migrate:staging`, needs the owner at the laptop). Vercel project in progress. Doc ambiguities from the M0 plan (§10) still open.
+- Staging: migrations not yet run on Neon (parked: `packages/db/.env.staging.local` + `db:migrate:staging`, needs the owner at the laptop). Vercel project `oda` created (root `apps/web`, Node 24.x, pooled Neon `DATABASE_URL` for Production + Preview, decision #26); region `fra1` and `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
 
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 
