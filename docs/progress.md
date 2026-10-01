@@ -14,7 +14,11 @@ Newest entries at the top.
 - Auth schema verified by a test against Better Auth's `getSchema()` instead of the CLI (the CLI can't load a config that imports `server-only`).
 - Added beyond the plan: same-shop composite foreign keys (decision #34 f).
 
-**Next:** review stop A (owner), then CP4 authorization layer.
+**Review stop A: approved** by the owner, including decision #34 (c)–(j), the Better Auth 1.7.6 pin and `unverified` as the default payment-account status.
+
+**Next:** CP4 authorization layer (after the owner's go-ahead; the laptop is getting a RAM upgrade, 16 → 32 GB).
+
+**Change to CP8:** `scripts/setup-android-windows.ps1` sizes the Gradle limits from the detected RAM instead of hardcoding them: at 16 GB today's values (`-Xmx2560m`, `workers.max=1`); at 32 GB e.g. `-Xmx4g`, `workers.max=3`. It prints the chosen tier, and decisions #23/#29/#30 get updated with the RAM-based rule.
 
 ## 2026-10-01 · Approved welcome animation added for M2 (branch `design/welcome-animation`)
 
