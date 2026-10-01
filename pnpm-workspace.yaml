@@ -33,4 +33,3 @@ minimumReleaseAgeExclude:
 # Keep React Native tooling on the versions Expo SDK 57 was built against.
 overrides:
   '@react-native/metro-config': 0.86.3
-  react-native-worklets: 0.10.1

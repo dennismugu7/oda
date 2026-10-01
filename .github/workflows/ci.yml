@@ -72,6 +72,10 @@ jobs:
       - name: Playwright smoke
         run: pnpm --filter @oda/web test:e2e
 
+      # Every installed copy (transitive ones too) must match the Expo SDK's versions.
+      - name: Expo SDK dependency versions
+        run: pnpm --filter @oda/seller deps:check
+
       - name: Expo doctor
         working-directory: apps/seller
         run: npx --yes expo-doctor@1
