@@ -24,8 +24,11 @@ Newest entries at the top.
   - Splash (Android 12+): the system clips the icon to a 192 dp circle on a 288 dp canvas, which cut off the "o" and the tick. `imageWidth` 200 → 160 dp: farthest visible pixel now ~84 dp from centre vs the 96 dp safe radius (~12% margin), measured on the generated mdpi and xxxhdpi drawables.
 - M2 scope added: animated welcome illustration (design-changes.md "01-welcome: animated illustration (M2)", acceptance line in M2).
 
+- `pnpm dev` re-checked after the dependency changes: web 200, `/api/health` `db: up` (after `pnpm db:up`), Metro running and serving the Android bundle. Follow-ups: `oda-postgres` now has `restart: unless-stopped` (verified: back healthy after a Docker Desktop restart, without `db:up`); new `pnpm dev:stop` ends only Node servers left on 3000/8081 (verified after a killed `pnpm dev`).
+- `m0-preview-2` built (3 min, cached native code; Kotlin compiles in-process, decision #30) with the label and splash fixes. The splash drawable inside the APK measures 0.293 of the canvas width vs the 0.333 safe radius.
+
 **Open**
-- Next APK (`m0-preview-2`) to confirm the "oda · now" label and the splash on the Redmi 15c.
+- Confirm on the Redmi 15c with `m0-preview-2`: "oda · now" fully visible; splash wordmark + tick inside the circle.
 - Staging migrations: workflow `migrate-staging` (decision #27) replaces the parked `.env.staging.local` step. Needs repo secret `NEON_STAGING_DATABASE_URL_UNPOOLED`; first runs when PR #1 merges to `main`. Neon has no tables until then.
 - Vercel project `oda` (root `apps/web`, Node 24.x, region `fra1`, pooled Neon `DATABASE_URL` for Production + Preview, decision #26). **Stable preview address for the M0 branch: https://oda-git-m0-foundations-dennismugu7-6048s-projects.vercel.app** (behind Vercel Authentication); `/api/health` returns `db: up` there. An earlier failure was a bad `DATABASE_URL` paste, re-pasted. `ENABLE_EXPERIMENTAL_COREPACK=1` is set for Production only; add it to Preview too. `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
 
