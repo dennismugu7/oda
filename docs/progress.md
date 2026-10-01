@@ -32,11 +32,12 @@ Newest entries at the top.
 - M11: release builds add `armeabi-v7a` (#23) and a real signing key; production Neon project on Postgres 18.
 - `packages/shared` holds only money formatting; state machine, pricing, phone and slug utils are M1 scope.
 
-**Open questions**
-- M1 acceptance requires "a backup file appears in R2", but the R2 bucket moved to M2 (#22). Create the bucket in M1, or move the backup check to M2?
-- Doc ambiguities from the M0 plan (§10) still need answers before M2.
+**Gate review (owner): M0 passed.** Outcomes in decision #31: backup + R2 check moved to M2; preview URL accepted for M0 (Production checked after merge); one EAS cloud build in M2; M1 adds the Android setup script and the migrate/deploy race fix. `milestones.md` updated.
 
-**Next:** M0 gate review, then merge PR #1.
+**Open questions**
+- Doc ambiguities from the M0 plan (§10): the owner answers them before M2.
+
+**Next:** merge PR #1, tag `m0-done`, check `migrate-staging`, Neon and the Production deployment; then M1.
 
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 
