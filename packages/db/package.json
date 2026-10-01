@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
@@ -16,6 +17,7 @@
     "test": "dotenv -e .env.local -- vitest run"
   },
   "dependencies": {
+    "@oda/shared": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "pg": "^8.23.1"
   },
