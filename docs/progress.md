@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-10-01 · Approved welcome animation added for M2 (branch `design/welcome-animation`)
+
+- Owner-approved assets added (owner's request; `design/` is otherwise read-only): `design/app/welcome-animation/01-welcome-animation-preview.html` (exact reference for timing, feel and card content) and three transparent PNGs (fashion 360×290, food 360×304, accessories 360×214), also copied to `apps/seller/assets/welcome/` for the app. Checked before copying: the preview contains "Nairobi · Kilimani" and no "M-Pesa till checked"; the PNGs are RGBA with transparent corners at the expected sizes; the preview embeds the same three images (scaled to 240 px wide).
+- `design-changes.md`: 01-welcome section replaced by the approved spec (card content, 5-step choreography ~2.85 s, reduce-motion = final state, smooth on the Redmi 15c). `milestones.md` M2 acceptance: side-by-side check against the preview on the Redmi 15c.
+- Not built yet (M2). One implementation note added to keep it smooth: the tile's glow is an opacity/scale-animated layer, not an animated shadow.
+
 ## 2026-10-01 · M0 closed
 
 - PR #1 merged into `main` as `e24fd42` (merge commit); annotated tag **`m0-done`**. CI green on `main`.

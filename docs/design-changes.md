@@ -16,7 +16,7 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 
 | File | Screen | Changes |
 |---|---|---|
-| 01-welcome | Welcome | Matches the image (static, M0). **M2: animate the illustration once on open**: see "01-welcome: animated illustration (M2)" below. |
+| 01-welcome | Welcome | Static in M0. **M2: new card content + animation, approved**: see "01-welcome: animated illustration (M2, approved)" below and the HTML preview in `design/app/welcome-animation/`. |
 | 02-sign-up | Sign up | **Remove Google/Facebook buttons** and "or continue with". |
 | 03-verify-email | Enter code | 6-digit code (Better Auth email OTP plugin). Add a 60s resend cooldown. |
 | 04-email-verification-code | Email template (OTP) | This is an **email**, not an app screen. The code is **6 digits** (image shows 8). Build it as a React Email / HTML template sent via Resend from the Better Auth OTP hook. |
@@ -46,21 +46,29 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 | NEW: delete account confirm | — | Type "DELETE" to confirm. Explains that orders/customers are removed after 30 days. |
 | app-icon | Launcher icon | Adaptive icon: foreground = wordmark, background = orange. |
 
-### 01-welcome: animated illustration (M2)
+### 01-welcome: animated illustration (M2, approved)
 
-Built in code with Reanimated (no video, GIF or Lottie file), on the existing welcome illustration. Plays **once** when the screen opens, about **3 s** in total, then stays still as the static design.
+**Exact reference:** `design/app/welcome-animation/01-welcome-animation-preview.html` (open it in a browser; it has Replay, Slow motion and "Remove animations"). It is the reference for **timing, feel and card content**; where this text and the preview differ, ask. Product images: `design/app/welcome-animation/` (originals) and `apps/seller/assets/welcome/` (used by the app), transparent PNGs.
 
-1. **Shop card** floats in with a slight tilt that settles to level, on a soft spring (~600 ms).
-2. A **finger-tap ripple** (a touch circle, not a mouse cursor) lands on one colour swatch; that swatch glows briefly.
-3. The **"New order #1042"** notification card slides up from the bottom right with a gentle bounce.
-4. **"Turn your posts into orders."** fades in with a small upward move.
+**Card content (changes from design 01):**
+- Remove the "M-Pesa till checked" badge. Under "Amani Styles" show **"Nairobi · Kilimani"** (small, muted).
+- The 3 colour blocks become **product tiles** with soft tinted backgrounds, image centred at max 78% of the tile:
+  - `#FBE3DA` fashion, `welcome-fashion.png`
+  - `#FBF0D2` food, `welcome-food.png`
+  - `#E2F1E8` accessories, `welcome-accessories.png`
+- The green tick sits on the **same baseline as "oda"**, like a full stop: its bottom on the text baseline, a small gap after the "a", matching the app icon and the web wordmark's green dot. (In the M0 build it sits below the baseline.)
 
-Rules:
-- If Android's **Remove animations** setting is on (Reanimated `useReducedMotion()`), show the static card with no motion.
-- Must stay smooth on budget phones: animate only `transform` and `opacity` on the UI thread (worklets), no layout animation, no JS-thread timers, no blur/shadow animation.
+**Choreography** (plays once on mount, ~2.85 s total, then stays still; Reanimated on the UI thread):
+1. **0–650 ms:** shop card from opacity 0, translateY 26, rotateX 14°, rotateZ −4°, scale 0.94 to rest, with a springy overshoot (equivalent to `cubic-bezier(.34,1.56,.64,1)`).
+2. **700–1450 ms:** a finger-tap indicator (30 dp circle, navy at 28% opacity, 2 dp white border) fades in about 70 dp below-right of the food tile, glides to its centre, presses (scale 0.78) and fades out.
+3. **1300–2000 ms:** the food tile presses (0.92), pops (1.06) with a warm yellow glow, and settles at 1. **1320–1920 ms:** an orange 2 dp ring expands from the tile (scale 1 → 1.6) and fades.
+4. **1550–2250 ms:** the "New order #1042" card enters from translate(30, 70), scale 0.9, opacity 0 with a gentle bounce (overshoot to −8 dp, then +3 dp, then rest).
+5. **2250–2850 ms:** "Turn your posts into orders." fades in from translateY 14 (easing `cubic-bezier(.2,.8,.2,1)`).
+
+**Rules:**
+- If the system **Remove animations** / reduce-motion setting is on (Reanimated `useReducedMotion()`), show the **final state immediately**.
+- Must stay smooth on the **Redmi 15c**: animate only `transform` and `opacity` on the UI thread (worklets); no layout animation, no JS-thread timers. The tile's glow is a pre-rendered warm-yellow layer behind the tile whose opacity/scale animate, not an animated shadow.
 - The buttons are usable immediately; the animation never blocks or delays input.
-
-Also in M2, with the animation: **the green tick badge after "oda" sits on the text baseline, like a full stop.** Its bottom aligns with the baseline of "oda", with a small gap after the "a", matching the app icon and the web wordmark's green dot. In the M0 build it sits below the baseline.
 
 ## Buyer web (`design/web/`)
 
