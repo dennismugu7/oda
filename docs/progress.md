@@ -2,6 +2,20 @@
 
 Newest entries at the top.
 
+## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
+
+**Done**
+- CP1 `packages/shared`: order state machine (every transition in order-lifecycle.md, exhaustive sweep of 3,640 combinations), pricing, Kenyan phones, M-Pesa code extraction (all-letters codes accepted), slugs. Decision #33.
+- CP2 schema `0001`: all 20 data-model tables + Better Auth's 4 (`auth_*`, uuid), enums, constraints, indexes. Better Auth 1.7.6 server core in apps/web (email + password, bearer sessions, profile hook). Tests run on throwaway databases created and migrated automatically (also in CI): `oda_test` for apps/web, `oda_db_test` for packages/db. They are separate because Turbo runs both suites in parallel; sharing one caused migration races.
+- CP3 `0002`: updated_at, status guard, sale aggregates, ratings, payment-verification reset, slug history/guards, same-shop composite foreign keys, `rate_limit_hit()`. Decision #34; data-model.md aligned.
+
+**Deviations**
+- `better-auth` 1.7.6, not 1.7.7 (pnpm's release-age guard; 1.7.7 is under a day old).
+- Auth schema verified by a test against Better Auth's `getSchema()` instead of the CLI (the CLI can't load a config that imports `server-only`).
+- Added beyond the plan: same-shop composite foreign keys (decision #34 f).
+
+**Next:** review stop A (owner), then CP4 authorization layer.
+
 ## 2026-10-01 · Approved welcome animation added for M2 (branch `design/welcome-animation`)
 
 - Owner-approved assets added (owner's request; `design/` is otherwise read-only): `design/app/welcome-animation/01-welcome-animation-preview.html` (exact reference for timing, feel and card content) and three transparent PNGs (fashion 360×290, food 360×304, accessories 360×214), also copied to `apps/seller/assets/welcome/` for the app. Checked before copying: the preview contains "Nairobi · Kilimani" and no "M-Pesa till checked"; the PNGs are RGBA with transparent corners at the expected sizes; the preview embeds the same three images (scaled to 240 px wide).
