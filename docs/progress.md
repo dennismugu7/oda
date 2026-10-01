@@ -12,13 +12,14 @@ Newest entries at the top.
 - New CI step `pnpm --filter @oda/seller deps:check`; checked against the old lockfile, it fails on Reanimated 4.7.0 and Gesture Handler 3.3.0.
 - Builds switch from EAS cloud to local Gradle, with EAS kept as a fallback (decision #23). Memory caps are in `~/.gradle/gradle.properties`; dev builds are arm64-v8a only; release builds (M11) must add armeabi-v7a.
 - CLAUDE.md Commands: local build, deps check, wireless-debugging connect/reconnect steps.
+- Neon `oda-staging` created (Postgres 18, AWS eu-central-1 Frankfurt, no Neon Auth). Local Docker and CI moved to Postgres 18 to match (decision #25); local DB rebuilt with `pnpm db:reset` (18.6, `oda` + `oda_test`); all tests, lint, typecheck, format and Playwright pass uncached.
 
 **Deviations**
 - Android run moves from EAS cloud to local (supersedes the 2026-09-30 "Open" note).
 
 **Open**
 - First local build + welcome screen (01) on the Redmi 15c, and design comparison.
-- Staging: Neon `oda-staging`, then Vercel. Doc ambiguities from the M0 plan (§10) still open.
+- Staging: migrations not yet run on Neon (parked: `packages/db/.env.staging.local` + `db:migrate:staging`, needs the owner at the laptop). Vercel project in progress. Doc ambiguities from the M0 plan (§10) still open.
 
 ## 2026-09-30 · M0 Foundations (in progress, branch `m0-foundations`, PR #1)
 

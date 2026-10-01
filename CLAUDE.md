@@ -53,7 +53,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm test`: Vitest in every package (the db tests need local Postgres up and migrated).
 - `pnpm test:e2e`: builds the web and runs Playwright (390×844 mobile Chromium) against it.
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
-- `pnpm db:up` / `db:down`: local Postgres 17 in Docker on **port 5442** (5433 is taken by a native Postgres on this machine).
+- `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
 - `pnpm db:reset`: drop the volume, start, migrate, seed. `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
 - `pnpm --filter @oda/ui-tokens generate`: regenerate `theme.css` after editing `tokens.ts`.
 - `pnpm --filter @oda/seller doctor`: expo-doctor. `pnpm --filter @oda/seller deps:check`: every installed Expo-pinned package (transitive too) matches the SDK. Add native modules with `npx expo install`, never `pnpm add`.
