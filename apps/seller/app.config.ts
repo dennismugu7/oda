@@ -27,7 +27,10 @@ const config: ExpoConfig = {
       'expo-splash-screen',
       {
         image: './assets/splash-icon.png',
-        imageWidth: 200,
+        // Android 12+ draws the icon on a 288dp canvas and clips it to a centred
+        // 192dp circle. At 160dp wide the wordmark + tick reach ~84dp from the centre,
+        // inside the 96dp safe radius with ~12% margin (200dp clipped the "o" and tick).
+        imageWidth: 160,
         resizeMode: 'contain',
         backgroundColor: '#D94A27',
       },

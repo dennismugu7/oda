@@ -48,7 +48,9 @@ export default function Welcome() {
               <View style={styles.notificationIcon}>
                 <View style={styles.notificationIconRing} />
               </View>
-              <Text style={styles.notificationMeta}>oda · now</Text>
+              <Text style={styles.notificationMeta} numberOfLines={1}>
+                oda · now
+              </Text>
             </View>
             <Text style={styles.notificationTitle}>New order #1042</Text>
             <Text style={styles.notificationBody}>Wanjiku · KSh 2,500 · TikTok</Text>
@@ -202,7 +204,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.surface,
   },
-  notificationMeta: { ...text('small'), fontSize: 7, lineHeight: 9, color: colors.textSecondary },
+  // flex: 1 gives the label the rest of the row. Sized to its own text, Android's
+  // rounding wrapped "now" onto a clipped second line on the Redmi 15c.
+  notificationMeta: {
+    ...text('small'),
+    flex: 1,
+    fontSize: 7,
+    lineHeight: 9,
+    color: colors.textSecondary,
+  },
   notificationTitle: { ...text('bodyStrong'), fontSize: 9, lineHeight: 12, color: colors.navy },
   notificationBody: { ...text('small'), fontSize: 7, lineHeight: 9, color: colors.textSecondary },
 
