@@ -14,7 +14,7 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 
 | File | Screen | Changes |
 |---|---|---|
-| 01-welcome | Welcome | none |
+| 01-welcome | Welcome | Matches the image (static, M0). **M2: animate the illustration once on open**: see "01-welcome: animated illustration (M2)" below. |
 | 02-sign-up | Sign up | **Remove Google/Facebook buttons** and "or continue with". |
 | 03-verify-email | Enter code | 6-digit code (Better Auth email OTP plugin). Add a 60s resend cooldown. |
 | 04-email-verification-code | Email template (OTP) | This is an **email**, not an app screen. The code is **6 digits** (image shows 8). Build it as a React Email / HTML template sent via Resend from the Better Auth OTP hook. |
@@ -42,6 +42,20 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 | NEW: offline bar | — | Thin bar "You're offline · showing saved data". |
 | NEW: delete account confirm | — | Type "DELETE" to confirm. Explains that orders/customers are removed after 30 days. |
 | app-icon | Launcher icon | Adaptive icon: foreground = wordmark, background = orange. |
+
+### 01-welcome: animated illustration (M2)
+
+Built in code with Reanimated (no video, GIF or Lottie file), on the existing welcome illustration. Plays **once** when the screen opens, about **3 s** in total, then stays still as the static design.
+
+1. **Shop card** floats in with a slight tilt that settles to level, on a soft spring (~600 ms).
+2. A **finger-tap ripple** (a touch circle, not a mouse cursor) lands on one colour swatch; that swatch glows briefly.
+3. The **"New order #1042"** notification card slides up from the bottom right with a gentle bounce.
+4. **"Turn your posts into orders."** fades in with a small upward move.
+
+Rules:
+- If Android's **Remove animations** setting is on (Reanimated `useReducedMotion()`), show the static card with no motion.
+- Must stay smooth on budget phones: animate only `transform` and `opacity` on the UI thread (worklets), no layout animation, no JS-thread timers, no blur/shadow animation.
+- The buttons are usable immediately; the animation never blocks or delays input.
 
 ## Buyer web (`design/web/`)
 

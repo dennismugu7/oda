@@ -19,8 +19,13 @@ Newest entries at the top.
 
 - The M0 welcome-screen check uses a **standalone release APK built locally** (`assembleRelease`, JS bundled in, arm64-v8a only, signed with the default debug keystore: testing only, not for distribution), published as GitHub pre-release `m0-preview-1` in the private repo. No EAS cloud build (queue too slow). Docker Desktop is stopped during Gradle builds.
 
+- **Design comparison, welcome (01), `m0-preview-1` on the Redmi 15c:** matches design 01 closely (owner's check). Differences found and fixed in code, to be confirmed on the next APK:
+  - Notification card showed "oda ·" instead of "oda · now": Android wrapped "now" onto a clipped second line (the label was sized to its own text width). The label now takes the rest of the row (`flex: 1`, one line).
+  - Splash (Android 12+): the system clips the icon to a 192 dp circle on a 288 dp canvas, which cut off the "o" and the tick. `imageWidth` 200 → 160 dp: farthest visible pixel now ~84 dp from centre vs the 96 dp safe radius (~12% margin), measured on the generated mdpi and xxxhdpi drawables.
+- M2 scope added: animated welcome illustration (design-changes.md "01-welcome: animated illustration (M2)", acceptance line in M2).
+
 **Open**
-- Install the `m0-preview-1` APK on the Redmi 15c, check the welcome screen (01) against its design, and list the differences.
+- Next APK (`m0-preview-2`) to confirm the "oda · now" label and the splash on the Redmi 15c.
 - Staging migrations: workflow `migrate-staging` (decision #27) replaces the parked `.env.staging.local` step. Needs repo secret `NEON_STAGING_DATABASE_URL_UNPOOLED`; first runs when PR #1 merges to `main`. Neon has no tables until then.
 - Vercel project `oda` (root `apps/web`, Node 24.x, region `fra1`, pooled Neon `DATABASE_URL` for Production + Preview, decision #26). **Stable preview address for the M0 branch: https://oda-git-m0-foundations-dennismugu7-6048s-projects.vercel.app** (behind Vercel Authentication); `/api/health` returns `db: up` there. An earlier failure was a bad `DATABASE_URL` paste, re-pasted. `ENABLE_EXPERIMENTAL_COREPACK=1` is set for Production only; add it to Preview too. `PUBLIC_SHOP_BASE_URL` still to set. Doc ambiguities from the M0 plan (§10) still open.
 

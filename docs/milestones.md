@@ -31,7 +31,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 Screens 01–14, email templates 04 and 06, web `/reset-password` (07, 08).
 - Better Auth (email + password + 6-digit email OTP) in apps/web, Expo client integration, forgot/reset flow, session persistence, resumable onboarding, slug check, photo capture/upload with resizing, payment account setup.
 - Resend configured on staging so emails actually arrive (sending domain: a subdomain of mugu-labs.com).
-- **Accept:** a new email can sign up, verify, finish onboarding and land on Home; the shop exists with 1 product; killing the app mid-onboarding resumes at the same step; reset password works end to end.
+- **Accept:** a new email can sign up, verify, finish onboarding and land on Home; the shop exists with 1 product; killing the app mid-onboarding resumes at the same step; reset password works end to end. The welcome illustration animates once (~3 s: card, tap ripple on a swatch, order card, headline; see design-changes.md "01-welcome: animated illustration") without visible stutter on a budget Android phone (the Redmi 15c test device), and shows the static card when Android's "Remove animations" is on.
 
 ## M3 · Catalogue management (seller)
 Screens 18-*, 19-shop-tab, 19b-categories, 20b-categories, 20b1-category-detail.
