@@ -49,7 +49,7 @@ docs/           specs (keep updated)
 
 ## Commands
 Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy each `.env.example` to `.env.local` (`apps/web`, `apps/seller`, `packages/db`), `pnpm db:up`, `pnpm db:migrate`.
-- `pnpm dev`: web on http://localhost:3000 + Metro for the seller app (open with the oda dev build). Needs `pnpm db:up` first.
+- `pnpm dev`: web on http://localhost:3000 + Metro for the seller app (open with the oda dev build). Needs `pnpm db:up` first (after that, `oda-postgres` restarts with Docker). Stop with Ctrl+C; if the terminal or task was killed instead, `pnpm dev:stop` ends the Node servers left on ports 3000 and 8081 (nothing else).
 - `pnpm test`: Vitest in every package (the db tests need local Postgres up and migrated).
 - `pnpm test:e2e`: builds the web and runs Playwright (390×844 mobile Chromium) against it.
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
