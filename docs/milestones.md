@@ -12,6 +12,7 @@ Definition of done (every milestone):
 ---
 
 ## M0 · Foundations
+**Status: closed 2026-10-01** (gate passed; PR #1 merged as `e24fd42`, tag `m0-done`).
 Monorepo + tooling + an empty but deployed skeleton.
 - pnpm + Turborepo monorepo: `apps/web` (Next.js, App Router, TypeScript, Tailwind), `apps/seller` (Expo, TypeScript, Expo Router, Android only), `packages/shared` (types, zod schemas, pricing, order machine, phone/money utils), `packages/ui-tokens` (colours, type, radii, spacing extracted from `design/`), `packages/db` (Drizzle schema, migrations, seed).
 - ESLint + Prettier, strict TypeScript, Vitest, Playwright, GitHub Actions CI (lint, typecheck, test).
@@ -57,6 +58,7 @@ Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 ## M6 · Order management (seller)
 Screens 15, 16, 17-*, 17b-*, new mark-delivered, refund banner, notifications list.
 - Home To-do + sales card, orders list/search, order detail with every action via server RPCs, WhatsApp prefill links, manual order creation, push notifications (Expo), in-app notifications, hourly auto-expire job.
+- **Needs from you:** a **Firebase project** (free) with the Android app `com.mugulabs.oda` registered, for Expo push via FCM (its `google-services.json` and the FCM credentials uploaded to EAS/Expo).
 - **Accept:** the lifecycle can be driven end to end by a buyer on web + a seller on the phone; push arrives on a real device within 10s of a web order; forbidden transitions are rejected by the server.
 
 ## M7 · Reviews

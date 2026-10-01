@@ -44,7 +44,7 @@ Implement this as **one pure state machine in `packages/shared`** (for example `
 
 Anything not listed is forbidden and must return a clear error.
 
-## What counts as a sale (Home, Insights, Bestseller, Popular)
+## What counts as a sale (Home, Insights, Customers, Bestseller, Popular)
 - An order counts as a **sale** while its status is `confirmed`, `sent` or `delivered`. It is dated by `confirmed_at`, bucketed in Africa/Nairobi time. Cancelling it removes it.
 - `products.units_sold` = the sum of qty over sale orders. `shops.delivered_count` = the number of `delivered` orders.
 - Sales total = the sum of `total` (including delivery fees) over sale orders in the period.
@@ -57,7 +57,7 @@ The same four steps in both apps. Step n is done when the status number (table a
 |---|---|---|---|
 | 1 | Order placed | Received | 1 |
 | 2 | Paid & confirmed / Accepted by {shop} | Payment / Accepted | 3 |
-| 3 | Sent out | Sent | 4 |
+| 3 | Sent out (pickup: **Ready for pickup**) | Sent (pickup: **Ready for pickup**) | 4 |
 | 4 | Delivered | Delivered | 5 |
 
 `payment_claimed` shows step 2 as "in progress" ("Waiting for {shop} to confirm your payment"). Step 5 on the buyer web, "Rate your order", unlocks at `delivered`.

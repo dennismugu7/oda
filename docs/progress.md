@@ -2,6 +2,14 @@
 
 Newest entries at the top.
 
+## 2026-10-01 · M0 closed
+
+- PR #1 merged into `main` as `e24fd42` (merge commit); annotated tag **`m0-done`**. CI green on `main`.
+- `migrate-staging`, first run on `e24fd42`: success, "migrations applied". Neon staging now holds the M0 baseline only (`drizzle.__drizzle_migrations`, 1 row; the baseline is `SELECT 1`, tables arrive in M1). Owner can confirm in the Neon console.
+- **Production (staging) web: https://oda-eta.vercel.app**, public. `/api/health` → `{"ok":true,"db":"up","commit":"e24fd42"}` (owner + curl), home page 200. Region confirmed: `X-Vercel-Id: cpt1::fra1::…` (edge Cape Town, function Frankfurt next to Neon). Recorded in CLAUDE.md → Commands.
+- Gate outcomes (decision #31) and the answers to the 18 open doc questions (decision #32) recorded; spec.md, design-changes.md, order-lifecycle.md, milestones.md (M0 status closed; Firebase in M6) and CLAUDE.md (pricing path, env names, source-of-truth rule) updated.
+- **Next:** M1 (Database & security), not started; it begins with a short plan for approval.
+
 ## 2026-10-01 · M0 Foundations: complete, ready for the gate review (branch `m0-foundations`, PR #1)
 
 **Acceptance (milestones.md M0)**

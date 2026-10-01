@@ -13,6 +13,7 @@ oda gives Kenyan social sellers a free shop link. Sellers run their shop from an
 8. `docs/progress.md`: running log; update it at the end of every task
 
 If these conflict or are unclear, **stop and ask**. Don't guess on product behaviour.
+**These repo docs are the only source of truth.** Don't rely on old plan files or past conversations (e.g. `~/.claude/plans/*`); anything decided there is recorded in `docs/decisions.md`.
 
 ## Stack
 pnpm + Turborepo · Expo (Android) · Next.js + Tailwind · Neon Postgres + Drizzle · Better Auth (email + password + email OTP) · Cloudflare R2 (presigned uploads) · Resend · Expo push · Sentry · GitHub Actions (CI, cron, backups) · Vercel · EAS. **No Supabase.** See `docs/decisions.md` #10 and #16.
@@ -29,13 +30,13 @@ docs/           specs (keep updated)
 ```
 
 ## Non-negotiable rules
-- **Money** is integer KES. Only `packages/shared/pricing.ts` computes totals, and only on the server from DB prices.
+- **Money** is integer KES. Only `packages/shared/src/pricing.ts` computes totals, and only on the server from DB prices.
 - **Order status** changes only through the shared state machine, run through `transitionOrder()` in Next.js API route handlers (see `docs/data-model.md` → "Where logic runs"). Never a raw status UPDATE anywhere else.
 - **The database is server-only.** Every access goes through the authorization layer (`apps/web/server/authz.ts` + shop-scoped repositories), with automated authorization tests. Never spread request bodies into DB writes; whitelist fields with zod.
 - **Buyer order access** only via `public_token`. Never expose sequential IDs in URLs.
 - **Phones** stored in E.164 (+254…). **Timezone** Africa/Nairobi for any date bucketing.
 - **No secrets in git.** Use `.env.local` + `.env.example`. DB URL, R2 keys and auth secrets are server-side only, never in the app bundle.
-- **Base shop URL** comes from config (`PUBLIC_SHOP_BASE_URL`). Never hardcode a domain.
+- **Base shop URL** comes from config: the server reads `PUBLIC_SHOP_BASE_URL`; the seller app reads `EXPO_PUBLIC_SHOP_BASE_URL` and `EXPO_PUBLIC_API_URL`. Never hardcode a domain.
 - Validate every input with zod at the boundary. Friendly, specific error messages in the UI.
 - Every screen handles loading, empty and error states.
 - Don't add dependencies casually. Prefer well-maintained, popular packages; note significant ones in `docs/decisions.md`.
@@ -56,6 +57,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
 - `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
 - `pnpm db:reset`: drop the volume, start, migrate, seed. `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
+- Staging web: **https://oda-eta.vercel.app** (Vercel Production deployment of `main`, public, region `fra1`; health at `/api/health`). Branch previews: `https://oda-git-<branch>-dennismugu7-6048s-projects.vercel.app` (behind Vercel login). Until M11 both use the Neon staging DB (decision #26).
 - Neon staging is migrated only by the `migrate-staging` GitHub Actions workflow (every push to `main`, or Actions → migrate-staging → Run workflow). No Neon credentials on dev machines.
 - `pnpm --filter @oda/ui-tokens generate`: regenerate `theme.css` after editing `tokens.ts`.
 - `pnpm --filter @oda/seller doctor`: expo-doctor. `pnpm --filter @oda/seller deps:check`: every installed Expo-pinned package (transitive too) matches the SDK. Add native modules with `npx expo install`, never `pnpm add`.

@@ -28,7 +28,7 @@ oda gives social sellers in Kenya a free shop link. A seller sets up a shop in t
 ## 4. Shop link
 
 - Format: `https://oda.mugu-labs.com/{shop-slug}` (for example `oda.mugu-labs.com/amani-styles`).
-- The base domain is **one config value** (`PUBLIC_SHOP_BASE_URL`). The designs show `oda.shop/…`, so render the configured domain instead.
+- The base domain is **one config value per environment**. The server reads `PUBLIC_SHOP_BASE_URL`; the seller app reads the same value as `EXPO_PUBLIC_SHOP_BASE_URL`, plus `EXPO_PUBLIC_API_URL` for the API (Expo only bundles `EXPO_PUBLIC_*`). The designs show `oda.shop/…`, so render the configured domain instead.
 - Slugs are lowercase, `a-z0-9-`, 3–30 characters, unique, and not on the reserved list (`admin, api, o, r, app, www, help, terms, privacy, delete-account, reset-password, login, static, assets, oda`).
 - A slug is generated from the shop name and can be edited. **Changing a slug keeps the old one redirecting (301) forever** (table `shop_slug_history`).
 - A slug that was ever used (in `shop_slug_history`) can never be taken by another shop.
@@ -39,6 +39,8 @@ oda gives social sellers in Kenya a free shop link. A seller sets up a shop in t
 
 Screens are in `design/app/`. Deviations from the designs are listed in `design-changes.md` and **take priority over the images**.
 
+Bottom tabs: **Home · Orders · + · Shop · More** ("+" = add product). UI text always writes the brand in lowercase: **oda**.
+
 ### 5.1 Auth (screens 01–08)
 - Implementation: **Better Auth** inside `apps/web` (email + password, the **email OTP plugin** with 6-digit codes and ~10 min expiry for sign-up verification, password reset by emailed link), with Better Auth's Expo integration in the seller app (session token in SecureStore). Emails are sent with Resend using the designs in screens 04 and 06. Sign-in and code attempts are rate-limited.
 - Welcome → Sign in / Create new shop.
@@ -46,10 +48,10 @@ Screens are in `design/app/`. Deviations from the designs are listed in `design-
 - Sign in: email + password. Forgot password → email with a reset link → web page `/reset-password` (screens 07, 08) → back to the app.
 - **No Google or Facebook sign-in in v1.**
 - Change password (screen 21) with an optional "log out other phones".
-- Sessions persist. The access token refreshes silently.
+- Sessions persist: the session stays signed in (Better Auth sessions renew automatically).
 
 ### 5.2 Onboarding (screens 09–14)
-Six steps, resumable if the app is closed. The progress bar shows the step. Answers to steps 1–2 are kept in `profiles.onboarding_draft`; the `shops` row is created at step 3, when the name and slug exist.
+Six steps, resumable if the app is closed. The progress bar has 6 segments; the number filled equals the current step. Steps 1–2 have **Skip**, which sets `business_type = other` and `channels = []`. Answers to steps 1–2 are kept in `profiles.onboarding_draft`; the `shops` row is created at step 3, when the name and slug exist.
 1. **What do you sell?** Sets `shops.business_type`, which presets suggested categories and size options for the first product.
 2. **Where do you sell today?** Multi-select. Sets `shops.channels`, which orders the share buttons.
 3. **Name your shop:** shop name → live slug check ("oda.mugu-labs.com/amani-styles is yours", Edit). WhatsApp number (required; this is the number buyers chat with). Logo optional (tap the avatar in the preview).
@@ -73,20 +75,22 @@ Six steps, resumable if the app is closed. The progress bar shows the step. Answ
 - Every "Tell {buyer} on WhatsApp" toggle opens the **seller's own WhatsApp** with a pre-written message (`wa.me/<buyer>?text=…`) after the action is saved. oda does not send WhatsApp messages itself in v1.
 - **New order** (manual, for DMs/calls/in person): buyer name + phone, items from the catalogue (size/colour/qty), delivery fee (editable override), payment: *Already paid* / *Not paid yet* / *Pay on delivery*. It creates a normal order with `source = manual` and produces an order link the seller can send.
 
-### 5.5 Products (screens 18-*, 12)
-- List with category filter chips and counts, search, sort (newest first default). Rows show sizes, sold count, "Add photo" and "Sold out" badges.
+### 5.5 Shop tab: products (screens 19-shop-tab, 18-edit-product, 12)
+- The **Shop tab is one screen** (19-shop-tab): shop header + product list + filters. `18-products` is merged into it (not a separate screen). Adding/editing a product stays `18-edit-product`.
+- Product list with category filter chips and counts, search, sort (newest first default). Rows show sizes, sold count, "Add photo" and "Sold out" badges.
 - Add/Edit: photos (1–5, first = cover, drag to reorder), name, price, **was-price (optional)**, category, description (optional), sizes (chips + custom), colours (preset palette + custom name), status Available / Sold out / Hidden. Delete product (soft delete; past orders keep their snapshot).
 - Photos are resized on device before upload into two files: full (max 1600px, JPEG ~80%) and thumbnail (~400px).
 
-### 5.6 Shop tab & categories (screens 19-*, 20b-categories, 20b1)
+### 5.6 Shop header, categories & sharing (screens 19b-*, 20b-categories, 20b1)
 - Shop header with View (in-app preview, screen 19b-preview) and Share.
+- The categories screen is **20b-categories** (thumbnails + chevron → 20b1 category detail), reached from both the Shop tab and More. `19b-categories` is not built.
 - Categories: add, rename, show/hide, drag to reorder, assign products. **Empty categories are never shown to buyers.**
 - Share your shop (19b-share): channel tabs, image choice (**New in** = latest product card, **Collection** = shop card, **QR code**), caption EN/SW with "Try another" (template-based, no AI), Copy caption, Copy link, and "Share to {channel}" via the Android share sheet. The link includes the channel's `?s=` tag.
 
 ### 5.7 More (screen 20-more)
 - **Insights:** Today / This week / This month. Sales total, % vs the previous period, bar chart, orders, average order, shop visits, orders by source, top products.
-- **Customers:** derived from orders and grouped by phone. Total spent, order count, last order, a "Repeat" badge (≥2 orders). Filters All / Repeat / New this month. WhatsApp button.
-- **Reviews:** average and distribution, tabs All / Needs reply / Low ratings (≤3★). Reply (one reply per review, editable).
+- **Customers:** derived from orders and grouped by phone. Total spent, order count, last order, a "Repeat" badge (≥2 orders). Total spent, order count and Repeat count **sales only** (`confirmed`, `sent`, `delivered`; see `order-lifecycle.md`). Filters All / Repeat / New this month. WhatsApp button.
+- **Reviews:** average and distribution, tabs All / Needs reply / Low ratings (≤3★). Reply (one reply per review, editable). Review text is stored **per item** (`review_items.text`): under each review, show each item's text with its product chip.
 - **Shop profile:** logo, name, link (change link, with a warning that old links keep working), about, location (Kenyan town / Nairobi area picker + free text), how buyers reach you: WhatsApp (main button), phone calls toggle, TikTok and Instagram handles.
 - **Payments:** M-Pesa accounts (one is *active* and shown at checkout; others saved), "When buyers pay" toggles *Before delivery* / *On delivery* (at least one must be on), and "oda never touches your money".
 - **Delivery:** areas (name, fee, method rider/parcel, ETA text such as "Same day"), pickup toggle (location + hours text), free delivery over an amount (applies only to areas flagged `free_delivery_eligible`).
@@ -121,13 +125,14 @@ Screens are in `design/web/`. The iPhone status bar and URL bar in the images ar
 - Search box → search page (07): text search on name/description, filter chips (category, size, max price), sort Popular / Newest / Price.
 - Category chips (only non-empty, visible categories, in seller order).
 - Product grid: cover, name, rating, price, was-price, badges (**Bestseller** = top 3 by units sold with ≥3 sold; **New** = created in the last 14 days; **Sold out**). No stock-count badges.
+- Product card actions: a **green tick** on the card = already in the cart. The **"+"** button quick-adds only when the product has no sizes and no colours; otherwise it opens the product page.
 - Favourites (heart) are saved **on this device only** (localStorage).
 - Sticky cart bar when the cart is not empty.
 - Seller WhatsApp "Chat" button (as in the seller's preview, 19b-preview).
 - States: shop paused ("taking a break, back soon", can browse, cannot order), shop not found (404 with oda branding), shop suspended by admin (same as not found).
 
 ### 6.2 Product (02)
-Photo carousel with a count, favourite, cart icon with count, badge, name, rating (links to reviews), price/was-price/"Save x%", colour swatches, size buttons (the sizes the seller listed), qty stepper, and **Add to cart · KES x**. Delivery info card (cheapest area fee, pickup, free-delivery threshold). Payment info card: "Pay the seller directly with M-Pesa" / "or on delivery" according to settings. Product reviews list below.
+Photo carousel with a count, favourite, cart icon with count, badge, name, rating (links to reviews), price/was-price/"Save x%", colour swatches, size buttons (the sizes the seller listed), qty stepper, and **Add to cart · KES x**. Shows "{units_sold} sold" only when `units_sold` ≥ 5. No size guide. Delivery info card (cheapest area fee, pickup, free-delivery threshold). Payment info card: "Pay the seller directly with M-Pesa" / "or on delivery" according to settings. Product reviews list below.
 
 ### 6.3 Cart (03)
 Per shop, stored in localStorage. Line items (size/colour, qty, remove), a free-delivery progress banner (if the seller has a threshold), "Goes well with" (up to 2 visible products from other categories, by popularity), subtotal. Delivery is shown as "Choose at checkout". **Prices are re-validated by the server at checkout.** If an item became sold out, hidden or changed price, show it inline and block checkout until resolved.
@@ -146,7 +151,7 @@ For pay-now orders in `awaiting_payment`: shows **exact** M-Pesa instructions fo
 - Status timeline matching `order-lifecycle.md`, with timestamps.
 - Cancel button while the order is cancellable. If the buyer already claimed payment, the copy says the seller will refund to M-Pesa manually. **No countdown timer.**
 - If the seller reported "payment not found": a banner prompting the buyer to re-check and resubmit the code, or message the seller.
-- Sent: method + rider phone if given.
+- Sent: method + rider phone if given. For pickup orders (`fulfilment = pickup`) step 3 reads **"Ready for pickup"** (see `order-lifecycle.md` → Stepper labels).
 - Delivered: "Rate your order" card (05c).
 - Help: Message {shop} (wa.me with the order number prefilled), Report a problem to oda (form → `reports`).
 - Cancelled / expired states.
@@ -158,7 +163,7 @@ Only when the order is delivered, one review per order (editable for 7 days). Ov
 Exactly the "email" side effects listed in `order-lifecycle.md`. Every email includes the order link.
 
 ## 7. Admin back office (`/admin`, desktop web, plain UI)
-- **Till verification queue:** seller, account type, number, name. The admin checks the registered name in M-Pesa and marks Verified or Rejected (with a note). Verified → the "M-Pesa till checked" badge.
+- **Till verification queue:** seller, account type, number, name. The admin checks the registered name in M-Pesa and marks Verified or Rejected (with a note). Verified → the "M-Pesa till checked by oda" badge.
 - **Shops:** search, view, suspend/unsuspend (suspended = the public page returns 404).
 - **Reports** from buyers and **feedback** from sellers: list, status (new / in progress / closed), notes.
 - **Account deletion requests** from the web form.
