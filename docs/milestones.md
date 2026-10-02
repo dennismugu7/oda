@@ -24,7 +24,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
-- Seed: shop "Amani Styles" with categories, 12 products and orders in every status (matches the designs).
+- Seed: shop "Amani Styles" with categories, 13 products and orders in every status (matches the designs, except the product count and Accessories: decision #36).
 - Staging migrations run **before** the Vercel deploy that needs them (fixes the migrate/deploy race in decision #27), e.g. Vercel deploys only after `migrate-staging` succeeds.
 - `scripts/setup-android-windows.ps1`: one command that applies and verifies this machine's local Android build setup (ninja 1.12+ in the SDK's CMake 3.22.1, decision #28; the Gradle limits in `~/.gradle/gradle.properties`, decisions #23, #29, #30), safe to re-run, so an SDK reinstall can be repaired in one step.
 - (Nightly backup moved to M2 with the R2 bucket, decision #31.)
