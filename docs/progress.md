@@ -2,6 +2,24 @@
 
 Newest entries at the top.
 
+## 2026-10-02 · M1 checkpoints 4–5, at review stop B (branch `m1-database-security`, draft PR #4)
+
+**Done**
+- Laptop now 32 GB: `~/.gradle/gradle.properties` → `-Xmx4g`, `workers.max=3`, other keys kept; decision #35 (amends #29/#30). Low-memory stop stays on. Health check after the restart: Docker + `oda-postgres` up, branch clean, the four checks green.
+- CP4 authorization layer: write whitelists (`packages/shared/src/schemas`), `errors.ts`, `authz.ts` (branded contexts, missing-profile repair), `uploads.ts`, repositories (user, seller, public, order-token, admin), ESLint guard on `@oda/db`/`drizzle-orm`/`pg` outside `apps/web/server/**` (also the seller app, shared, ui-tokens). 24 authorization tests.
+- CP5 `apps/web/server/orders.ts`: `nextOrderNumber()`, `insertOrder()` (prices, fees, payment-account snapshot and cover from the DB; idempotency key; shop rules), `transitionOrder()` (scoped load, machine, optimistic update → 409, events, payment claims, duplicate-code flag). 23 tests incl. the confirm/confirm and cancel/confirm races and concurrent numbering.
+- Both suites were mutation-checked: removing the shop filter or the status condition makes them fail.
+
+**Deviations**
+- Paused shops stay browsable (`isPaused`, spec §6); only suspended/deleted shops are not found.
+- Order `status` is server-owned on every schema except products (their own `status`).
+- Validation limits chosen (to confirm): Till/Paybill 5–7 digits, Pochi stored in E.164, price ≥ KSh 1, shop name 2–40 chars; channel values open until M2.
+- Lines for products with sizes/colours must name one; manual orders may use sold-out products and pickup even when pickup is off.
+
+**Review stop B:** seed table posted to the owner; waiting for the OK.
+
+**Next:** CP6 seed + `db:reset` after the OK.
+
 ## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
 
 **Done**
