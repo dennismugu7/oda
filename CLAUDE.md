@@ -37,6 +37,7 @@ docs/           specs (keep updated)
 - **Phones** stored in E.164 (+254…). **Timezone** Africa/Nairobi for any date bucketing.
 - **No secrets in git.** Use `.env.local` + `.env.example`. DB URL, R2 keys and auth secrets are server-side only, never in the app bundle.
 - **Base shop URL** comes from config: the server reads `PUBLIC_SHOP_BASE_URL`; the seller app reads `EXPO_PUBLIC_SHOP_BASE_URL` and `EXPO_PUBLIC_API_URL`. Never hardcode a domain.
+- **Migrations are backward compatible** with the code already running (expand → deploy → contract): the old deployment briefly runs against the new schema. Rename or drop a column in two releases, never one. Branch previews share the staging DB, so a preview of an unmerged migration may fail until merge.
 - Validate every input with zod at the boundary. Friendly, specific error messages in the UI.
 - Every screen handles loading, empty and error states.
 - Don't add dependencies casually. Prefer well-maintained, popular packages; note significant ones in `docs/decisions.md`.
@@ -58,7 +59,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
 - `pnpm db:reset`: drop the volume, start, migrate, seed (the "Amani Styles" demo shop; sign in as `amani@example.test` or `admin@example.test` with `SEED_PASSWORD` from `apps/web/.env.example`). `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
 - Staging web: **https://oda-eta.vercel.app** (Vercel Production deployment of `main`, public, region `fra1`; health at `/api/health`). Branch previews: `https://oda-git-<branch>-dennismugu7-6048s-projects.vercel.app` (behind Vercel login). Until M11 both use the Neon staging DB (decision #26).
-- Neon staging is migrated only by the `migrate-staging` GitHub Actions workflow (every push to `main`, or Actions → migrate-staging → Run workflow). No Neon credentials on dev machines.
+- Neon staging is migrated only by the `migrate-staging` GitHub Actions workflow: after CI passes on `main` it migrates, then deploys staging through a Vercel Deploy Hook and waits for `/api/health` to show the commit (Vercel doesn't deploy `main` on push: `apps/web/vercel.json`). Manual run: Actions → migrate-staging → Run workflow. No Neon credentials on dev machines.
 - `pnpm --filter @oda/ui-tokens generate`: regenerate `theme.css` after editing `tokens.ts`.
 - `pnpm --filter @oda/seller doctor`: expo-doctor. `pnpm --filter @oda/seller deps:check`: every installed Expo-pinned package (transitive too) matches the SDK. Add native modules with `npx expo install`, never `pnpm add`.
 - Android builds run **locally** (decision #23): `pnpm --filter @oda/seller android` (`expo run:android`: prebuild, Gradle, install on the connected phone, start Metro). Quit Docker Desktop first; Gradle memory caps live in `~/.gradle/gradle.properties`. Windows needs ninja 1.12+ in the SDK's CMake 3.22.1 (decision #28). Standalone APK: `cd apps/seller/android && ./gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk` (debug-keystore signed, testing only). EAS is the fallback: `eas build -p android --profile development` (from `apps/seller`).

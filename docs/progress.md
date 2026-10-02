@@ -20,7 +20,11 @@ Newest entries at the top.
 
 **CP6 seed** (`apps/web/server/seed/`, through Better Auth, the repositories, `insertOrder()` and `transitionOrder()`): `pnpm db:reset` builds 13 products, 142 orders, 126 delivered, 38 reviews (33/3/1/1 → 4.76, shown 4.8, 2 need a reply), 42 customers; to-do 2 to confirm / 4 to send / 3 new; this week KSh 18,250 from 6 sales, 12 orders of which 8 TikTok; sold counts 5/3/2/4; a duplicate M-Pesa code, refund_due, refunded, expired, buyer- and seller-cancelled and an unresolved claim. Fixed on the way: the shop checklist update failed when nothing was unticked (new test).
 
-**Next:** CP7 migrate/deploy race fix; needs the Vercel Deploy Hook secret from the owner.
+**CP7 (code ready, waiting for the secret):** `apps/web/vercel.json` stops automatic `main` deployments; `migrate-staging` runs after green CI on `main`: migrate → Deploy Hook → wait for `/api/health` to show the commit (decision #37); CLAUDE.md migration rule (backward compatible, expand → deploy → contract).
+
+**Needs from the owner:** Vercel Deploy Hook for `main` saved as repository secret `VERCEL_DEPLOY_HOOK_STAGING`. Proven by the M1 merge itself.
+
+**Next:** CP8 `setup-android-windows.ps1` (32 GB or more → `-Xmx6g`, 6 workers, parallel; decision #35).
 
 ## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
 
