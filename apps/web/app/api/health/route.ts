@@ -1,6 +1,4 @@
-import { sql } from '@oda/db';
-import { getDb } from '@/server/db';
-import { serverEnv } from '@/server/env';
+import { checkHealth } from '@/server/health';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,8 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local';
   try {
-    serverEnv();
-    await getDb().execute(sql`select 1`);
+    await checkHealth();
     return Response.json(
       { ok: true, db: 'up', commit },
       { headers: { 'cache-control': 'no-store' } },

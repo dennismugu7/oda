@@ -1,11 +1,16 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 import {
+  ACCOUNT_REF_MODES,
   ACTORS,
+  BUSINESS_TYPES,
   CANCEL_REASONS,
+  DELIVERY_METHODS,
   ORDER_SOURCES,
   ORDER_STATUSES,
+  PAYMENT_ACCOUNT_TYPES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  PRODUCT_STATUSES,
   SENT_METHODS,
 } from '@oda/shared';
 
@@ -21,26 +26,18 @@ export const cancelledBy = pgEnum('cancelled_by', ['buyer', 'seller', 'system'])
 export const fulfilment = pgEnum('fulfilment', ['delivery', 'pickup']);
 export const claimOutcome = pgEnum('claim_outcome', ['pending', 'confirmed', 'not_found']);
 
-export const businessType = pgEnum('business_type', [
-  'fashion',
-  'shoes_bags',
-  'beauty_hair',
-  'food_drinks',
-  'phones_electronics',
-  'home_decor',
-  'baby_kids',
-  'other',
-]);
-export const paymentAccountType = pgEnum('payment_account_type', ['till', 'pochi', 'paybill']);
-export const accountRefMode = pgEnum('account_ref_mode', ['fixed', 'order_number']);
+// Seller-editable enums share their values with the write whitelists in @oda/shared.
+export const businessType = pgEnum('business_type', BUSINESS_TYPES);
+export const paymentAccountType = pgEnum('payment_account_type', PAYMENT_ACCOUNT_TYPES);
+export const accountRefMode = pgEnum('account_ref_mode', ACCOUNT_REF_MODES);
 export const verificationStatus = pgEnum('verification_status', [
   'unverified',
   'pending',
   'verified',
   'rejected',
 ]);
-export const deliveryMethod = pgEnum('delivery_method', ['rider', 'parcel']);
-export const productStatus = pgEnum('product_status', ['available', 'sold_out', 'hidden']);
+export const deliveryMethod = pgEnum('delivery_method', DELIVERY_METHODS);
+export const productStatus = pgEnum('product_status', PRODUCT_STATUSES);
 
 export const notificationType = pgEnum('notification_type', [
   'new_order',
