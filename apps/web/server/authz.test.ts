@@ -22,6 +22,7 @@ import {
 } from './authz';
 import { getDb } from './db';
 import { ConflictError, HttpError, parseInput } from './errors';
+import { insertOrder, transitionOrder } from './orders';
 import { adminRepo } from './repos/admin';
 import { orderTokenRepo } from './repos/order-token';
 import { publicRepo } from './repos/public';
@@ -248,9 +249,29 @@ describe('1. seller isolation: A gets 404 on every one of B’s resources', () =
     expect((await r.getProduct(A.product.id)).photos.map((p) => p.id)).toEqual([A.photo.id]);
   });
 
-  it('A’s customer list never contains B’s buyers', async () => {
+  it('customers: only A’s buyers with at least one sale', async () => {
+    const order = (shop: Seller, phone: string, kind: 'manual_paid' | 'buyer_pay_now') =>
+      insertOrder(db, {
+        shopId: shop.ctx.shopId,
+        kind,
+        buyer: { name: 'Neema Otieno', phone },
+        fulfilment: { kind: 'delivery', areaId: shop.area.id, addressText: 'Kilimani' },
+        lines: [{ productId: shop.product.id, qty: 1 }],
+      });
+    await order(A, '0711000010', 'manual_paid'); // a sale
+    const cancelled = await order(A, '0711000011', 'buyer_pay_now');
+    await transitionOrder(
+      db,
+      { kind: 'seller', ctx: A.ctx, orderId: cancelled.order.id },
+      { type: 'sellerCancel', reason: 'out_of_stock' },
+    );
+    await order(B, '0722000010', 'manual_paid'); // B's sale
+
+    // Not listed: the cancelled-only buyer, the fixture's unpaid buyer and B's buyers.
     const customers = await A.repo.listCustomers();
-    expect(customers.map((c) => c.phone)).toEqual(['+254711000001']);
+    expect(customers).toMatchObject([
+      { phone: '+254711000010', name: 'Neema Otieno', orderCount: 1, totalSpent: 2700 },
+    ]);
   });
 
   it('updates and deletes, leaving every B row unchanged', async () => {

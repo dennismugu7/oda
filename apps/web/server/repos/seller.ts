@@ -377,7 +377,10 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
       return { ...order, items, events };
     },
 
-    /** Buyers grouped by phone. Totals and counts are sales only (decision #32). */
+    /**
+     * Buyers grouped by phone: only those with at least one sale (decision #38). Totals and
+     * counts are sales only (decision #32); the last order is their latest of any status.
+     */
     async listCustomers() {
       const sale = inArray(t.orders.status, SALE_STATUSES);
       return db
@@ -391,6 +394,7 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
         .from(t.orders)
         .where(eq(t.orders.shopId, shopId))
         .groupBy(t.orders.buyerPhone)
+        .having(sql`count(*) filter (where ${sale}) > 0`)
         .orderBy(desc(sql`max(${t.orders.placedAt})`));
     },
 

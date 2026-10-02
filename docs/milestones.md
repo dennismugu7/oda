@@ -21,7 +21,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 - **Accept:** `pnpm dev` runs web + app locally; the web staging URL shows a placeholder page in the Poppins font and brand colours; the app opens on Android showing the welcome screen (static); CI is green.
 
 ## M1 · Database & security
-**Status: ready for the gate review** (PR #4). Decisions #33–#37.
+**Status: gate passed 2026-10-02** (PR #4). Decisions #33–#38.
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
@@ -55,6 +55,7 @@ Web 01, 02, 03, 07 + shop states.
 ## M5 · Checkout & payment claim (buyer)
 Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 - Server checkout endpoint: validation, re-pricing, idempotency, rate limiting, honeypot, order number + token; pay page with code extraction; order page with the timeline, cancel, "payment not found" banner, report a problem; optional buyer emails.
+- Order page (decision #38): a cancelled order shows the cancel **reason** as a label, never the seller's `cancel_note`. If the shop was deleted, the link keeps working until the 30-day purge with a "This shop has closed" banner and only "Report a problem"; after the purge it 404s.
 - **Accept:** Playwright: full pay-now and pay-on-delivery orders; changing a price after add-to-cart is caught; order IDs cannot be guessed; the rate limit triggers.
 
 ## M6 · Order management (seller)

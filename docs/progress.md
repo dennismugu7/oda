@@ -28,7 +28,9 @@ Secret `VERCEL_DEPLOY_HOOK_STAGING` added by the owner (confirmed with `gh secre
 
 **CP9 docs:** milestones.md (M1 status, M4 staging demo seed note), data-model.md (where the authorization layer and order functions live), CLAUDE.md Commands (seed logins, `setup:android`, migrate-then-deploy) and the migration rule.
 
-**Next:** M1 gate review (PR #4 ready for review). After the merge: confirm migrate → Deploy Hook → `/api/health` shows the merge commit, and Neon staging has all tables.
+**M1 gate review: passed** (decision #38): customers list = buyers with a sale (changed and tested); cancel reason not note, and the deleted-shop order page, recorded for M5; `decisions.md` strictly append-only. Owner's hand test in Drizzle Studio passed.
+
+**Next:** merge PR #4, tag `m1-done`. After the merge: confirm migrate → Deploy Hook → `/api/health` shows the merge commit, and Neon staging has all tables.
 
 ## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
 
