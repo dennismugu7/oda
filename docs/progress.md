@@ -16,9 +16,11 @@ Newest entries at the top.
 - Validation limits chosen (to confirm): Till/Paybill 5–7 digits, Pochi stored in E.164, price ≥ KSh 1, shop name 2–40 chars; channel values open until M2.
 - Lines for products with sizes/colours must name one; manual orders may use sold-out products and pickup even when pickup is off.
 
-**Review stop B:** seed table posted to the owner; waiting for the OK.
+**Review stop B: approved** with changes (decision #36): pay on delivery on; 13 products (earrings in a visible Accessories, new Leather tote); history on soft-deleted older stock; order numbers follow the 126 deliveries.
 
-**Next:** CP6 seed + `db:reset` after the OK.
+**CP6 seed** (`apps/web/server/seed/`, through Better Auth, the repositories, `insertOrder()` and `transitionOrder()`): `pnpm db:reset` builds 13 products, 142 orders, 126 delivered, 38 reviews (33/3/1/1 → 4.76, shown 4.8, 2 need a reply), 42 customers; to-do 2 to confirm / 4 to send / 3 new; this week KSh 18,250 from 6 sales, 12 orders of which 8 TikTok; sold counts 5/3/2/4; a duplicate M-Pesa code, refund_due, refunded, expired, buyer- and seller-cancelled and an unresolved claim. Fixed on the way: the shop checklist update failed when nothing was unticked (new test).
+
+**Next:** CP7 migrate/deploy race fix; needs the Vercel Deploy Hook secret from the owner.
 
 ## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
 

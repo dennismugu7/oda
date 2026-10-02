@@ -601,6 +601,21 @@ describe('5. missing profile', () => {
   });
 });
 
+describe('checklist', () => {
+  it('ticks with a timestamp and unticks, leaving other items alone', async () => {
+    const ticked = await A.repo.updateShop({
+      checklist: { shared_link: true, tested_whatsapp: true },
+    });
+    expect(Object.keys(ticked.checklist as object).sort()).toEqual([
+      'shared_link',
+      'tested_whatsapp',
+    ]);
+    const unticked = await A.repo.updateShop({ checklist: { tested_whatsapp: false } });
+    expect(Object.keys(unticked.checklist as object)).toEqual(['shared_link']);
+    expect(Date.parse((unticked.checklist as Record<string, string>).shared_link!)).not.toBeNaN();
+  });
+});
+
 describe('6. database guards', () => {
   it('a raw status UPDATE outside transitionOrder() fails', async () => {
     await expect(

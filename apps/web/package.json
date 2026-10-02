@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:seed": "tsx --conditions=react-server server/seed/run.ts"
   },
   "dependencies": {
     "@oda/db": "workspace:*",
@@ -32,6 +33,7 @@
     "@types/react-dom": "~19.2.2",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.3"
   }
 }

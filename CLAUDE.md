@@ -56,7 +56,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm test:e2e`: builds the web and runs Playwright (390×844 mobile Chromium) against it.
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
 - `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
-- `pnpm db:reset`: drop the volume, start, migrate, seed. `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
+- `pnpm db:reset`: drop the volume, start, migrate, seed (the "Amani Styles" demo shop; sign in as `amani@example.test` or `admin@example.test` with `SEED_PASSWORD` from `apps/web/.env.example`). `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
 - Staging web: **https://oda-eta.vercel.app** (Vercel Production deployment of `main`, public, region `fra1`; health at `/api/health`). Branch previews: `https://oda-git-<branch>-dennismugu7-6048s-projects.vercel.app` (behind Vercel login). Until M11 both use the Neon staging DB (decision #26).
 - Neon staging is migrated only by the `migrate-staging` GitHub Actions workflow (every push to `main`, or Actions → migrate-staging → Run workflow). No Neon credentials on dev machines.
 - `pnpm --filter @oda/ui-tokens generate`: regenerate `theme.css` after editing `tokens.ts`.

@@ -91,7 +91,9 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
         const unticked = Object.entries(checklist)
           .filter(([, on]) => !on)
           .map(([item]) => item);
-        checklistValue = sql`(${t.shops.checklist} || ${JSON.stringify(ticked)}::jsonb) - ${unticked}::text[]`;
+        checklistValue = sql`(${t.shops.checklist} || ${JSON.stringify(ticked)}::jsonb)`;
+        // jsonb - text removes one key; chained so an empty list needs no array literal.
+        for (const item of unticked) checklistValue = sql`(${checklistValue} - ${item}::text)`;
       }
       const rows = await withDbErrors(() =>
         db
