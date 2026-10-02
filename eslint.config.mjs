@@ -13,4 +13,17 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
+  {
+    // shared and ui-tokens are bundled into the seller app: no database code.
+    files: ['packages/shared/**', 'packages/ui-tokens/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['@oda/db', 'pg'],
+          patterns: ['@oda/db/*', 'drizzle-orm', 'drizzle-orm/*'],
+        },
+      ],
+    },
+  },
 );

@@ -21,10 +21,11 @@ Monorepo + tooling + an empty but deployed skeleton.
 - **Accept:** `pnpm dev` runs web + app locally; the web staging URL shows a placeholder page in the Poppins font and brand colours; the app opens on Android showing the welcome screen (static); CI is green.
 
 ## M1 · Database & security
+**Status: gate passed 2026-10-02** (PR #4). Decisions #33–#38.
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
-- Seed: shop "Amani Styles" with categories, 12 products and orders in every status (matches the designs).
+- Seed: shop "Amani Styles" with categories, 13 products and orders in every status (matches the designs, except the product count and Accessories: decision #36).
 - Staging migrations run **before** the Vercel deploy that needs them (fixes the migrate/deploy race in decision #27), e.g. Vercel deploys only after `migrate-staging` succeeds.
 - `scripts/setup-android-windows.ps1`: one command that applies and verifies this machine's local Android build setup (ninja 1.12+ in the SDK's CMake 3.22.1, decision #28; the Gradle limits in `~/.gradle/gradle.properties`, decisions #23, #29, #30), safe to re-run, so an SDK reinstall can be repaired in one step.
 - (Nightly backup moved to M2 with the R2 bucket, decision #31.)
@@ -48,11 +49,13 @@ Web 01, 02, 03, 07 + shop states.
 - Server-rendered shop/product pages, OG tags + OG images, search/filters/sort, cart (localStorage), favourites (localStorage), badges, visit counting with `?s=` source capture, slug redirects, paused/not-found/not-taking-orders states.
 - Landing page `/`, `/privacy`, `/terms` (placeholder legal text clearly marked for later replacement).
 - Seller app: 19b-preview (WebView of the real shop).
+- **Staging demo shop:** browsing staging on a phone needs a shop with products. Add a separate, safe "staging demo seed": no real-looking personal data (obviously fake names and numbers, no real M-Pesa accounts), no seller password in the repo, run only by a **manual** GitHub Actions workflow against Neon staging, idempotent. It is not the local seed (`apps/web/server/seed/`, local-only by design). Not built in M1.
 - **Accept:** pasting a shop link into WhatsApp shows a rich preview; Lighthouse mobile performance ≥ 85 on the shop home; a Playwright test covers browse → search → product → cart.
 
 ## M5 · Checkout & payment claim (buyer)
 Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 - Server checkout endpoint: validation, re-pricing, idempotency, rate limiting, honeypot, order number + token; pay page with code extraction; order page with the timeline, cancel, "payment not found" banner, report a problem; optional buyer emails.
+- Order page (decision #38): a cancelled order shows the cancel **reason** as a label, never the seller's `cancel_note`. If the shop was deleted, the link keeps working until the 30-day purge with a "This shop has closed" banner and only "Report a problem"; after the purge it 404s.
 - **Accept:** Playwright: full pay-now and pay-on-delivery orders; changing a price after add-to-cart is caught; order IDs cannot be guessed; the rate limit triggers.
 
 ## M6 · Order management (seller)

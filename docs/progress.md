@@ -2,6 +2,54 @@
 
 Newest entries at the top.
 
+## 2026-10-02 · M1 checkpoints 4–5, at review stop B (branch `m1-database-security`, draft PR #4)
+
+**Done**
+- Laptop now 32 GB: `~/.gradle/gradle.properties` → `-Xmx6g`, `workers.max=6`, `parallel=true` (owner's correction), other keys kept; decision #35 (amends #29/#30). Low-memory stop stays on. Health check after the restart: Docker + `oda-postgres` up, branch clean, the four checks green.
+- CP4 authorization layer: write whitelists (`packages/shared/src/schemas`), `errors.ts`, `authz.ts` (branded contexts, missing-profile repair), `uploads.ts`, repositories (user, seller, public, order-token, admin), ESLint guard on `@oda/db`/`drizzle-orm`/`pg` outside `apps/web/server/**` (also the seller app, shared, ui-tokens). 24 authorization tests.
+- CP5 `apps/web/server/orders.ts`: `nextOrderNumber()`, `insertOrder()` (prices, fees, payment-account snapshot and cover from the DB; idempotency key; shop rules), `transitionOrder()` (scoped load, machine, optimistic update → 409, events, payment claims, duplicate-code flag). 23 tests incl. the confirm/confirm and cancel/confirm races and concurrent numbering.
+- Both suites were mutation-checked: removing the shop filter or the status condition makes them fail.
+
+**Deviations**
+- Paused shops stay browsable (`isPaused`, spec §6); only suspended/deleted shops are not found.
+- Order `status` is server-owned on every schema except products (their own `status`).
+- Validation limits chosen (to confirm): Till/Paybill 5–7 digits, Pochi stored in E.164, price ≥ KSh 1, shop name 2–40 chars; channel values open until M2.
+- Lines for products with sizes/colours must name one; manual orders may use sold-out products and pickup even when pickup is off.
+
+**Review stop B: approved** with changes (decision #36): pay on delivery on; 13 products (earrings in a visible Accessories, new Leather tote); history on soft-deleted older stock; order numbers follow the 126 deliveries.
+
+**CP6 seed** (`apps/web/server/seed/`, through Better Auth, the repositories, `insertOrder()` and `transitionOrder()`): `pnpm db:reset` builds 13 products, 142 orders, 126 delivered, 38 reviews (33/3/1/1 → 4.76, shown 4.8, 2 need a reply), 42 customers; to-do 2 to confirm / 4 to send / 3 new; this week KSh 18,250 from 6 sales, 12 orders of which 8 TikTok; sold counts 5/3/2/4; a duplicate M-Pesa code, refund_due, refunded, expired, buyer- and seller-cancelled and an unresolved claim. Fixed on the way: the shop checklist update failed when nothing was unticked (new test).
+
+**CP7 (code ready, waiting for the secret):** `apps/web/vercel.json` stops automatic `main` deployments; `migrate-staging` runs after green CI on `main`: migrate → Deploy Hook → wait for `/api/health` to show the commit (decision #37); CLAUDE.md migration rule (backward compatible, expand → deploy → contract).
+
+Secret `VERCEL_DEPLOY_HOOK_STAGING` added by the owner (confirmed with `gh secret list`). The flow is proven by the M1 merge itself.
+
+**CP8** `scripts/setup-android-windows.ps1` (`pnpm setup:android`, `-Check` to only report): ninja 1.12+ in CMake 3.22.1 (installs CMake 3.31.6 if needed, keeps the old ninja), Gradle limits from RAM (≥ 30 GB visible → `-Xmx6g`, 6 workers, parallel; else the #29 values; other lines kept, `.bak` written), long paths reported. On this laptop: everything in place (31.7 GB → 32 GB tier, Gradle file unchanged); ninja deliberately reverted to 1.10.2 → `-Check` exit 1 → repaired to 1.12.1 → re-run all OK; Gradle repair tested on a scratch `GRADLE_USER_HOME`.
+
+**CP9 docs:** milestones.md (M1 status, M4 staging demo seed note), data-model.md (where the authorization layer and order functions live), CLAUDE.md Commands (seed logins, `setup:android`, migrate-then-deploy) and the migration rule.
+
+**M1 gate review: passed** (decision #38): customers list = buyers with a sale (changed and tested); cancel reason not note, and the deleted-shop order page, recorded for M5; `decisions.md` strictly append-only. Owner's hand test in Drizzle Studio passed.
+
+**Next:** merge PR #4, tag `m1-done`. After the merge: confirm migrate → Deploy Hook → `/api/health` shows the merge commit, and Neon staging has all tables.
+
+## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
+
+**Done**
+- CP1 `packages/shared`: order state machine (every transition in order-lifecycle.md, exhaustive sweep of 3,640 combinations), pricing, Kenyan phones, M-Pesa code extraction (all-letters codes accepted), slugs. Decision #33.
+- CP2 schema `0001`: all 20 data-model tables + Better Auth's 4 (`auth_*`, uuid), enums, constraints, indexes. Better Auth 1.7.6 server core in apps/web (email + password, bearer sessions, profile hook). Tests run on throwaway databases created and migrated automatically (also in CI): `oda_test` for apps/web, `oda_db_test` for packages/db. They are separate because Turbo runs both suites in parallel; sharing one caused migration races.
+- CP3 `0002`: updated_at, status guard, sale aggregates, ratings, payment-verification reset, slug history/guards, same-shop composite foreign keys, `rate_limit_hit()`. Decision #34; data-model.md aligned.
+
+**Deviations**
+- `better-auth` 1.7.6, not 1.7.7 (pnpm's release-age guard; 1.7.7 is under a day old).
+- Auth schema verified by a test against Better Auth's `getSchema()` instead of the CLI (the CLI can't load a config that imports `server-only`).
+- Added beyond the plan: same-shop composite foreign keys (decision #34 f).
+
+**Review stop A: approved** by the owner, including decision #34 (c)–(j), the Better Auth 1.7.6 pin and `unverified` as the default payment-account status.
+
+**Next:** CP4 authorization layer (after the owner's go-ahead; the laptop is getting a RAM upgrade, 16 → 32 GB).
+
+**Change to CP8:** `scripts/setup-android-windows.ps1` sizes the Gradle limits from the detected RAM instead of hardcoding them: at 16 GB today's values (`-Xmx2560m`, `workers.max=1`); at 32 GB e.g. `-Xmx4g`, `workers.max=3`. It prints the chosen tier, and decisions #23/#29/#30 get updated with the RAM-based rule.
+
 ## 2026-10-01 · Approved welcome animation added for M2 (branch `design/welcome-animation`)
 
 - Owner-approved assets added (owner's request; `design/` is otherwise read-only): `design/app/welcome-animation/01-welcome-animation-preview.html` (exact reference for timing, feel and card content) and three transparent PNGs (fashion 360×290, food 360×304, accessories 360×214), also copied to `apps/seller/assets/welcome/` for the app. Checked before copying: the preview contains "Nairobi · Kilimani" and no "M-Pesa till checked"; the PNGs are RGBA with transparent corners at the expected sizes; the preview embeds the same three images (scaled to 240 px wide).

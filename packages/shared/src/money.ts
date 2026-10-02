@@ -1,5 +1,5 @@
 // Money is integer KES everywhere (see docs/spec.md §3). These helpers only format;
-// totals are computed by pricing.ts on the server (arrives in M1).
+// totals are computed by pricing.ts on the server.
 
 const grouping = new Intl.NumberFormat('en-KE', { maximumFractionDigits: 0 });
 

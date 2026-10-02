@@ -19,8 +19,9 @@
     "db:down": "docker compose down",
     "db:generate": "pnpm --filter @oda/db db:generate",
     "db:migrate": "pnpm --filter @oda/db db:migrate",
-    "db:seed": "pnpm --filter @oda/db db:seed",
+    "db:seed": "pnpm --filter @oda/web db:seed",
     "db:studio": "pnpm --filter @oda/db db:studio",
+    "setup:android": "pwsh -NoProfile -File scripts/setup-android-windows.ps1",
     "db:reset": "docker compose down -v && pnpm db:up && pnpm db:migrate && pnpm db:seed"
   },
   "devDependencies": {
