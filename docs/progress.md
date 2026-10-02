@@ -22,9 +22,11 @@ Newest entries at the top.
 
 **CP7 (code ready, waiting for the secret):** `apps/web/vercel.json` stops automatic `main` deployments; `migrate-staging` runs after green CI on `main`: migrate → Deploy Hook → wait for `/api/health` to show the commit (decision #37); CLAUDE.md migration rule (backward compatible, expand → deploy → contract).
 
-**Needs from the owner:** Vercel Deploy Hook for `main` saved as repository secret `VERCEL_DEPLOY_HOOK_STAGING`. Proven by the M1 merge itself.
+Secret `VERCEL_DEPLOY_HOOK_STAGING` added by the owner (confirmed with `gh secret list`). The flow is proven by the M1 merge itself.
 
-**Next:** CP8 `setup-android-windows.ps1` (32 GB or more → `-Xmx6g`, 6 workers, parallel; decision #35).
+**CP8** `scripts/setup-android-windows.ps1` (`pnpm setup:android`, `-Check` to only report): ninja 1.12+ in CMake 3.22.1 (installs CMake 3.31.6 if needed, keeps the old ninja), Gradle limits from RAM (≥ 30 GB visible → `-Xmx6g`, 6 workers, parallel; else the #29 values; other lines kept, `.bak` written), long paths reported. On this laptop: everything in place (31.7 GB → 32 GB tier, Gradle file unchanged); ninja deliberately reverted to 1.10.2 → `-Check` exit 1 → repaired to 1.12.1 → re-run all OK; Gradle repair tested on a scratch `GRADLE_USER_HOME`.
+
+**Next:** CP9 docs (incl. the M4 staging-demo-seed note in milestones.md), PR ready → M1 gate review.
 
 ## 2026-10-01 · M1 Database & security: checkpoints 1–3, at review stop A (branch `m1-database-security`, draft PR #4)
 
