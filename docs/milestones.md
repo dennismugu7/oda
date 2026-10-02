@@ -21,6 +21,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 - **Accept:** `pnpm dev` runs web + app locally; the web staging URL shows a placeholder page in the Poppins font and brand colours; the app opens on Android showing the welcome screen (static); CI is green.
 
 ## M1 · Database & security
+**Status: ready for the gate review** (PR #4). Decisions #33–#37.
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
@@ -48,6 +49,7 @@ Web 01, 02, 03, 07 + shop states.
 - Server-rendered shop/product pages, OG tags + OG images, search/filters/sort, cart (localStorage), favourites (localStorage), badges, visit counting with `?s=` source capture, slug redirects, paused/not-found/not-taking-orders states.
 - Landing page `/`, `/privacy`, `/terms` (placeholder legal text clearly marked for later replacement).
 - Seller app: 19b-preview (WebView of the real shop).
+- **Staging demo shop:** browsing staging on a phone needs a shop with products. Add a separate, safe "staging demo seed": no real-looking personal data (obviously fake names and numbers, no real M-Pesa accounts), no seller password in the repo, run only by a **manual** GitHub Actions workflow against Neon staging, idempotent. It is not the local seed (`apps/web/server/seed/`, local-only by design). Not built in M1.
 - **Accept:** pasting a shop link into WhatsApp shows a rich preview; Lighthouse mobile performance ≥ 85 on the shop home; a Playwright test covers browse → search → product → cart.
 
 ## M5 · Checkout & payment claim (buyer)
