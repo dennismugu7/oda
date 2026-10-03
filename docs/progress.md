@@ -2,6 +2,15 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · Owner away: ring as in the preview, preview APK m2a-preview-1 (branch `m2a-auth`)
+
+- **Ring (owner):** matches the approved preview: it sits on the food tile at 0.9 opacity from the start (fading in with the card), then expands to 1.6 and fades at 1320–1920 ms. `design-changes.md` and the timeline test updated (`4835d1c`). Checks green: format, lint, typecheck, tests (web 118, seller 21, shared 145, db 23, ui-tokens 3).
+- **Preview APK:** free RAM 12.7 of 31.7 GB before the build (Docker left running, as asked). `expo prebuild --clean` (new native modules) then `gradlew assembleRelease --no-daemon` with `EXPO_PUBLIC_API_URL` / `EXPO_PUBLIC_SHOP_BASE_URL` = `https://oda-eta.vercel.app` in the build's environment: BUILD SUCCESSFUL in 16 m 28 s, no memory trouble. APK 43 MB, `lib/arm64-v8a` only, debug-keystore signed; the bundle contains the staging URL (the one `localhost:3000` string is the unused fallback in `config.ts`). Published as pre-release **m2a-preview-1** on `4835d1c`: https://github.com/dennismugu7/oda/releases/tag/m2a-preview-1 (notes: visual check only; sign in / sign up show an error because the auth API isn't on staging yet).
+- **BETTER_AUTH_SECRET:** not set. The Vercel CLI isn't installed on the laptop, so this waits for the owner (CP3 steps, part D).
+- PR #7 not merged.
+
+**Next (owner):** look at m2a-preview-1 on the Redmi (welcome animation side by side with the preview, Remove animations, sign-up/sign-in layouts); CP3 Resend + DNS + Vercel env vars. Then review stop B with a dev build against the local server, and the hand test.
+
 ## 2026-10-03 · M2a CP5 welcome card + animation in code (branch `m2a-auth`)
 
 - `app/welcome.tsx` rebuilt from the approved preview's measurements: "Nairobi · Kilimani", three product tiles (`#FBE3DA` / `#FBF0D2` / `#E2F1E8`, images at max 78%), no badge; Poppins 800 for the logo and headline like the preview; the green tick is an inline view inside the "oda" text, so it sits on the baseline like a full stop.
