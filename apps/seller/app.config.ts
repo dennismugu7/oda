@@ -39,6 +39,11 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: { typedRoutes: true },
+  // EAS Update (decision #47): preview builds fetch JS updates published to their channel.
+  // The fingerprint policy gives each set of native code its own runtime version, so an
+  // update can never reach a binary whose native modules don't match it.
+  runtimeVersion: { policy: 'fingerprint' },
+  updates: { url: `https://u.expo.dev/${easProjectId}` },
   owner: 'dennisxenonxavier',
   extra: { eas: { projectId: easProjectId } },
 };

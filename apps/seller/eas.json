@@ -12,14 +12,23 @@
       "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "environment": "development"
+      "android": {
+        "buildType": "apk"
+      },
+      "environment": "development",
+      "channel": "development"
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "environment": "preview"
+      "android": {
+        "buildType": "apk"
+      },
+      "environment": "preview",
+      "channel": "preview",
+      "env": {
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
+      }
     }
   }
 }
