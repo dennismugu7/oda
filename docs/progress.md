@@ -2,6 +2,20 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M2a merged to staging; phone testing moves to EAS preview + EAS Update (branch `m2a-eas-preview`, draft PR #8)
+
+- **Local route stopped** (owner): no more local Gradle builds or wireless adb for review stop B. The local debug build never finished; it downloaded ~391 MB (entry below). The phone still has `m2a-preview-1` installed.
+- **PR #7 merged** (`2ae5ad8`, CI green). CI on `main` → `migrate-staging` → Deploy Hook → `/api/health` = `{"ok":true,"db":"up","commit":"2ae5ad8"}`. Staging smoke (no email sent): `/api/auth/get-session` 200, `/dev/outbox` 404, `/reset-password` 200, `/api/me` 401 without a session, blocked Better Auth endpoint 404.
+- **EAS Update** (decision #47): `expo-updates` 57.0.24 via `npx expo install` (pnpm reused its store, nothing downloaded); updates URL; channels `preview`/`development`; preview builds arm64-v8a only; `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SHOP_BASE_URL` = `https://oda-eta.vercel.app` as plain-text EAS variables in the `preview` environment; `pnpm --filter @oda/seller update:preview -m "…"`. `eas whoami`: `dennisxenonxavier` (already logged in).
+- **Runtime version:** fingerprint first; build `849248cb` failed because laptop and EAS fingerprints differ (pnpm folder names on Windows vs Linux, 292 path-only differences). Switched to **appVersion** with a CI guard (decision #48, `check-native-runtime.mjs` in `deps:check`, `native-runtime.json` snapshot; failure path tested). Runtime version `0.1.0`.
+- **CLAUDE.md:** no network downloads (Gradle, npm/pnpm, Docker images, NDK) without asking first with a size estimate.
+- Second EAS preview build `e21b8131` started (upload 17.3 MB): https://expo.dev/accounts/dennisxenonxavier/projects/oda/builds/e21b8131-ff13-41a2-8149-f8b63fda883a
+- Checks: format, lint, typecheck, seller tests, `deps:check` (incl. the new guard), expo-doctor 21/21.
+- **Phone install note:** the EAS build is signed with EAS's keystore, the installed `m2a-preview-1` with the local debug keystore, so Android refuses to install over it: uninstall oda first.
+- Supabase stacks `bookflow` and `dashboardx-local` still stopped (data kept).
+
+**Next:** owner installs the EAS preview build and runs the phone test against staging (real emails via Resend); fixes go in PR #8.
+
 ## 2026-10-03 · Review stop B: dev build paused after an unexpected ~391 MB download (branch `m2a-auth`)
 
 - Redmi connected over wireless debugging (`172.16.160.1:43691`, paired by the owner): model 25078RA3EA, arm64-v8a, 720×1600 @ 320 dpi. `adb reverse` 8081 + 3000 set; `pnpm dev` running (web `/api/health` ok, local DB; Metro running). App `.env.local` → `http://localhost:3000`.
