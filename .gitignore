@@ -17,3 +17,7 @@ test-results
 # Expo prebuild output (we use EAS builds / Continuous Native Generation)
 apps/seller/android
 apps/seller/ios
+
+# Local email outbox (apps/web, EMAIL_TRANSPORT=file)
+.outbox
+.outbox-e2e

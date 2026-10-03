@@ -115,6 +115,11 @@ export async function seed(db: Db, opts: { password: string; now?: Date }): Prom
   const adminSignUp = await auth.api.signUpEmail({
     body: { name: ADMIN.name, email: ADMIN.email, password: opts.password },
   });
+  // Seed accounts skip the emailed code (decision #43): mark both emails verified.
+  await db
+    .update(t.authUser)
+    .set({ emailVerified: true })
+    .where(inArray(t.authUser.id, [sellerSignUp.user.id, adminSignUp.user.id]));
   await db.update(t.profiles).set({ isAdmin: true }).where(eq(t.profiles.id, adminSignUp.user.id));
   const sellerUserId = sellerSignUp.user.id;
   const userCtx = { userId: sellerUserId } as Parameters<typeof userRepo>[1];

@@ -61,7 +61,7 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 **Choreography** (plays once on mount, ~2.85 s total, then stays still; Reanimated on the UI thread):
 1. **0–650 ms:** shop card from opacity 0, translateY 26, rotateX 14°, rotateZ −4°, scale 0.94 to rest, with a springy overshoot (equivalent to `cubic-bezier(.34,1.56,.64,1)`).
 2. **700–1450 ms:** a finger-tap indicator (30 dp circle, navy at 28% opacity, 2 dp white border) fades in about 70 dp below-right of the food tile, glides to its centre, presses (scale 0.78) and fades out.
-3. **1300–2000 ms:** the food tile presses (0.92), pops (1.06) with a warm yellow glow, and settles at 1. **1320–1920 ms:** an orange 2 dp ring expands from the tile (scale 1 → 1.6) and fades.
+3. **1300–2000 ms:** the food tile presses (0.92), pops (1.06) with a warm yellow glow, and settles at 1. **1320–1920 ms:** an orange 2 dp ring expands from the tile (scale 1 → 1.6) and fades. Before 1320 ms the ring already sits on the food tile at 0.9 opacity (it fades in with the card), exactly as in the preview (owner, 2026-10-03).
 4. **1550–2250 ms:** the "New order #1042" card enters from translate(30, 70), scale 0.9, opacity 0 with a gentle bounce (overshoot to −8 dp, then +3 dp, then rest).
 5. **2250–2850 ms:** "Turn your posts into orders." fades in from translateY 14 (easing `cubic-bezier(.2,.8,.2,1)`).
 

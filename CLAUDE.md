@@ -35,6 +35,7 @@ docs/           specs (keep updated)
 - **The database is server-only.** Every access goes through the authorization layer (`apps/web/server/authz.ts` + shop-scoped repositories), with automated authorization tests. Never spread request bodies into DB writes; whitelist fields with zod.
 - **Buyer order access** only via `public_token`. Never expose sequential IDs in URLs.
 - **Phones** stored in E.164 (+254…). **Timezone** Africa/Nairobi for any date bucketing.
+- **No secrets in logs.** Passwords, email codes, reset tokens, session tokens and API keys never appear in logs, error messages or (later) Sentry events; scrub them in Sentry's `beforeSend`. Emails are logged by kind and recipient domain only, never subject or body. Reset links carry the token in the URL fragment (`#token=`), never in a query string a server could log. Decision #45.
 - **No secrets in git.** Use `.env.local` + `.env.example`. DB URL, R2 keys and auth secrets are server-side only, never in the app bundle.
 - **Base shop URL** comes from config: the server reads `PUBLIC_SHOP_BASE_URL`; the seller app reads `EXPO_PUBLIC_SHOP_BASE_URL` and `EXPO_PUBLIC_API_URL`. Never hardcode a domain.
 - **Migrations are backward compatible** with the code already running (expand → deploy → contract): the old deployment briefly runs against the new schema. Rename or drop a column in two releases, never one. Branch previews share the staging DB, so a preview of an unmerged migration may fail until merge.

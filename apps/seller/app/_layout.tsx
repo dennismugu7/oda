@@ -3,6 +3,7 @@ import {
   Poppins_500Medium,
   Poppins_600SemiBold,
   Poppins_700Bold,
+  Poppins_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/poppins';
 import { Stack } from 'expo-router';
@@ -19,6 +20,8 @@ export default function RootLayout() {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
+    // Welcome logo and headline (the approved preview uses 800).
+    Poppins_800ExtraBold,
   });
 
   useEffect(() => {

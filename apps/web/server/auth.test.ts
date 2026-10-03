@@ -4,8 +4,9 @@ import { getSchema } from 'better-auth/db';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
-import { authOptions, getAuth } from './auth';
+import { authBaseUrl, authOptions, getAuth } from './auth';
 import { getDb } from './db';
+import { signUpVerified } from '@/test/auth';
 
 const drizzleTables: Record<string, PgTable> = {
   auth_user: schema.authUser,
@@ -38,19 +39,16 @@ describe('Better Auth against oda_test', () => {
   });
 
   it('signs up with a uuid id, creates the profile and resolves a bearer session', async () => {
-    const auth = getAuth();
-    const res = await auth.api.signUpEmail({
-      body: { name: 'Amani Wairimu', email: 'amani@example.test', password: 'kitenge2026' },
-    });
-    expect(res.user.id).toMatch(/^[0-9a-f-]{36}$/);
+    const res = await signUpVerified('Amani Wairimu', 'amani@example.test');
+    expect(res.userId).toMatch(/^[0-9a-f-]{36}$/);
     expect(res.token).toBeTruthy();
 
     const profile = await getDb().query.profiles.findFirst({
-      where: eq(schema.profiles.id, res.user.id),
+      where: eq(schema.profiles.id, res.userId),
     });
-    expect(profile).toMatchObject({ id: res.user.id, isAdmin: false });
+    expect(profile).toMatchObject({ id: res.userId, isAdmin: false });
 
-    const session = await auth.api.getSession({
+    const session = await getAuth().api.getSession({
       headers: new Headers({ authorization: `Bearer ${res.token}` }),
     });
     expect(session?.user.email).toBe('amani@example.test');
@@ -59,5 +57,31 @@ describe('Better Auth against oda_test', () => {
   it('has no session without a token', async () => {
     const session = await getAuth().api.getSession({ headers: new Headers() });
     expect(session).toBeNull();
+  });
+});
+
+describe('authBaseUrl', () => {
+  it('uses BETTER_AUTH_URL when set, without a trailing slash', () => {
+    expect(authBaseUrl({ BETTER_AUTH_URL: 'https://oda-eta.vercel.app/', VERCEL: '1' })).toBe(
+      'https://oda-eta.vercel.app',
+    );
+  });
+
+  it("falls back to a Vercel Preview's own branch URL", () => {
+    expect(
+      authBaseUrl({
+        VERCEL: '1',
+        VERCEL_ENV: 'preview',
+        VERCEL_BRANCH_URL: 'oda-git-m2a-auth-team.vercel.app',
+      }),
+    ).toBe('https://oda-git-m2a-auth-team.vercel.app');
+  });
+
+  it('fails loudly on Vercel Production without it', () => {
+    expect(() => authBaseUrl({ VERCEL: '1', VERCEL_ENV: 'production' })).toThrow(/BETTER_AUTH_URL/);
+  });
+
+  it('is localhost locally', () => {
+    expect(authBaseUrl({})).toBe('http://localhost:3000');
   });
 });
