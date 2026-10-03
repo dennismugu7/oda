@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · CP3 complete; review stop B paused (low RAM) (branch `m2a-auth`)
+
+- **CP3 complete.** Owner removed Preview from `BETTER_AUTH_URL`. `vercel env ls` (names/types/environments only): `BETTER_AUTH_SECRET` Secret (Preview) + Secret (Production); `BETTER_AUTH_URL` Config (Production); `EMAIL_FROM` Config (Preview, Production); `RESEND_API_KEY` Secret (Production) + Secret (Preview); `DATABASE_URL` Secret (Production, Preview); `ENABLE_EXPERIMENTAL_COREPACK` Secret (Production, Preview). Previews now build reset links from their own URL (`authBaseUrl()`).
+- **Review stop B not started:** free RAM 3.8 of 31.7 GB, under the owner's ~10 GB limit for a native build with Docker running. Largest user: the WSL VM behind Docker Desktop (`vmmemWSL`, 13.7 GB), running 25 containers, mostly the `bookflow` and `dashboardx-local` Supabase stacks (another project); Chrome 4.1 GB. Nothing was stopped (owner: don't quit Docker). The owner's message also still had the placeholder `<IP:PORT>` instead of the Redmi's address. Laptop LAN IP: 172.16.160.236 (Wi-Fi).
+- No build, no deployment, PR #7 not merged.
+
 ## 2026-10-03 · Owner: skip the Vercel CLI login (arrived after the secrets were set)
 
 - The owner asked to stop the CLI login attempts and set `BETTER_AUTH_SECRET` (Production + Preview) themselves in the dashboard. By then the third device code had been approved and both values were already set (entry below). No `vercel login` (or any Vercel CLI) process is running (checked).
