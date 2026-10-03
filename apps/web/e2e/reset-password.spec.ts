@@ -19,14 +19,17 @@ test('reset password from the emailed link', async ({ page, request }) => {
   expect(ask.status()).toBe(200);
   const reset = await lastEmailTo(email);
   expect(reset.subject).toBe('Reset your oda password');
-  const link = /https?:\/\/\S+\/reset-password\?token=\S+/.exec(reset.text)?.[0];
+  // The token rides in the fragment, never in a URL a server logs (decision #45).
+  const link = /https?:\/\/\S+\/reset-password#token=\S+/.exec(reset.text)?.[0];
   expect(link).toBeTruthy();
   const url = new URL(link!);
 
   // 07
-  await page.goto(url.pathname + url.search);
+  await page.goto(url.pathname + url.hash);
   const heading = page.getByRole('heading', { name: 'Choose a new password' });
   await expect(heading).toBeVisible();
+  // Once read, the token is gone from the address bar and history.
+  expect(new URL(page.url()).hash).toBe('');
   expect(await heading.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Poppins/i);
   await page.screenshot({ path: test.info().outputPath('07-reset-password-390x844.png') });
 
@@ -65,6 +68,7 @@ test('reset password from the emailed link', async ({ page, request }) => {
     'href',
     'oda://sign-in',
   );
+  await expect(page.getByText('Or open the oda app on your phone and sign in.')).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('08-password-changed-390x844.png') });
 
   // The new password works, the old one doesn't.
@@ -77,12 +81,16 @@ test('reset password from the emailed link', async ({ page, request }) => {
   expect((await signIn(NEW_PASSWORD)).status()).toBe(200);
 
   // The link works once.
-  await page.goto(url.pathname + url.search);
+  await page.goto(url.pathname + url.hash);
   await expect(page.getByRole('heading', { name: 'This link has expired' })).toBeVisible();
 });
 
-test('a made-up or missing token shows the expired-link page', async ({ page }) => {
-  for (const path of ['/reset-password?token=not-a-real-token-123', '/reset-password']) {
+test('a made-up, missing or query-string token shows the expired-link page', async ({ page }) => {
+  for (const path of [
+    '/reset-password#token=not-a-real-token-123',
+    '/reset-password',
+    '/reset-password?token=query-tokens-are-ignored',
+  ]) {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: 'This link has expired' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Open oda app' })).toHaveAttribute(
@@ -93,8 +101,8 @@ test('a made-up or missing token shows the expired-link page', async ({ page }) 
   await page.screenshot({ path: test.info().outputPath('07-expired-link-390x844.png') });
 });
 
-test('the reset page never sends its token to other sites', async ({ page }) => {
-  await page.goto('/reset-password?token=abc');
+test('the reset page never sends a referrer to other sites', async ({ page }) => {
+  await page.goto('/reset-password#token=abc');
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'no-referrer');
 });
 

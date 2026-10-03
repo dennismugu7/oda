@@ -1,11 +1,11 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OutboxPage from '@/app/dev/outbox/page';
 import { devOutboxEnabled, readOutbox } from './outbox';
 import { resetPasswordEmail, verificationCodeEmail } from './templates';
-import { emailConfig, sendEmail } from './transport';
+import { emailConfig, EmailSendError, redact, RESEND_TIMEOUT_MS, sendEmail } from './transport';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -97,17 +97,109 @@ describe('transport config', () => {
     });
   });
 
-  it('fails loudly when Resend refuses', async () => {
+  describe('failures (decision #45)', () => {
+    const KEY = 're_secret_key_123';
+    const RESET_URL = 'https://oda-eta.vercel.app/reset-password#token=SeCrEtToKeN123';
+    let logged: string[];
+
+    beforeEach(() => {
+      vi.stubEnv('EMAIL_TRANSPORT', 'resend');
+      vi.stubEnv('RESEND_API_KEY', KEY);
+      vi.stubEnv('EMAIL_FROM', 'oda <hello@mail.oda.mugu-labs.com>');
+      logged = [];
+      vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      });
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    async function failure(email = resetPasswordEmail('amani@example.test', RESET_URL)) {
+      const error = await sendEmail(email).then(
+        () => null,
+        (e: unknown) => e as Error,
+      );
+      expect(error).toBeInstanceOf(EmailSendError);
+      return { message: error!.message, logs: logged.join(' | ') };
+    }
+
+    function expectNoSecrets(text: string) {
+      for (const secret of [KEY, 'SeCrEtToKeN123', '482913', 'amani@']) {
+        expect(text).not.toContain(secret);
+      }
+    }
+
+    it('names the problem when Resend refuses, without secrets', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () =>
+          Response.json(
+            {
+              name: 'validation_error',
+              message: `The mail.oda.mugu-labs.com domain is not verified. Key ${KEY}, link ${RESET_URL}`,
+            },
+            { status: 403 },
+          ),
+        ),
+      );
+      const { message, logs } = await failure();
+      expect(message).toContain('reset-link email: Resend refused it (403 validation_error)');
+      expect(message).toContain('domain is not verified');
+      expect(logs).toContain('[email] reset-link → @example.test failed');
+      expectNoSecrets(message);
+      expectNoSecrets(logs);
+    });
+
+    it('gives up after 10 seconds', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url: string, init: RequestInit) => {
+          expect(init.signal).toBeInstanceOf(AbortSignal);
+          throw new DOMException('The operation timed out.', 'TimeoutError');
+        }),
+      );
+      const { message, logs } = await failure(
+        verificationCodeEmail('amani@example.test', '482913'),
+      );
+      expect(message).toBe(
+        'Could not send the verification-code email: Resend did not answer within 10 s',
+      );
+      expect(RESEND_TIMEOUT_MS).toBe(10_000);
+      expectNoSecrets(logs);
+    });
+
+    it('reports an unreachable Resend', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          throw new TypeError(`fetch failed for ${RESET_URL}`);
+        }),
+      );
+      const { message } = await failure();
+      expect(message).toBe('Could not send the reset-link email: Resend could not be reached');
+    });
+  });
+
+  it('sends a plain-text version alongside the HTML for both emails', async () => {
     vi.stubEnv('EMAIL_TRANSPORT', 'resend');
     vi.stubEnv('RESEND_API_KEY', 're_test_key');
     vi.stubEnv('EMAIL_FROM', 'oda <hello@mail.oda.mugu-labs.com>');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('{"message":"domain not verified"}', { status: 403 })),
+    const fetchMock = vi.fn(async () => Response.json({ id: 'email_1' }));
+    vi.stubGlobal('fetch', fetchMock);
+    await sendEmail(verificationCodeEmail('a@example.test', '482913'));
+    await sendEmail(resetPasswordEmail('a@example.test', 'https://x.test/reset-password#token=t'));
+    for (const [, init] of fetchMock.mock.calls as unknown as [string, RequestInit][]) {
+      const body = JSON.parse(init.body as string) as { html: string; text: string };
+      expect(body.html).toMatch(/^<!doctype html>/);
+      expect(body.text.length).toBeGreaterThan(50);
+      expect(body.text).not.toContain('<');
+    }
+  });
+
+  it('redacts keys, links, tokens and codes', () => {
+    expect(redact('key re_AbC_123 link https://x.test/a?token=zz code 123456 and 2026')).toBe(
+      'key [key] link [link] code [code] and 2026',
     );
-    await expect(sendEmail(resetPasswordEmail('a@example.test', 'https://x.test'))).rejects.toThrow(
-      /403.*domain not verified/,
-    );
+    expect(redact('token=abc&x=1')).toBe('token=[token]&x=1');
   });
 });
 
@@ -151,9 +243,16 @@ describe('dev outbox (decision #43)', () => {
     try {
       vi.stubEnv('EMAIL_TRANSPORT', 'file');
       vi.stubEnv('OUTBOX_DIR', dir);
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {});
       await sendEmail(verificationCodeEmail('a@example.test', '111111'));
       await new Promise((r) => setTimeout(r, 5));
       await sendEmail(verificationCodeEmail('a@example.test', '222222'));
+      // The log names the kind of email, never the code in its subject.
+      expect(info.mock.calls.map((c) => c.join(' '))).toEqual([
+        '[email] verification-code → @example.test (saved to the outbox)',
+        '[email] verification-code → @example.test (saved to the outbox)',
+      ]);
+      info.mockRestore();
       const emails = await readOutbox();
       expect(emails?.map((e) => e.subject)).toEqual([
         '222222 is your oda code',

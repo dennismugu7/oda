@@ -48,7 +48,7 @@ export function randomIp(): string {
  * a session cookie is present) and a client IP.
  */
 export function appHeaders(ip: string): Record<string, string> {
-  return { 'x-forwarded-for': ip, 'expo-origin': 'oda://' };
+  return { 'x-real-ip': ip, 'expo-origin': 'oda://' };
 }
 
 /** Signs up and enters the emailed code: a verified seller with this email and password. */

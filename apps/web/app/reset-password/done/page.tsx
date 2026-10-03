@@ -39,6 +39,9 @@ export default function PasswordChangedPage() {
         >
           Open oda app
         </a>
+        <p className="text-small text-text-secondary mt-4">
+          Or open the oda app on your phone and sign in.
+        </p>
       </div>
     </AuthShell>
   );

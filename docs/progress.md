@@ -2,6 +2,21 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M2a review stop A approved; owner's changes done (branch `m2a-auth`, draft PR #7)
+
+**Review stop A: approved** (screenshots, and #44's fetch to Resend, oda:// origin plugin, direct reset link), with changes, all done (decision #45):
+- Per-IP limits: sign-in 100 per 15 min, sign-ups 30 per hour; per-email limits unchanged.
+- Client IP only from `x-vercel-forwarded-for` / `x-real-ip`, never `x-forwarded-for` (unit test).
+- Lock message "Too many tries. Wait 15 minutes or reset your password."; forgot password works while locked and a reset clears the lock (test).
+- Origin tests: `oda://` accepted; a made-up Origin, a made-up `expo-origin`, `expo-origin` trying to override a real Origin, and a browser request with cookies but no Origin are rejected.
+- Resend: 10 s timeout, redacted errors, clear `[email] <kind> → @domain failed: …` log, plain text alongside HTML (tests).
+- 08: "Or open the oda app on your phone and sign in."
+- No secrets in logs: emails logged by kind + domain only; a test runs sign-up → wrong code → code → wrong password → reset and checks no code, token or password appears in any console output. **The reset token moved to the URL fragment** (`/reset-password#token=…`), because Vercel logs request URLs including query strings; the page reads it in the browser, clears it from the address bar and checks it with `POST /api/reset-password/check`. CLAUDE.md rule added.
+
+**Tests:** web 114, shared 145, db 23, ui-tokens 3; Playwright 6. Format, lint, typecheck, build green.
+
+**Next:** CP3 Resend + DNS (owner steps sent), CP4 app auth screens in parallel.
+
 ## 2026-10-03 · M2a CP1–CP2, at review stop A (branch `m2a-auth`)
 
 **Done**

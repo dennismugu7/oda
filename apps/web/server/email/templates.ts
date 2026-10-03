@@ -72,7 +72,7 @@ ${ignoreLine}
 Thank you,
 The oda team`;
   // The code in the subject shows in the phone's notification, so sellers can copy it there.
-  return { to, subject: `${code} is your oda code`, html, text };
+  return { kind: 'verification-code', to, subject: `${code} is your oda code`, html, text };
 }
 
 /** 06: the link to the web reset page (07). */
@@ -98,5 +98,5 @@ ${ignoreLine}
 
 Thank you,
 The oda team`;
-  return { to, subject: 'Reset your oda password', html, text };
+  return { kind: 'reset-link', to, subject: 'Reset your oda password', html, text };
 }

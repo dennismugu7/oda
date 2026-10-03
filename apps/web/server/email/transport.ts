@@ -10,8 +10,14 @@ import { z } from 'zod';
 // - memory: an in-process list for Vitest.
 // Default: resend when RESEND_API_KEY is set, otherwise file (local) or an error on Vercel.
 // Never file on Vercel: the outbox page must stay a local-only tool.
+// Logs never contain a subject, body, link, code or key (decision #45): only the email's
+// kind and the recipient's domain.
+
+/** What the email is, for logs (the subject can contain the code). */
+export type EmailKind = 'verification-code' | 'reset-link';
 
 export interface Email {
+  kind: EmailKind;
   to: string;
   subject: string;
   html: string;
@@ -70,6 +76,25 @@ export const testOutbox = {
   },
 };
 
+/** Masks anything secret-looking in text that may reach a log or an error message. */
+export function redact(text: string): string {
+  return text
+    .replace(/re_[A-Za-z0-9_]+/g, '[key]')
+    .replace(/https?:\/\/\S+/g, '[link]')
+    .replace(/token=[^\s&"']+/gi, 'token=[token]')
+    .replace(/\b\d{6}\b/g, '[code]');
+}
+
+/** For logs: the recipient's domain only. */
+const domainOf = (email: string) => email.split('@')[1] ?? 'unknown';
+
+export class EmailSendError extends Error {
+  constructor(kind: EmailKind, reason: string) {
+    super(`Could not send the ${kind} email: ${redact(reason)}`);
+    this.name = 'EmailSendError';
+  }
+}
+
 export async function sendEmail(email: Email): Promise<void> {
   const config = emailConfig();
   const sent: SentEmail = {
@@ -89,36 +114,54 @@ export async function sendEmail(email: Email): Promise<void> {
         path.join(config.outboxDir, `${Date.now()}-${sent.id}.json`),
         JSON.stringify(sent, null, 2),
       );
-      console.info(`[email] ${email.subject} → ${email.to} (saved to the outbox)`);
+      console.info(`[email] ${email.kind} → @${domainOf(email.to)} (saved to the outbox)`);
       return;
     case 'resend':
-      await sendWithResend(sent, config.resendApiKey!);
+      try {
+        await sendWithResend(sent, config.resendApiKey!);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        const failure = new EmailSendError(email.kind, reason);
+        console.error(`[email] ${email.kind} → @${domainOf(email.to)} failed: ${failure.message}`);
+        throw failure;
+      }
       return;
   }
 }
 
+export const RESEND_TIMEOUT_MS = 10_000;
+
 /** Resend's REST API with fetch: one call, no SDK dependency. */
 async function sendWithResend(email: SentEmail, apiKey: string): Promise<void> {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-      // Retries of the same email are sent once.
-      'idempotency-key': email.id,
-    },
-    body: JSON.stringify({
-      from: email.from,
-      to: [email.to],
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
+  let res: Response;
+  try {
+    res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        // Retries of the same email are sent once.
+        'idempotency-key': email.id,
+      },
+      body: JSON.stringify({
+        from: email.from,
+        to: [email.to],
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+      }),
+      signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    throw new Error(timedOut ? 'Resend did not answer within 10 s' : 'Resend could not be reached');
+  }
   if (!res.ok) {
-    // The body names the problem (e.g. an unverified domain); it never contains the key.
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend refused the email (${res.status}): ${detail.slice(0, 300)}`);
+    // Resend's error names the problem (e.g. an unverified domain); only its name and
+    // message are kept, redacted.
+    const body = (await res.json().catch(() => null)) as { name?: string; message?: string } | null;
+    throw new Error(
+      `Resend refused it (${res.status}${body?.name ? ` ${body.name}` : ''}): ${(body?.message ?? '').slice(0, 200)}`,
+    );
   }
 }

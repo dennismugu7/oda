@@ -41,6 +41,12 @@ export class ConflictError extends HttpError {
   }
 }
 
+export class TooManyRequestsError extends HttpError {
+  constructor(message = 'Too many tries. Try again in a few minutes.') {
+    super(429, message, 'rate_limited');
+  }
+}
+
 export class ValidationError extends HttpError {
   constructor(message: string, fields?: Record<string, string>, code = 'invalid') {
     super(422, message, code, fields);

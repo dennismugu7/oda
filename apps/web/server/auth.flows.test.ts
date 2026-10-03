@@ -1,9 +1,10 @@
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
 import { SESSION_TTL_SECONDS } from '@oda/shared';
 import { GET as getMe } from '@/app/api/me/route';
+import { POST as checkToken } from '@/app/api/reset-password/check/route';
 import { resetTokenStatus } from './auth';
 import { handleAuthRequest } from './authRoute';
 import { getDb } from './db';
@@ -37,7 +38,7 @@ async function call(path: string, body?: unknown, opts: CallOptions = {}) {
       method,
       headers: {
         'content-type': 'application/json',
-        'x-forwarded-for': opts.ip ?? '10.0.0.1',
+        'x-real-ip': opts.ip ?? '10.0.0.1',
         ...opts.headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -68,7 +69,7 @@ function lastCode(email = EMAIL): string {
 
 function lastResetToken(email = EMAIL): string {
   const text = testOutbox.last(email)?.text ?? '';
-  const token = /\/reset-password\?token=([^\s]+)/.exec(text)?.[1];
+  const token = /\/reset-password#token=([^\s]+)/.exec(text)?.[1];
   if (!token) throw new Error(`no reset email for ${email}`);
   return decodeURIComponent(token);
 }
@@ -88,6 +89,13 @@ async function signedUpAndVerified(email = EMAIL) {
   const res = await verify(lastCode(email), email);
   expect(res.status).toBe(200);
   return res.json!.token!;
+}
+
+/** Pre-fills a fixed-window counter, as if `count` hits already happened in this window. */
+async function fillLimit(key: string, window: number, count: number) {
+  await getDb().execute(sql`
+    insert into rate_limits (key, window_start, count)
+    values (${key}, to_timestamp(floor(extract(epoch from now()) / ${window}) * ${window}), ${count})`);
 }
 
 const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
@@ -288,29 +296,40 @@ describe('sign in', () => {
     }
     const locked = await signIn(EMAIL, PASSWORD, { ip: '10.0.2.1' });
     expect(locked.status).toBe(429);
-    expect(locked.json!.message).toMatch(
-      /^Too many wrong passwords\. Try again in \d+ minutes?, or reset your password\.$/,
-    );
+    expect(locked.json!.message).toBe('Too many tries. Wait 15 minutes or reset your password.');
     // Other emails are unaffected.
     await signedUpAndVerified('wanjiku@example.test');
     expect((await signIn('wanjiku@example.test', PASSWORD, { ip: '10.0.2.1' })).status).toBe(200);
   });
 
-  it('limits sign-in attempts per IP', async () => {
-    for (let i = 0; i < 30; i++) {
-      expect((await signIn(`buyer${i}@example.test`, PASSWORD)).status).toBe(401);
-    }
-    expect((await signIn('one-more@example.test', PASSWORD)).status).toBe(429);
-    expect((await signIn('one-more@example.test', PASSWORD, { ip: '10.9.9.9' })).status).toBe(401);
+  it('lets a locked seller reset their password, which clears the lock', async () => {
+    await signedUpAndVerified();
+    for (let i = 0; i < 5; i++) await signIn(EMAIL, 'wrong-pass1');
+    expect((await signIn()).status).toBe(429);
+
+    testOutbox.clear();
+    expect((await requestReset()).status).toBe(200);
+    const token = lastResetToken();
+    expect((await call('/reset-password', { token, newPassword: 'newpass2026' })).status).toBe(200);
+    expect((await signIn(EMAIL, 'newpass2026')).status).toBe(200);
   });
 
-  it('limits sign-ups per IP', async () => {
-    for (let i = 0; i < 10; i++) {
-      expect((await signUp(`new${i}@example.test`)).status).toBe(200);
-    }
-    const res = await signUp('new10@example.test');
+  it('allows 100 sign-in attempts per IP per 15 minutes', async () => {
+    await fillLimit('signin-ip:10.0.0.1', 900, 99);
+    expect((await signIn('one@example.test', PASSWORD)).status).toBe(401); // the 100th
+    const blocked = await signIn('two@example.test', PASSWORD);
+    expect(blocked.status).toBe(429);
+    expect(blocked.json!.message).toMatch(/^Too many sign-in attempts\./);
+    expect((await signIn('two@example.test', PASSWORD, { ip: '10.9.9.9' })).status).toBe(401);
+  });
+
+  it('allows 30 sign-ups per IP per hour', async () => {
+    await fillLimit('signup-ip:10.0.0.1', 3600, 29);
+    expect((await signUp('new29@example.test')).status).toBe(200); // the 30th
+    const res = await signUp('new30@example.test');
     expect(res.status).toBe(429);
     expect(res.json!.message).toMatch(/^Too many new accounts\./);
+    expect((await signUp('new30@example.test', PASSWORD, { ip: '10.9.9.9' })).status).toBe(200);
   });
 });
 
@@ -325,7 +344,8 @@ describe('forgot and reset password', () => {
     expect(known.json).toEqual(unknown.json);
     expect(testOutbox.all()).toHaveLength(1);
     expect(testOutbox.last()?.subject).toBe('Reset your oda password');
-    expect(testOutbox.last()?.text).toContain('http://localhost:3000/reset-password?token=');
+    // The token rides in the fragment, which never reaches a server log (decision #45).
+    expect(testOutbox.last()?.text).toContain('http://localhost:3000/reset-password#token=');
   });
 
   it('sends one reset email per minute per account, silently', async () => {
@@ -404,20 +424,118 @@ describe('HTTP surface', () => {
     }
   });
 
-  it("accepts the app's scheme as origin and refuses others when cookies are sent", async () => {
-    await signedUpAndVerified();
-    const signedIn = await signIn();
-    const cookie = signedIn.headers.get('set-cookie')!.split(';')[0]!;
+  describe('origin (the oda:// plugin)', () => {
+    async function sessionCookie() {
+      await signedUpAndVerified();
+      const signedIn = await signIn();
+      return signedIn.headers.get('set-cookie')!.split(';')[0]!;
+    }
 
-    const foreign = await call(
-      '/sign-out',
-      {},
-      { headers: { cookie, origin: 'https://evil.example' } },
+    it("accepts the app's scheme, oda://", async () => {
+      const cookie = await sessionCookie();
+      const res = await call('/sign-out', {}, { headers: { cookie, 'expo-origin': 'oda://' } });
+      expect(res.status).toBe(200);
+    });
+
+    it('rejects a made-up Origin', async () => {
+      const cookie = await sessionCookie();
+      const res = await call(
+        '/sign-out',
+        {},
+        { headers: { cookie, origin: 'https://evil.example' } },
+      );
+      expect(res.status).toBe(403);
+      expect(res.json!.code).toBe('INVALID_ORIGIN');
+    });
+
+    it('rejects a made-up expo-origin, and never lets it override a real Origin', async () => {
+      const cookie = await sessionCookie();
+      const fake = await call('/sign-out', {}, { headers: { cookie, 'expo-origin': 'evil://' } });
+      expect(fake.status).toBe(403);
+      const both = await call(
+        '/sign-out',
+        {},
+        { headers: { cookie, origin: 'https://evil.example', 'expo-origin': 'oda://' } },
+      );
+      expect(both.status).toBe(403);
+    });
+
+    it('rejects a browser request with cookies but no Origin', async () => {
+      const cookie = await sessionCookie();
+      const res = await call(
+        '/sign-out',
+        {},
+        { headers: { cookie, 'sec-fetch-site': 'cross-site' } },
+      );
+      expect(res.status).toBe(403);
+      expect(res.json!.code).toBe('MISSING_OR_NULL_ORIGIN');
+    });
+  });
+});
+
+describe('logs (decision #45)', () => {
+  it('never contain a code, a reset token or a password', async () => {
+    const lines: string[] = [];
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
+        lines.push(
+          args.map((a) => (a instanceof Error ? `${a.message} ${a.stack}` : String(a))).join(' '),
+        );
+      }),
     );
-    expect(foreign.status).toBe(403);
+    try {
+      await signUp();
+      const code = lastCode();
+      await verify(wrongCode(code));
+      await verify(code);
+      await signIn(EMAIL, 'wrong-pass1');
+      await requestReset();
+      const token = lastResetToken();
+      await call('/reset-password', { token, newPassword: 'short' });
+      await call('/reset-password', { token, newPassword: 'newpass2026' });
+      await call('/reset-password', { token, newPassword: 'again2026x' });
 
-    const app = await call('/sign-out', {}, { headers: { cookie, 'expo-origin': 'oda://' } });
-    expect(app.status).toBe(200);
+      expect(lines.length).toBeGreaterThan(0); // Better Auth did log (warnings)
+      const all = lines.join(String.fromCharCode(10));
+      for (const secret of [code, wrongCode(code), token, PASSWORD, 'wrong-pass1', 'newpass2026']) {
+        expect(all).not.toContain(secret);
+      }
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+  });
+});
+
+describe('POST /api/reset-password/check', () => {
+  const check = (body: unknown, ip = '10.0.0.1') =>
+    checkToken(
+      new Request('http://localhost:3000/api/reset-password/check', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-real-ip': ip },
+        body: JSON.stringify(body),
+      }),
+    );
+
+  it('says whether a reset link still works', async () => {
+    await signedUpAndVerified();
+    await requestReset();
+    const token = lastResetToken();
+    expect(await (await check({ token })).json()).toEqual({ status: 'valid' });
+    await call('/reset-password', { token, newPassword: 'newpass2026' });
+    expect(await (await check({ token })).json()).toEqual({ status: 'invalid' });
+  });
+
+  it('treats a missing or odd token as invalid', async () => {
+    for (const body of [{}, { token: '' }, { token: 42 }, { token: 'x'.repeat(500) }]) {
+      const res = await check(body);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ status: 'invalid' });
+    }
+  });
+
+  it('limits guesses per IP', async () => {
+    await fillLimit('reset-check-ip:10.0.0.7', 3600, 60);
+    expect((await check({ token: 'abc' }, '10.0.0.7')).status).toBe(429);
   });
 });
 

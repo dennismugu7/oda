@@ -35,8 +35,18 @@ export function secondsLeftInWindow(limit: Limit, now: Date = new Date()): numbe
   return Math.ceil(limit.window - (seconds % limit.window));
 }
 
-/** The client's IP. Vercel sets x-forwarded-for itself (first entry = the client). */
+/**
+ * The client's IP, for per-IP limits. Only headers Vercel sets itself: x-vercel-forwarded-for,
+ * then x-real-ip. Never the left-most x-forwarded-for value, which the client can write.
+ * Without them (local runs) every request shares the bucket "unknown".
+ */
 export function clientIp(headers: Headers | undefined | null): string {
-  const forwarded = headers?.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return forwarded || headers?.get('x-real-ip') || 'unknown';
+  const vercel = headers?.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  const real = headers?.get('x-real-ip')?.trim();
+  return vercel || real || 'unknown';
+}
+
+/** Clears a key in every window (e.g. the wrong-password lock after a password reset). */
+export async function clearLimit(db: Db, key: string): Promise<void> {
+  await db.execute(sql`delete from rate_limits where key = ${key}`);
 }

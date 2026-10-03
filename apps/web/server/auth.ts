@@ -22,7 +22,14 @@ import { getDb } from './db';
 import { resetPasswordEmail, verificationCodeEmail } from './email/templates';
 import { sendEmail } from './email/transport';
 import { ensureProfile } from './profiles';
-import { clientIp, hitLimit, isLimited, secondsLeftInWindow, type Limit } from './rateLimit';
+import {
+  clearLimit,
+  clientIp,
+  hitLimit,
+  isLimited,
+  secondsLeftInWindow,
+  type Limit,
+} from './rateLimit';
 
 // Better Auth (docs/spec.md §5.1, decisions #34, #43): email + password, a 6-digit email code
 // to verify new accounts, password reset by emailed link to the web /reset-password page.
@@ -37,9 +44,10 @@ const authEnvSchema = z.object({
 
 /** Rate limits per action (Postgres-backed; Better Auth's in-memory limiter is off). */
 export const AUTH_LIMITS = {
-  signUpPerIp: { window: 3600, max: 10 },
+  // Per-IP limits are generous: Kenyan mobile networks put many users behind one IP (#45).
+  signUpPerIp: { window: 3600, max: 30 },
   signInFailuresPerEmail: { window: 900, max: 5 },
-  signInPerIp: { window: 900, max: 30 },
+  signInPerIp: { window: 900, max: 100 },
   codeSendsPerEmail: { window: 3600, max: 5 },
   codeSendsPerIp: { window: 3600, max: 30 },
   codeChecksPerEmail: { window: 3600, max: 10 },
@@ -62,6 +70,8 @@ export const AUTH_ROUTES = {
     '/reset-password',
   ],
 } as const;
+
+const signInFailKey = (email: string) => `signin-fail:${email.trim().toLowerCase()}`;
 
 function tooMany(message: string, retryAfter: number): never {
   throw new APIError('TOO_MANY_REQUESTS', { code: 'RATE_LIMITED', message, retryAfter });
@@ -145,11 +155,11 @@ async function checkLimitsAndRules(ctx: Parameters<Parameters<typeof createAuthM
     }
     case '/sign-in/email': {
       const failures = AUTH_LIMITS.signInFailuresPerEmail;
-      if (email && (await isLimited(db, `signin-fail:${email}`, failures))) {
-        const wait = secondsLeftInWindow(failures);
+      if (email && (await isLimited(db, signInFailKey(email), failures))) {
+        // Forgot password keeps working while locked, and a reset clears the lock.
         tooMany(
-          `Too many wrong passwords. Try again in ${minutesText(wait)}, or reset your password.`,
-          wait,
+          'Too many tries. Wait 15 minutes or reset your password.',
+          secondsLeftInWindow(failures),
         );
       }
       await limitOrThrow(`signin-ip:${ip}`, AUTH_LIMITS.signInPerIp, 'Too many sign-in attempts.');
@@ -195,7 +205,7 @@ const afterHook = createAuthMiddleware(async (ctx) => {
   const email = (ctx.body as { email?: unknown } | undefined)?.email;
   if (typeof email !== 'string') return;
   // Counts every failure; the before hook blocks once the window holds `max`.
-  await hitLimit(getDb(), `signin-fail:${email.trim().toLowerCase()}`, {
+  await hitLimit(getDb(), signInFailKey(email), {
     ...AUTH_LIMITS.signInFailuresPerEmail,
     max: 2_147_483_647, // count only; never blocks here
   });
@@ -218,9 +228,12 @@ const expoOrigin = {
   },
 } satisfies BetterAuthPlugin;
 
-/** The link in email 06: straight to the web page, which checks the token on load. */
+/**
+ * The link in email 06: straight to the web page, with the token in the fragment (#), which
+ * browsers never send to a server, so it can't end up in request logs (decision #45).
+ */
 export function resetPageUrl(baseUrl: string, token: string): string {
-  return `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+  return `${baseUrl}/reset-password#token=${encodeURIComponent(token)}`;
 }
 
 /**
@@ -248,6 +261,10 @@ export const authOptions = {
     requireEmailVerification: true,
     resetPasswordTokenExpiresIn: RESET_LINK_TTL_SECONDS,
     revokeSessionsOnPasswordReset: true,
+    async onPasswordReset({ user }) {
+      // A seller locked out by wrong passwords can sign in with the new one straight away.
+      await clearLimit(getDb(), signInFailKey(user.email));
+    },
     async sendResetPassword({ user, token }) {
       // Silent per-email cooldown: the reply is the same either way (decision #43).
       // Better Auth stores this link's token before calling us, so look past the newest one.
