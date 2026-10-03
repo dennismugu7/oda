@@ -2,12 +2,15 @@
 
 Newest entries at the top.
 
-## 2026-10-03 · M1 merged; staging migration fix (branch `fix/migrate-staging-install`)
+## 2026-10-03 · M1 closed; staging migration fix
 
 - PR #4 merged as `78423e0`, tag `m1-done`.
 - First `migrate-staging` run after the merge failed at Migrate (`Cannot find package 'zod'`): the reduced install skipped `@oda/shared`'s dependencies. Nothing migrated or deployed; staging stayed on `5eb5d31`.
 - Fix (decision #39): install with `--filter "@oda/db..."`, plus a CI job that runs the same install and migration on a clean runner. Reproduced and verified locally in a clean worktree.
-- **Next:** merge the fix; its merge runs migrate → Deploy Hook → `/api/health`; then the owner checks the Neon tables.
+- PR #5 merged as `25d0739`. CI green (incl. the new **Staging migrate install** job, "migrations applied"). `migrate-staging` run 37096082312: Migrate 04:18:36–04:19:01 UTC → Deploy Hook 04:19:06 → `/api/health` showed `25d0739` at 04:20:09. Vercel's Production deployment was created at 04:19:59, after the migration. The M1 merge `78423e0` has no deployment at all (automatic `main` deployments are off), so the race fix holds.
+- Neon staging checked by the owner: 24 tables in `public`, 3 rows in `drizzle.__drizzle_migrations`, 0 shops.
+- **M1 closed** (tag `m1-done` on `78423e0`; staging fix `25d0739`).
+- **Next:** M2 (Seller auth & onboarding), starting with a short plan for approval.
 
 ## 2026-10-02 · M1 checkpoints 4–5, at review stop B (branch `m1-database-security`, draft PR #4)
 
