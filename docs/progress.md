@@ -2,6 +2,23 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M2a CP3 started, CP4 app auth screens in code (branch `m2a-auth`, draft PR #7)
+
+**CP3 (Resend + DNS):** owner steps sent (Resend domain `mail.oda.mugu-labs.com` in eu-west-1, click/open tracking off, Cloudflare MX/SPF/DKIM/DMARC records DNS only, API key `oda-staging`, Vercel env vars with a separate `BETTER_AUTH_SECRET` per environment, generated with `node … | clip`). Code: auth links use a Preview's own URL when `BETTER_AUTH_URL` is unset; Production fails loudly without it (tests). Waiting for the owner.
+
+**CP4 (app):**
+- Better Auth Expo client (cookie in SecureStore, `expo-origin: oda://`), `fetchMe()` for `GET /api/me`. Decision #46.
+- Screens: start gate (`/`: session → `/api/me` → Welcome / code screen / placeholder; offline and error states with Try again), Welcome buttons wired (+ an "API: local · localhost:3000" label in dev builds), 02 sign up, 03 code (6 boxes on one real input so paste/autofill work, auto-submit, 60 s countdown that also follows the server's `retryAfter`, spam hint), 05 sign in (unverified → code screen with a fresh code), forgot password (new; neutral "Check your email" state), placeholder `/start` with Sign out.
+- Friendly wording for Better Auth errors; server-worded messages (rate limits, password rules, existing email + Sign in link) shown as they are.
+- `apps/seller/.env.example` (and the local `.env.local`) default to `http://localhost:3000` for the Redmi over `adb reverse`.
+- Checks: seller Vitest 12, typecheck, lint, `deps:check`, expo-doctor 21/21, Metro Android export bundles (3.7 MB). **Not yet run on a device**: the new native modules need a dev build on the Redmi (hand-test stop).
+
+**Known gaps:** the Terms / Privacy links on sign up open `/terms` and `/privacy`, which are built in M4 (404 until then). The welcome card and animation are CP5.
+
+**Tests:** web 118, seller 12, shared 145, db 23, ui-tokens 3; Playwright 6.
+
+**Next:** CP5 welcome card + animation + tick fix; then review stop B (Redmi screenshots), which needs the phone connected and a dev build (Docker Desktop quit during the Gradle build).
+
 ## 2026-10-03 · M2a review stop A approved; owner's changes done (branch `m2a-auth`, draft PR #7)
 
 **Review stop A: approved** (screenshots, and #44's fetch to Resend, oda:// origin plugin, direct reset link), with changes, all done (decision #45):
