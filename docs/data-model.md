@@ -12,7 +12,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 - `id`, `owner_id → profiles`, `name`, `slug unique`, `logo_path`, `about`, `location_label` (for example "Kilimani, Nairobi"), `business_type` (enum: fashion, shoes_bags, beauty_hair, food_drinks, phones_electronics, home_decor, baby_kids, other), `channels text[]`, `whatsapp_phone`, `calls_enabled bool`, `tiktok_handle`, `instagram_handle`
 - `accepts_pay_before bool default true`, `accepts_pay_on_delivery bool default false` (check: at least one true)
 - `pickup_enabled bool`, `pickup_location`, `pickup_hours`, `free_delivery_threshold int null`
-- `is_paused bool`, `suspended_at`, `deleted_at` (public page 404s immediately; purged after 30 days), `onboarding_step int` (steps 4–6; the row is created at step 3), `onboarding_completed_at`, `checklist jsonb` (ticked items without their own data, e.g. `{shared_link: ts, tested_whatsapp: ts}`)
+- `is_paused bool`, `suspended_at`, `deleted_at` (public page 404s immediately; purged after 30 days), `onboarding_step int` (steps 4–6; the row is created at step 3; steps 1–3 are tracked in `profiles.onboarding_draft`, decision #41), `onboarding_completed_at`, `checklist jsonb` (ticked items without their own data, e.g. `{shared_link: ts, tested_whatsapp: ts}`)
 - `order_counter int default 1000`: the next order number is taken with `UPDATE shops SET order_counter = order_counter + 1 … RETURNING` inside the order-insert transaction
 - `rating_avg numeric`, `rating_count int`, `delivered_count int` (maintained by triggers)
 
@@ -67,9 +67,11 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **rate_limits** (Postgres table, fixed-window counter via an upsert function): `key`, `window_start`, `count`
 
 ## File storage (Cloudflare R2)
-One bucket per environment, with key prefixes:
-- `products/{shop_id}/…`, `logos/{shop_id}/…`, `reviews/{order_id}/…`: public read via the bucket's public URL / custom domain
-- `feedback/{shop_id}/…`: private (read only through a short-lived signed URL for admins)
+R2 public access applies to a whole bucket, so public and private files live in separate buckets (decision #42). Per environment:
+- **Public images bucket** (staging `oda-staging`): `products/{shop_id}/…`, `logos/{shop_id}/…`, `reviews/{order_id}/…`, read via the bucket's public URL / custom domain
+- **Private feedback bucket** (M8): `feedback/{shop_id}/…`, read only through a short-lived signed URL for admins
+- **Private backups bucket** (staging `oda-backups-staging`): the nightly encrypted `pg_dump` files
+Each bucket has its own API token, scoped to that bucket.
 
 Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads`). The API checks that the caller owns the shop (or holds the order token, for review photos), and enforces content type (JPEG/PNG/WebP) and max size (5 MB). The client uploads straight to R2, then saves the key through the API. Deleting a product/shop deletes its objects (directly, or via the purge job).
 
@@ -87,7 +89,7 @@ Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads
 ## Where logic runs
 - **Everything server-side lives in `apps/web`** (Next.js route handlers under `app/api/…`, plus server components for buyer pages). Handlers import `packages/shared` (zod, pricing, state machine) and `packages/db` (Drizzle).
 - Order transitions run in one DB transaction: `UPDATE orders SET … WHERE id = $1 AND status = $expected RETURNING *` (0 rows → 409 Conflict "this order changed, refresh"), then insert into `order_events`. Implemented once as `transitionOrder()` in `apps/web/server/orders.ts`, next to `insertOrder()` (every order is created there, with prices, fees and the payment-account snapshot read from the DB) and `nextOrderNumber()`.
-- **The seller app** calls the API with its Better Auth session (bearer token stored in SecureStore, via Better Auth's Expo integration) for all reads and writes.
+- **The seller app** calls the API with its Better Auth session (session cookie stored in SecureStore and sent as a `Cookie` header, via Better Auth's Expo integration; decision #43) for all reads and writes.
 - **Scheduled jobs** are protected routes (`/api/cron/expire-orders` hourly, `/api/cron/purge` daily, `/api/cron/backup-check` optional), called by **GitHub Actions** schedules with a secret header. Auto-expire reuses `transitionOrder()`.
 - **Backups:** a daily GitHub Actions job runs `pg_dump` and stores it encrypted in a private R2 bucket (keep 14 days): staging from M2, production from M11 (decision #31). Don't rely only on Neon's built-in restore on the free plan.
 - Neon's free plan scales to zero after 5 minutes idle. Use `pg` (node-postgres) with Neon's pooled connection string (decision #17) and expect a short cold start on the first request.
