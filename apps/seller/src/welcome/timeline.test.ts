@@ -56,10 +56,13 @@ describe('the five steps (design-changes.md → 01-welcome)', () => {
     expect(END_MS).toBe(2850);
   });
 
-  it('start hidden: card, finger, ring, order card and headline', () => {
-    for (const name of ['shop', 'finger', 'ring', 'order', 'headline'] as const) {
+  it('start hidden: card, finger, order card and headline; the ring waits on the tile', () => {
+    for (const name of ['shop', 'finger', 'order', 'headline'] as const) {
       expect(opacityAt(ANIMS[name], 0), name).toBe(0);
     }
+    // Like the preview: the ring sits on the food tile (inside the fading-in card) until 1320 ms.
+    expect(opacityAt(ANIMS.ring, 0)).toBeCloseTo(0.9, 5);
+    expect(at('ring', 'scale', 0)).toBe(1);
     expect(at('shop', 'translateY', 0)).toBe(26);
     expect(at('shop', 'rotateX', 0)).toBe(14);
     expect(at('shop', 'rotateZ', 0)).toBe(-4);
@@ -117,8 +120,10 @@ describe('the five steps (design-changes.md → 01-welcome)', () => {
     expect(Math.max(...tile)).toBeCloseTo(1.06, 2);
     const glow = Array.from({ length: 701 }, (_, i) => at('tile', 'glow', 1300 + i));
     expect(Math.max(...glow)).toBeCloseTo(1, 2);
-    expect(opacityAt(ANIMS.ring, 1319)).toBe(0);
-    expect(opacityAt(ANIMS.ring, 1320)).toBeCloseTo(0.9, 5);
+    expect(opacityAt(ANIMS.ring, 1319)).toBeCloseTo(0.9, 5);
+    expect(at('ring', 'scale', 1319)).toBe(1);
+    expect(opacityAt(ANIMS.ring, 1620)).toBeLessThan(0.9);
+    expect(at('ring', 'scale', 1620)).toBeGreaterThan(1);
     expect(at('ring', 'scale', 1920)).toBeCloseTo(1.6, 5);
   });
 

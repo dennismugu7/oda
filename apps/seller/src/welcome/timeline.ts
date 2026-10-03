@@ -59,13 +59,12 @@ export interface Anim {
   duration: number;
   easing: Easing;
   tracks: Record<string, Track>;
-  /** Opacity 0 until the delay, instead of the first keyframe. */
-  hiddenBeforeStart?: boolean;
 }
 
 /**
  * The preview's five steps. Values: opacity 0–1, translate in dp, rotate in degrees, scale.
- * Each element shows its first keyframe before its delay and its last after it ends.
+ * Each element shows its first keyframe before its delay and its last after it ends (the
+ * preview's fill: 'both').
  */
 export const ANIMS = {
   // 1. 0–650 ms: shop card floats in, tilted, with a springy overshoot.
@@ -149,9 +148,8 @@ export const ANIMS = {
     delay: 1320,
     duration: 600,
     easing: EASE.out,
-    // Hidden before it starts, as design-changes.md describes. (The preview's backwards fill
-    // shows the ring on the tile from the start; flagged to the owner.)
-    hiddenBeforeStart: true,
+    // Like the preview (owner, 2026-10-03): the ring shows faintly on the food tile from the
+    // start (its first keyframe, held before the delay), then expands and fades.
     tracks: {
       opacity: [
         [0, 0.9],
@@ -240,7 +238,6 @@ export function sample(anim: Anim, prop: string, t: number): number {
   'worklet';
   const track = anim.tracks[prop]!;
   const local = Math.min(1, Math.max(0, (t - anim.delay) / anim.duration));
-  if (prop === 'opacity' && anim.hiddenBeforeStart && t < anim.delay) return 0;
   return interpolateTrack(track, cubicBezier(anim.easing, local));
 }
 
