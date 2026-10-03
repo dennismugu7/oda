@@ -2,6 +2,15 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M2a CP5 welcome card + animation in code (branch `m2a-auth`)
+
+- `app/welcome.tsx` rebuilt from the approved preview's measurements: "Nairobi · Kilimani", three product tiles (`#FBE3DA` / `#FBF0D2` / `#E2F1E8`, images at max 78%), no badge; Poppins 800 for the logo and headline like the preview; the green tick is an inline view inside the "oda" text, so it sits on the baseline like a full stop.
+- Animation: one UI-thread clock (0 → 2850 ms, `withTiming`, linear) and every element sampled from the preview's own keyframes, offsets and easing curves (`src/welcome/timeline.ts`, worklets): card spring with tilt (0–650), finger glide + press (700–1450), tile press/pop + pre-rendered warm glow (1300–2000), orange ring (1320–1920), order card bounce (1550–2250), headline (2250–2850). Only transform and opacity animate; no JS timers; buttons work from the first frame. `useReducedMotion()` → the final state at once.
+- Pre-rendered images: `dot@3x.png` (the board's dot grid, tiled; replaces ~500 views) and `glow@3x.png` (the tile's warm glow; only its opacity animates).
+- Tests: timeline 9 (curves against a brute-force reference, the five windows, start hidden, final state, spring overshoot, finger press 0.78, tile 0.92 → 1.06, ring 1 → 1.6, order bounce −8 / +3). Seller total 21. Lint, typecheck, Metro Android export green.
+- **Question for the owner:** in the preview the orange ring is visible on the food tile from the start until 1.32 s (a side effect of the preview's backwards fill), but design-changes.md describes it only expanding at 1320–1920 ms. Built as the text says (hidden until 1.32 s).
+- **Not yet seen on a device.** Review stop B needs a dev build on the Redmi (Gradle, Docker Desktop quit) and screenshots.
+
 ## 2026-10-03 · M2a CP3 started, CP4 app auth screens in code (branch `m2a-auth`, draft PR #7)
 
 **CP3 (Resend + DNS):** owner steps sent (Resend domain `mail.oda.mugu-labs.com` in eu-west-1, click/open tracking off, Cloudflare MX/SPF/DKIM/DMARC records DNS only, API key `oda-staging`, Vercel env vars with a separate `BETTER_AUTH_SECRET` per environment, generated with `node … | clip`). Code: auth links use a Preview's own URL when `BETTER_AUTH_URL` is unset; Production fails loudly without it (tests). Waiting for the owner.
