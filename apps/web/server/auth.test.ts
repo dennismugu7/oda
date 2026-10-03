@@ -4,7 +4,7 @@ import { getSchema } from 'better-auth/db';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
-import { authOptions, getAuth } from './auth';
+import { authBaseUrl, authOptions, getAuth } from './auth';
 import { getDb } from './db';
 import { signUpVerified } from '@/test/auth';
 
@@ -57,5 +57,31 @@ describe('Better Auth against oda_test', () => {
   it('has no session without a token', async () => {
     const session = await getAuth().api.getSession({ headers: new Headers() });
     expect(session).toBeNull();
+  });
+});
+
+describe('authBaseUrl', () => {
+  it('uses BETTER_AUTH_URL when set, without a trailing slash', () => {
+    expect(authBaseUrl({ BETTER_AUTH_URL: 'https://oda-eta.vercel.app/', VERCEL: '1' })).toBe(
+      'https://oda-eta.vercel.app',
+    );
+  });
+
+  it("falls back to a Vercel Preview's own branch URL", () => {
+    expect(
+      authBaseUrl({
+        VERCEL: '1',
+        VERCEL_ENV: 'preview',
+        VERCEL_BRANCH_URL: 'oda-git-m2a-auth-team.vercel.app',
+      }),
+    ).toBe('https://oda-git-m2a-auth-team.vercel.app');
+  });
+
+  it('fails loudly on Vercel Production without it', () => {
+    expect(() => authBaseUrl({ VERCEL: '1', VERCEL_ENV: 'production' })).toThrow(/BETTER_AUTH_URL/);
+  });
+
+  it('is localhost locally', () => {
+    expect(authBaseUrl({})).toBe('http://localhost:3000');
   });
 });

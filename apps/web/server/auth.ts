@@ -39,8 +39,21 @@ import {
 
 const authEnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
-  BETTER_AUTH_URL: z.url().default('http://localhost:3000'),
 });
+
+/**
+ * The public base URL for auth links (email 06). BETTER_AUTH_URL when set; on a Vercel
+ * Preview without it, the preview's own branch URL; locally http://localhost:3000. Vercel
+ * Production must set it (fails loudly otherwise).
+ */
+export function authBaseUrl(env: Record<string, string | undefined> = process.env): string {
+  if (env.BETTER_AUTH_URL) return z.url().parse(env.BETTER_AUTH_URL).replace(/\/+$/, '');
+  if (env.VERCEL_ENV === 'preview' && env.VERCEL_BRANCH_URL) {
+    return `https://${env.VERCEL_BRANCH_URL}`;
+  }
+  if (env.VERCEL) throw new Error('BETTER_AUTH_URL is not set');
+  return 'http://localhost:3000';
+}
 
 /** Rate limits per action (Postgres-backed; Better Auth's in-memory limiter is off). */
 export const AUTH_LIMITS = {
@@ -274,7 +287,7 @@ export const authOptions = {
       if (!(await hitLimit(getDb(), `reset-mails:${email}`, AUTH_LIMITS.resetMailsPerEmail))) {
         return;
       }
-      const base = authEnvSchema.shape.BETTER_AUTH_URL.parse(process.env.BETTER_AUTH_URL);
+      const base = authBaseUrl();
       await sendEmail(resetPasswordEmail(user.email, resetPageUrl(base, token)));
     },
   },
@@ -315,7 +328,7 @@ function createAuth() {
   return betterAuth({
     ...authOptions,
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL,
+    baseURL: authBaseUrl(),
     database: drizzleAdapter(getDb(), {
       provider: 'pg',
       schema: {
