@@ -88,3 +88,40 @@ jobs:
             apps/web/playwright-report
             apps/web/test-results
           retention-days: 7
+
+  # Mirrors migrate-staging: a clean runner with the same reduced install, then the migration,
+  # so a package the migration needs but the filter skips fails here, before merge (#39).
+  migrate-install:
+    name: Staging migrate install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: oda
+          POSTGRES_PASSWORD: oda
+          POSTGRES_DB: oda
+        ports: ['5442:5432']
+        options: >-
+          --health-cmd "pg_isready -U oda -d oda"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Same command as migrate-staging.yml.
+      - run: pnpm install --frozen-lockfile --filter "@oda/db..."
+
+      - name: Migrate (as migrate-staging does)
+        env:
+          DATABASE_URL_UNPOOLED: postgres://oda:oda@localhost:5442/oda
+        run: pnpm db:migrate

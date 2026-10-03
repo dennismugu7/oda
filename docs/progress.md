@@ -2,6 +2,13 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M1 merged; staging migration fix (branch `fix/migrate-staging-install`)
+
+- PR #4 merged as `78423e0`, tag `m1-done`.
+- First `migrate-staging` run after the merge failed at Migrate (`Cannot find package 'zod'`): the reduced install skipped `@oda/shared`'s dependencies. Nothing migrated or deployed; staging stayed on `5eb5d31`.
+- Fix (decision #39): install with `--filter "@oda/db..."`, plus a CI job that runs the same install and migration on a clean runner. Reproduced and verified locally in a clean worktree.
+- **Next:** merge the fix; its merge runs migrate → Deploy Hook → `/api/health`; then the owner checks the Neon tables.
+
 ## 2026-10-02 · M1 checkpoints 4–5, at review stop B (branch `m1-database-security`, draft PR #4)
 
 **Done**
