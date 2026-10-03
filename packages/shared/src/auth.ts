@@ -53,3 +53,14 @@ export function resendWaitSeconds(lastSentAt: Date | null, now: Date = new Date(
   const elapsed = (now.getTime() - lastSentAt.getTime()) / 1000;
   return Math.max(0, Math.ceil(OTP_RESEND_COOLDOWN_SECONDS - elapsed));
 }
+
+/** The password rules as a checklist (shown under password fields, ticking as you type). */
+export function passwordChecks(password: string): { label: string; ok: boolean }[] {
+  return [
+    {
+      label: `At least ${PASSWORD_MIN_LENGTH} characters`,
+      ok: password.length >= PASSWORD_MIN_LENGTH,
+    },
+    { label: 'At least one number', ok: /[0-9]/.test(password) },
+  ];
+}

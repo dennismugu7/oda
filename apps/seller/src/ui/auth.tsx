@@ -17,6 +17,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { passwordChecks } from '@oda/shared';
 import { colors, radii, sizes, spacing, text } from '@/theme';
 
 /** Scrollable page with the keyboard pushing the footer (main button) up. */
@@ -151,6 +152,30 @@ export const PasswordField = forwardRef<TextInput, Omit<FieldProps, 'right'>>(
   },
 );
 
+/** The password rules under the field, ticking as the seller types. */
+export function PasswordRules({ password }: { password: string }) {
+  return (
+    <View style={styles.rules} accessibilityLabel="Password rules">
+      {passwordChecks(password).map((rule) => (
+        <View key={rule.label} style={styles.rule}>
+          <Feather
+            name={rule.ok ? 'check' : 'circle'}
+            size={rule.ok ? 16 : 6}
+            color={rule.ok ? colors.green : colors.textMuted}
+            style={styles.ruleIcon}
+          />
+          <Text
+            style={[styles.ruleText, rule.ok && { color: colors.green }]}
+            accessibilityLabel={`${rule.label}: ${rule.ok ? 'done' : 'not yet'}`}
+          >
+            {rule.label}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function Button({
   title,
   onPress,
@@ -224,6 +249,8 @@ export function InfoNote({ icon, children }: { icon: 'info' | 'shield'; children
   );
 }
 
+const INPUT_HEIGHT = 52;
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: colors.background },
@@ -250,8 +277,9 @@ const styles = StyleSheet.create({
 
   field: { marginTop: spacing.lg },
   label: { ...text('bodyStrong'), color: colors.text, marginBottom: spacing.sm },
+  // Fixed height: the thicker focus border grows inwards, so the centre line never moves.
   inputBox: {
-    minHeight: 52,
+    height: INPUT_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -260,14 +288,24 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     paddingLeft: spacing.md,
   },
-  inputFocused: { borderWidth: sizes.borderWidthStrong, borderColor: colors.borderStrong },
+  inputFocused: {
+    borderWidth: sizes.borderWidthStrong,
+    borderColor: colors.borderStrong,
+    paddingLeft: spacing.md - (sizes.borderWidthStrong - sizes.borderWidth),
+  },
   inputError: { borderColor: colors.danger },
+  // Android draws the placeholder off-centre when a TextInput has a lineHeight (and adds
+  // Poppins' font padding). No lineHeight, no font padding, no vertical padding, centred
+  // vertically: typed text, placeholder and the eye icon share one centre line.
   input: {
-    ...text('body'),
+    fontFamily: text('body').fontFamily,
     fontSize: 16,
     flex: 1,
+    alignSelf: 'stretch',
     color: colors.text,
-    paddingVertical: spacing.md,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    paddingVertical: 0,
     paddingRight: spacing.md,
   },
   eye: {
@@ -277,6 +315,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldError: { ...text('small'), color: colors.danger, marginTop: spacing.xs },
+  rules: { marginTop: spacing.sm, gap: spacing.xxs },
+  rule: { flexDirection: 'row', alignItems: 'center' },
+  ruleIcon: { width: 20, textAlign: 'center' },
+  ruleText: { ...text('small'), color: colors.textSecondary, marginLeft: spacing.xs },
 
   button: {
     height: sizes.buttonHeight + 4,

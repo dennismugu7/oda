@@ -3,6 +3,7 @@ import {
   emailSchema,
   otpSchema,
   OTP_RESEND_COOLDOWN_SECONDS,
+  passwordChecks,
   passwordProblem,
   resendWaitSeconds,
 } from './auth';
@@ -64,5 +65,23 @@ describe('resendWaitSeconds', () => {
 
   it('is 0 when nothing was sent', () => {
     expect(resendWaitSeconds(null)).toBe(0);
+  });
+});
+
+describe('passwordChecks', () => {
+  it('ticks each rule separately', () => {
+    expect(passwordChecks('')).toEqual([
+      { label: 'At least 8 characters', ok: false },
+      { label: 'At least one number', ok: false },
+    ]);
+    expect(passwordChecks('kitengedress').map((c) => c.ok)).toEqual([true, false]);
+    expect(passwordChecks('abc1').map((c) => c.ok)).toEqual([false, true]);
+    expect(passwordChecks('kitenge2026').map((c) => c.ok)).toEqual([true, true]);
+  });
+
+  it('agrees with passwordProblem within the length cap', () => {
+    for (const p of ['', 'abc1', 'kitengedress', 'kitenge2026', 'abcdefg1']) {
+      expect(passwordChecks(p).every((c) => c.ok)).toBe(passwordProblem(p) === null);
+    }
   });
 });

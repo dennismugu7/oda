@@ -16,6 +16,7 @@ import {
   InfoNote,
   Link,
   PasswordField,
+  PasswordRules,
   Title,
   Wordmark,
 } from '@/ui/auth';
@@ -92,13 +93,14 @@ export default function SignUp() {
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder="At least 8 characters, with a number"
+          placeholder="At least 8 characters"
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="go"
           onSubmitEditing={submit}
           error={passwordError}
         />
+        <PasswordRules password={password} />
       </View>
 
       {error ? (

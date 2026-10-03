@@ -2,6 +2,14 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · Redmi check of m2a-preview-1: passed, two input fixes (branch `m2a-auth`)
+
+**Owner's phone check passed:** animation, ring, tick on the baseline, Remove animations, form errors, offline/error state. Two fixes:
+1. **Placeholders sat ~8 dp above centre** in every text field (typed text was fine). Fixed once in the shared field (`apps/seller/src/ui/auth.tsx`): no `lineHeight` on the TextInput, `includeFontPadding: false`, `textAlignVertical: 'center'`, `paddingVertical: 0`, stretched to a fixed 52 dp box. The focus border grows inwards (padding compensated), so typed text, placeholder and the eye icon stay on one centre line.
+2. **Password placeholder** on sign up is now "At least 8 characters". The app's sign-up screen didn't list the rules yet (only the web reset page did), so a rules list now sits under the field and ticks as you type ("At least 8 characters", "At least one number"). One shared `passwordChecks()` in `@oda/shared` feeds both the app and the web page (2 new tests).
+
+**Checks:** format, lint, typecheck, tests (web 118, seller 21, shared 147, db 23, ui-tokens 3), web build, Playwright 6, Metro Android export: all green. No new APK (owner checks both at review stop B on the dev build).
+
 ## 2026-10-03 · Owner away: ring as in the preview, preview APK m2a-preview-1 (branch `m2a-auth`)
 
 - **Ring (owner):** matches the approved preview: it sits on the food tile at 0.9 opacity from the start (fading in with the card), then expands to 1.6 and fades at 1320–1920 ms. `design-changes.md` and the timeline test updated (`4835d1c`). Checks green: format, lint, typecheck, tests (web 118, seller 21, shared 145, db 23, ui-tokens 3).

@@ -2,17 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
-import { PASSWORD_MIN_LENGTH, passwordProblem } from '@oda/shared';
+import { passwordChecks, passwordProblem } from '@oda/shared';
 
 type Status = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
-
-const RULES = [
-  {
-    label: `At least ${PASSWORD_MIN_LENGTH} characters`,
-    ok: (p: string) => p.length >= PASSWORD_MIN_LENGTH,
-  },
-  { label: 'At least one number', ok: (p: string) => /[0-9]/.test(p) },
-];
 
 function EyeIcon({ open }: { open: boolean }) {
   return (
@@ -133,15 +125,10 @@ export function ResetForm({ token }: { token: string }) {
           autoFocus
         />
         <ul className="text-small -mt-2 flex flex-col gap-1" aria-label="Password rules">
-          {RULES.map((rule) => {
-            const ok = rule.ok(password);
+          {passwordChecks(password).map(({ label, ok }) => {
             return (
-              <li
-                key={rule.label}
-                className={ok ? 'text-green' : 'text-text-secondary'}
-                data-ok={ok}
-              >
-                {ok ? '✓' : '•'} {rule.label}
+              <li key={label} className={ok ? 'text-green' : 'text-text-secondary'} data-ok={ok}>
+                {ok ? '✓' : '•'} {label}
               </li>
             );
           })}
