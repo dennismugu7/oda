@@ -2,6 +2,14 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · Review stop B prep: RAM freed, phone not paired yet (branch `m2a-auth`)
+
+- Pairing the Redmi failed twice (`adb pair 172.16.160.1:39079` → `protocol fault`, also after restarting adb; `adb connect 172.16.160.1:42089` failed). Waiting for new pairing details.
+- Owner-approved: `supabase stop` (default, data kept) for `bookflow` (from its folder) and `dashboardx-local` (no folder under `~/projects`; stopped with `--project-id dashboardx-local`). Both reported `backup: true`; volumes kept; only `oda-postgres` runs. **Both stacks stay stopped until the owner restarts them.**
+- Owner-approved: `sync; echo 3 > /proc/sys/vm/drop_caches` in the `docker-desktop` WSL distro (no container stopped). Free RAM 3.8 → 5.2 (stacks stopped) → **14.5 GB** 3 min after dropping the cache; `vmmemWSL` 13.7 → 3.6 GB.
+- Build rule for this run (owner): ≥ 8 GB free → build with `-Dorg.gradle.workers.max=4` on the command line (no change to `~/.gradle/gradle.properties`). Not built yet: waiting for the phone.
+- Proposed (not applied): a `%UserProfile%\.wslconfig` capping WSL at 12 GB with gradual memory reclaim (WSL 2.7.11 supports it); applying needs Docker Desktop quit + `wsl --shutdown`.
+
 ## 2026-10-03 · CP3 complete; review stop B paused (low RAM) (branch `m2a-auth`)
 
 - **CP3 complete.** Owner removed Preview from `BETTER_AUTH_URL`. `vercel env ls` (names/types/environments only): `BETTER_AUTH_SECRET` Secret (Preview) + Secret (Production); `BETTER_AUTH_URL` Config (Production); `EMAIL_FROM` Config (Preview, Production); `RESEND_API_KEY` Secret (Production) + Secret (Preview); `DATABASE_URL` Secret (Production, Preview); `ENABLE_EXPERIMENTAL_COREPACK` Secret (Production, Preview). Previews now build reset links from their own URL (`authBaseUrl()`).
