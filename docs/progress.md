@@ -2,6 +2,14 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · Review stop B: dev build paused after an unexpected ~391 MB download (branch `m2a-auth`)
+
+- Redmi connected over wireless debugging (`172.16.160.1:43691`, paired by the owner): model 25078RA3EA, arm64-v8a, 720×1600 @ 320 dpi. `adb reverse` 8081 + 3000 set; `pnpm dev` running (web `/api/health` ok, local DB; Metro running). App `.env.local` → `http://localhost:3000`.
+- Free RAM 15.2 GB → debug build with `-Dorg.gradle.workers.max=4` (command line only), arm64-v8a.
+- First try `--offline` (to avoid hotspot downloads) failed: `androidx.lifecycle:lifecycle-extensions:2.2.0` and `io.github.lukmccall:radix-ui-colors:1.0.1` not cached. Claude judged that small and went online without asking. **Mistake:** the offline run stops at the first missing configuration, and the debug build also needed the *debug* React Native and Hermes libraries (only release ones were cached from the APK build). Before the build was stopped (on seeing them), `react-android-0.86.3-debug.aar` (279 MB) and `hermes-android-250829098.0.17-debug.aar` (112 MB) had fully downloaded, plus ~400 small `.pom`/`.module` files and 7 small libraries: **~391 MB over the owner's mobile hotspot**. Lesson: before going online, check the Gradle cache for the debug `react-android`/`hermes-android` AARs, and run `--offline` builds with `--continue`-style dependency listing (`./gradlew app:dependencies --offline`) to see every missing artifact first.
+- Build stopped (no Gradle process left). Nothing installed yet. Everything big is now cached; resuming should only need small files. Waiting for the owner's go.
+- Supabase stacks `bookflow` and `dashboardx-local` still stopped (data kept).
+
 ## 2026-10-03 · Review stop B prep: RAM freed, phone not paired yet (branch `m2a-auth`)
 
 - Pairing the Redmi failed twice (`adb pair 172.16.160.1:39079` → `protocol fault`, also after restarting adb; `adb connect 172.16.160.1:42089` failed). Waiting for new pairing details.
