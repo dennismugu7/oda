@@ -21,7 +21,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 - **Accept:** `pnpm dev` runs web + app locally; the web staging URL shows a placeholder page in the Poppins font and brand colours; the app opens on Android showing the welcome screen (static); CI is green.
 
 ## M1 · Database & security
-**Status: gate passed 2026-10-02** (PR #4). Decisions #33–#38.
+**Status: closed 2026-10-03** (gate passed 2026-10-02; PR #4 merged as `78423e0`, tag `m1-done`; staging migration fix PR #5 `25d0739`; Neon staging has all 24 tables). Decisions #33–#39.
 - All tables, enums, indexes and triggers from `data-model.md` as Drizzle migrations.
 - The authorization layer (`authz.ts`, scoped repositories) + automated authorization tests.
 - `packages/shared`: order state machine, pricing, phone normalisation, M-Pesa code extraction, slug rules, with exhaustive unit tests.
