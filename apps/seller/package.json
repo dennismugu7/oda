@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "doctor": "npx expo-doctor@1",
-    "deps:check": "expo install --check && node scripts/check-native-deps.mjs",
+    "deps:check": "expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run",
     "update:preview": "eas update --channel preview --environment preview"
   },
