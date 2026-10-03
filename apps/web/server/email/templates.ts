@@ -40,7 +40,7 @@ function layout(title: string, body: string): string {
 <tr><td align="center" style="padding-bottom:32px;">${wordmark(40)}</td></tr>
 ${body}
 <tr><td style="padding-top:32px;font-size:15px;line-height:24px;color:${colors.text};">Thank you,<br>The oda team</td></tr>
-<tr><td style="padding-top:48px;border-top:1px solid ${colors.border};"></td></tr>
+<tr><td style="padding:48px 0 24px;"><div style="height:1px;line-height:1px;font-size:1px;background:${colors.border};">&nbsp;</div></td></tr>
 <tr><td style="font-size:13px;line-height:20px;color:${colors.textSecondary};">${wordmark(20)}<br>Your free shop link · Nairobi, Kenya</td></tr>
 </table>
 </td></tr>

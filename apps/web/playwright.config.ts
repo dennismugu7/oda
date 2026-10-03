@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_OUTBOX_DIR } from './e2e/outbox';
 
 const port = 3100;
 
@@ -17,6 +18,12 @@ export default defineConfig({
   webServer: {
     command: `pnpm exec next start --port ${port}`,
     url: `http://localhost:${port}`,
+    // Emails go to a file outbox the tests read (e2e/outbox.ts); links point at this server.
+    env: {
+      EMAIL_TRANSPORT: 'file',
+      OUTBOX_DIR: E2E_OUTBOX_DIR,
+      BETTER_AUTH_URL: `http://localhost:${port}`,
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

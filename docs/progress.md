@@ -2,6 +2,26 @@
 
 Newest entries at the top.
 
+## 2026-10-03 · M2a CP1–CP2, at review stop A (branch `m2a-auth`)
+
+**Done**
+- M2 plan approved; decisions #40–#43 recorded (split, onboarding answers, private R2 buckets, auth/email rules); `data-model.md` File storage, session and onboarding wording; `milestones.md` M2 split.
+- CP1 server auth (`apps/web/server/auth.ts`): `/api/auth` with 8 allowlisted endpoints, 6-digit email code (10 min, 3 tries, hashed), verification required, auto sign-in after the code, 60-day sessions renewed daily, reset revokes every session, Postgres rate limits, friendly existing-email message, neutral forgot password. Emails 04/06 (`server/email/`), Resend via `fetch`, local file outbox at `/dev/outbox` (404 on Vercel). `GET /api/me` (onboarding step to resume, shop). Shared rules in `@oda/shared` (`auth.ts`). Decision #44.
+- CP2 web pages `/reset-password` (07) and `/reset-password/done` (08) + Playwright.
+
+**Tests:** web 99 (auth flows 30, email/outbox 16), shared 145 (auth 9), db 23, ui-tokens 3; Playwright 6 (reset end to end, expired/made-up token, no referrer, local outbox). Format, lint, typecheck green.
+
+**Design comparison (07, 08)**
+- Same structure: wordmark + "Your free shop link" on grey, white band, two fields with eye icons, orange pill button; 08 tick circle, title, two lines.
+- Differences, on purpose: Poppins everywhere (the images mix fonts); sentence case ("Choose a new password", "Password changed!"); labels above the fields instead of placeholders (accessibility); the password rules listed under the field and ticking as you type; 08 tick is brand green (image: orange, design-changes.md); 08 adds "Open oda app" (`oda://sign-in`) and one line saying every phone was signed out; new "This link has expired" state.
+- Emails: 6-digit code (image: 8), lowercase "oda", no social icons or "Contact us" (decision #43), button + plain link in 06 (image: a text link).
+
+**Deviations**
+- `resend` SDK not used (REST via `fetch`); `@better-auth/expo` not installed in the web app (small origin plugin instead). Decision #44.
+- `/api/me` shipped in CP1 (planned with CP4) because the tests needed it.
+
+**Next:** review stop A (owner), then CP3 Resend + DNS (owner steps) in parallel with CP4 app screens.
+
 ## 2026-10-03 · M1 closed; staging migration fix
 
 - PR #4 merged as `78423e0`, tag `m1-done`.

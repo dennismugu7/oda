@@ -33,6 +33,8 @@ jobs:
     env:
       DATABASE_URL: postgres://oda:oda@localhost:5442/oda
       PUBLIC_SHOP_BASE_URL: http://localhost:3000
+      # CI-only values (no real secret): Playwright's server signs sessions and reset links.
+      BETTER_AUTH_SECRET: ci-only-not-a-secret-0123456789abcdefghij
       TURBO_TELEMETRY_DISABLED: 1
       NEXT_TELEMETRY_DISABLED: 1
 
