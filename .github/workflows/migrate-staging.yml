@@ -65,7 +65,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile --filter @oda/db
+      # @oda/db and everything its workspace packages need (e.g. zod for @oda/shared), decision #39.
+      # CI's "Staging migrate install" job runs this exact command, so keep the two in sync.
+      - run: pnpm install --frozen-lockfile --filter "@oda/db..."
 
       - name: Migrate
         env:
