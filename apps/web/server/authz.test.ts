@@ -12,7 +12,7 @@ import {
   profileUpdate,
   shopUpdate,
 } from '@oda/shared';
-import { getAuth } from './auth';
+
 import {
   requireAdmin,
   requireOrderToken,
@@ -25,6 +25,7 @@ import { ConflictError, HttpError, parseInput } from './errors';
 import { insertOrder, transitionOrder } from './orders';
 import { adminRepo } from './repos/admin';
 import { orderTokenRepo } from './repos/order-token';
+import { signUpVerified } from '@/test/auth';
 import { publicRepo } from './repos/public';
 import { sellerRepo } from './repos/seller';
 import { userRepo } from './repos/user';
@@ -55,14 +56,11 @@ const bearer = (token: string | null): HasHeaders => ({
 let userCount = 0;
 async function signUp(name: string) {
   userCount += 1;
-  const res = await getAuth().api.signUpEmail({
-    body: {
-      name,
-      email: `user${userCount}-${randomUUID().slice(0, 6)}@example.test`,
-      password: 'kitenge2026',
-    },
-  });
-  return { userId: res.user.id, token: res.token!, req: bearer(res.token!) };
+  const { userId, token } = await signUpVerified(
+    name,
+    `user${userCount}-${randomUUID().slice(0, 6)}@example.test`,
+  );
+  return { userId, token, req: bearer(token) };
 }
 
 /** A seller with a shop and one of everything, built through the real repositories. */

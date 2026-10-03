@@ -5,3 +5,5 @@ import { testDatabaseUrl } from '@oda/db/testing';
 process.env.DATABASE_URL = testDatabaseUrl();
 process.env.BETTER_AUTH_SECRET ??= 'test-only-secret-0123456789abcdefghijklmnop';
 process.env.BETTER_AUTH_URL ??= 'http://localhost:3000';
+// Emails stay in memory (server/email/transport.ts → testOutbox), never sent or written.
+process.env.EMAIL_TRANSPORT = 'memory';

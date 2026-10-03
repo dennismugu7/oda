@@ -1,3 +1,4 @@
+export * from './auth';
 export * from './money';
 export * from './orderMachine';
 export * from './pricing';

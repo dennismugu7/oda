@@ -1,5 +1,5 @@
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import type { ProfileUpdate, ShopCreate } from '@oda/shared';
 import type { SellerCtx, UserCtx } from '../authz';
@@ -23,6 +23,45 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
         where: byId,
       });
       return profile!;
+    },
+
+    /**
+     * What the seller app needs to decide where to go after sign-in (GET /api/me): the
+     * onboarding step to resume (1–3 from the draft, 4–6 from the shop) or done.
+     */
+    async getMe() {
+      const user = await db.query.authUser.findFirst({
+        columns: { email: true, emailVerified: true },
+        where: eq(schema.authUser.id, ctx.userId),
+      });
+      const profile = await db.query.profiles.findFirst({
+        columns: { onboardingDraft: true },
+        where: byId,
+      });
+      const shop = await db.query.shops.findFirst({
+        columns: {
+          id: true,
+          name: true,
+          slug: true,
+          onboardingStep: true,
+          onboardingCompletedAt: true,
+        },
+        where: and(eq(schema.shops.ownerId, ctx.userId), isNull(schema.shops.deletedAt)),
+      });
+      const draftStep = (profile?.onboardingDraft as { step?: unknown } | null)?.step;
+      const step = shop
+        ? shop.onboardingCompletedAt
+          ? null
+          : shop.onboardingStep
+        : typeof draftStep === 'number' && draftStep >= 1 && draftStep <= 3
+          ? draftStep
+          : 1;
+      return {
+        email: user!.email,
+        emailVerified: user!.emailVerified,
+        onboarding: { step, done: step === null },
+        shop: shop ? { id: shop.id, name: shop.name, slug: shop.slug } : null,
+      };
     },
 
     async updateProfile(input: ProfileUpdate) {
