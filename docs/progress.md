@@ -2,6 +2,17 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M2b CP3 onboarding API, at review stop A (branch `m2b-onboarding`)
+
+- PR #10 (M2a gate docs) merged (`babb927`). M2b plan approved with changes (decision #51): order CP3 → review stop A → CP1 → CP4 → CP5 → review stop B → CP0 + CP2 → hand test → gate; storage behind one interface; EXIF stripping with a test and byte-checked file types; `r2.dev` staging only.
+- **CP3 built** (decision #51): `packages/shared/src/onboarding.ts` (step inputs, the six channels from #41, size presets per business type, the 7-item "Finish your shop" checklist), `apps/web/server/repos/onboarding.ts` (scoped to the user / their shop; steps move forward only; redo updates instead of duplicating), `apps/web/server/onboardingRoutes.ts` and 8 routes under `/api/onboarding`. `shops.channels` now validated against the six values; seed updated (`tt`/`wa`/`ig` → `tiktok`/`whatsapp`/`instagram`).
+- **Tests:** onboarding API 26 (draft and resume via `/api/me`, Skip values, going back, bad values and extra fields write nothing, link check incl. another shop's current and old link, own link free, reserved, rate limit, shop creation from the draft, link clash 409, no duplicate shop, product with ordered photos and replace-on-redo, photo keys only under the seller's own prefix (403), payment pending/active, replace-on-redo, Skip → pay on delivery, step order 409, server-owned fields 422, checklist + complete, writes closed after completion, 401 anon, 404 without a shop, seller isolation); shared onboarding 10. Totals: web 147, shared 157, seller 45, db 23, ui-tokens 3; Playwright 6.
+- **Fixed on the way:** the "30 sign-up starts per IP" test ran 31 real password hashes and hit Vitest's 5 s limit under load (its leftovers then broke the cleanup test); it now prefills the counter.
+- **Checks** (one at a time): format, lint, typecheck, tests, web build, Playwright, root check, `db:reset` (migration + seed).
+- **Carried forward (new):** production images on a custom domain instead of `r2.dev` (M11).
+
+**Next:** review stop A (owner), then CP1 uploads with the local storage driver.
+
 ## 2026-10-04 · M2a gate passed, tag `m2a-done`
 
 **Owner's phone retest A–E passed**; the M2a hand test (1–18) is complete after the fixes.

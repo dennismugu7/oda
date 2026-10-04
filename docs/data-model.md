@@ -10,7 +10,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 - Verify locks the attempt (`SELECT … FOR UPDATE`, plus a per-email advisory lock) and, in one transaction, creates `auth_user` (verified), the credential `auth_account` with this attempt's `password_hash`, and `profiles`, then deletes this attempt. Any other attempt for the email is refused ("already has a shop") and deleted when it is used. Attempts older than 7 days are deleted lazily on each sign-up start (batches of 100) and by `/api/cron/purge` (M8). Indexes: `email`, `created_at`.
 
 **profiles**: one per auth user
-- `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `is_admin bool default false`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists), `deleted_at`
+- `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `is_admin bool default false`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists: `{ step: 1–3 (next step to show), businessType?, channels? }`, decision #51), `deleted_at`
 
 **shops**: one per seller in v1
 - `id`, `owner_id → profiles`, `name`, `slug unique`, `logo_path`, `about`, `location_label` (for example "Kilimani, Nairobi"), `business_type` (enum: fashion, shoes_bags, beauty_hair, food_drinks, phones_electronics, home_decor, baby_kids, other), `channels text[]`, `whatsapp_phone`, `calls_enabled bool`, `tiktok_handle`, `instagram_handle`

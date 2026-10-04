@@ -312,14 +312,24 @@ describe('limits', () => {
   });
 
   it('allows 30 sign-up starts per IP per hour', async () => {
-    for (let i = 0; i < 30; i++) {
-      expect(
-        (await signupApi.start({ email: `s${i}@example.test`, password: VICTIM_PASSWORD })).status,
-      ).toBe(200);
-    }
+    // 29 starts already in this hour's window (each real start hashes a password: slow).
+    await db().execute(sql`
+      insert into rate_limits (key, window_start, count)
+      values ('signup-ip:10.0.0.1', to_timestamp(floor(extract(epoch from now()) / 3600) * 3600), 29)`);
+    const thirtieth = await signupApi.start({
+      email: 's29@example.test',
+      password: VICTIM_PASSWORD,
+    });
+    expect(thirtieth.status).toBe(200);
     const res = await signupApi.start({ email: 's30@example.test', password: VICTIM_PASSWORD });
     expect(res.status).toBe(429);
     expect(res.json.error?.message).toMatch(/^Too many new accounts\./);
+    // Another IP is unaffected.
+    const other = await signupApi.start(
+      { email: 's31@example.test', password: VICTIM_PASSWORD },
+      '10.9.9.9',
+    );
+    expect(other.status).toBe(200);
   });
 });
 

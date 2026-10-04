@@ -10,7 +10,7 @@ export const SHOP = {
   callsEnabled: true,
   tiktokHandle: 'amani.styles',
   businessType: 'fashion' as const,
-  channels: ['tt', 'wa', 'ig'],
+  channels: ['tiktok', 'whatsapp', 'instagram'],
   acceptsPayBefore: true,
   acceptsPayOnDelivery: true, // decision #36 (a)
   pickupEnabled: true,
