@@ -8,7 +8,9 @@ const config: ExpoConfig = {
   name: 'oda',
   slug: 'oda',
   scheme: 'oda',
-  version: '0.1.0',
+  // 0.2.0: native modules for onboarding photos and later milestones (decision #53).
+  // Bump on every native change (decision #48).
+  version: '0.2.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   platforms: ['android'],
@@ -25,6 +27,15 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-secure-store',
     'expo-web-browser',
+    'expo-sharing',
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'oda uses your photos to show your products to buyers.',
+        cameraPermission: 'oda uses the camera to take photos of your products.',
+        microphonePermission: false,
+      },
+    ],
     [
       'expo-splash-screen',
       {

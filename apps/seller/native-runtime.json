@@ -1,17 +1,22 @@
 {
-  "version": "0.1.0",
-  "appConfigSha256": "b6b207b93ddadfcf6cd0ef6edbc94ff840c0c0a048120536faa30568eaa46112",
+  "version": "0.2.0",
+  "appConfigSha256": "f269220e65aac226df18fc907d9aa76f80231f449ac9e0f3eab01f02f6d78a19",
   "nativeModules": {
     "expo": "57.0.26",
+    "expo-clipboard": "57.0.2",
     "expo-constants": "57.0.20",
     "expo-dev-client": "57.0.19",
     "expo-font": "57.0.4",
+    "expo-image-manipulator": "57.0.20",
+    "expo-image-picker": "57.0.20",
     "expo-linking": "57.0.11",
     "expo-network": "57.0.2",
     "expo-router": "57.0.24",
     "expo-secure-store": "57.0.4",
+    "expo-sharing": "57.0.22",
     "expo-splash-screen": "57.0.9",
     "expo-status-bar": "57.0.1",
+    "expo-store-review": "57.0.3",
     "expo-system-ui": "57.0.4",
     "expo-updates": "57.0.24",
     "expo-web-browser": "57.0.3",
@@ -20,6 +25,9 @@
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "4.26.2",
+    "react-native-svg": "15.15.4",
+    "react-native-view-shot": "5.1.0",
+    "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1"
   }
 }

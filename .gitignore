@@ -21,3 +21,6 @@ apps/seller/ios
 # Local email outbox (apps/web, EMAIL_TRANSPORT=file)
 .outbox
 .outbox-e2e
+
+# Local photo storage (apps/web, decision #52)
+.uploads

@@ -8,7 +8,7 @@
     "android": "expo run:android",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "doctor": "npx expo-doctor@1",
+    "doctor": "expo-doctor",
     "deps:check": "expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run",
     "update:preview": "node scripts/eas-update.mjs"
@@ -21,15 +21,20 @@
     "@oda/ui-tokens": "workspace:*",
     "better-auth": "1.7.6",
     "expo": "~57.0.26",
+    "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.20",
     "expo-dev-client": "~57.0.19",
     "expo-font": "~57.0.4",
+    "expo-image-manipulator": "~57.0.20",
+    "expo-image-picker": "~57.0.20",
     "expo-linking": "~57.0.11",
     "expo-network": "~57.0.2",
     "expo-router": "~57.0.24",
     "expo-secure-store": "~57.0.4",
+    "expo-sharing": "~57.0.22",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
+    "expo-store-review": "~57.0.3",
     "expo-system-ui": "~57.0.4",
     "expo-updates": "~57.0.24",
     "expo-web-browser": "~57.0.3",
@@ -39,11 +44,15 @@
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
+    "react-native-view-shot": "5.1.0",
+    "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "eslint-config-expo": "~57.0.2",
+    "expo-doctor": "1.20.4",
     "vitest": "5.0.3"
   }
 }

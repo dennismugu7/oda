@@ -1,10 +1,13 @@
-// Placeholder after sign-in (M2a): onboarding (09–14) replaces it in M2b, Home in M6.
+// Placeholder after onboarding (M2b) until Home (M6): the shop link and Sign out.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { displayUrl } from '@oda/shared';
 import { fetchMe } from '@/api';
+import { SHOP_BASE_URL } from '@/config';
 import { signOutLocal } from '@/auth/client';
+import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import type { Me } from '@/auth/route';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
@@ -23,6 +26,7 @@ export default function Start() {
     setSigningOut(true);
     // Works offline too: the stored session is removed either way.
     await signOutLocal();
+    clearOnboardingState();
     router.replace('/welcome');
   }
 
@@ -30,12 +34,10 @@ export default function Start() {
     <SafeAreaView style={styles.screen}>
       <Wordmark size={56} />
       <View style={styles.card}>
-        <Text style={styles.title}>You&apos;re signed in</Text>
+        <Text style={styles.title}>{me?.shop ? me.shop.name : 'Your shop'}</Text>
         <Text style={styles.body}>{me ? me.email : ' '}</Text>
-        <Text style={styles.body}>
-          Setting up your shop comes next
-          {me?.onboarding.step ? ` (step ${me.onboarding.step} of 6)` : ''}.
-        </Text>
+        <Text style={styles.body}>{me?.shop ? displayUrl(SHOP_BASE_URL, me.shop.slug) : ' '}</Text>
+        <Text style={styles.body}>Orders and your Home screen come in the next update.</Text>
       </View>
       <View style={styles.footer}>
         <Button title="Sign out" variant="secondary" onPress={signOut} loading={signingOut} />

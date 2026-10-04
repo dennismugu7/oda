@@ -3,6 +3,7 @@ import { normalizeKePhone } from '../phone';
 import {
   ACCOUNT_REF_MODES,
   BUSINESS_TYPES,
+  CHANNELS,
   DELIVERY_METHODS,
   PAYMENT_ACCOUNT_TYPES,
   PRODUCT_STATUSES,
@@ -23,10 +24,10 @@ import {
 // set from a request body. Repositories accept only these parsed types.
 
 const businessType = z.enum(BUSINESS_TYPES, { error: 'Pick what you sell.' });
-// Values are settled with the onboarding screen in M2; until then any short label.
-const channels = z
-  .array(requiredText(1, 30, 'A channel'))
-  .max(10, { error: 'Pick at most 10 channels.' })
+// Decision #41: the onboarding choices; "I'm just starting out" is an empty list.
+export const channels = z
+  .array(z.enum(CHANNELS, { error: 'Pick from the list.' }))
+  .max(CHANNELS.length)
   .transform((list) => [...new Set(list)]);
 const position = z.number().int().min(0).max(10_000);
 

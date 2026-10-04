@@ -1,4 +1,5 @@
 // Where the app opens, from the session and GET /api/me (pure, so it is unit-tested).
+import { routeForStep, type OnboardingRoute } from '../onboarding/steps';
 
 export interface Me {
   email: string;
@@ -17,7 +18,8 @@ export type MeResult =
 export type StartRoute =
   | { to: '/welcome' }
   | { to: '/verify'; email: string }
-  | { to: '/start' } // placeholder until M2b's onboarding and M6's Home
+  | { to: OnboardingRoute } // the onboarding step to resume (M2b)
+  | { to: '/start' } // after onboarding: placeholder until M6's Home
   | { to: 'offline' }
   | { to: 'unreachable' }
   | { to: 'error' };
@@ -36,6 +38,8 @@ export function startRoute(hasSession: boolean, me: MeResult | null): StartRoute
       return { to: 'error' };
     case 'ok':
       // Every account has a verified email (decision #49: accounts exist only after the code).
+      // Not finished setting up: back to the step they reached.
+      if (!me.me.onboarding.done) return { to: routeForStep(me.me.onboarding.step) };
       return { to: '/start' };
   }
 }

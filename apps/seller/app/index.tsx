@@ -1,6 +1,5 @@
 // Start gate: where the app opens. No stored session → Welcome; a session → GET /api/me
-// decides (code screen if the email isn't verified, otherwise the placeholder until
-// onboarding). Reads the session cookie directly, never Better Auth's session atom, which
+// decides (the onboarding step reached, or the placeholder once onboarding is done). Reads the session cookie directly, never Better Auth's session atom, which
 // refreshes ~10 ms after a verified code (src/auth/start.ts). Every path ends: a timeout,
 // an offline message or an error message, never an endless spinner.
 import { router } from 'expo-router';
@@ -13,6 +12,7 @@ import { OFFLINE_MESSAGE, UNREACHABLE_MESSAGE } from '@/auth/errors';
 import type { StartRoute } from '@/auth/route';
 import { getPendingSignup } from '@/auth/signup';
 import { resolveStart } from '@/auth/start';
+import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
 
@@ -30,6 +30,8 @@ export default function StartGate() {
 
   useEffect(() => {
     let cancelled = false;
+    // Whoever is signed in now, onboarding screens load their state fresh.
+    clearOnboardingState();
     resolveStart({
       getCookie: () => authClient.getCookie(),
       fetchMe,

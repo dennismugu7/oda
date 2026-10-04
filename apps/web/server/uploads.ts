@@ -1,12 +1,26 @@
 import 'server-only';
+import { randomUUID } from 'node:crypto';
+import { inArray } from 'drizzle-orm';
+import { schema, type Db } from '@oda/db';
+import { z } from 'zod';
 import type { SellerCtx } from './authz';
-import { ForbiddenError } from './errors';
+import { getDb } from './db';
+import { ForbiddenError, HttpError, TooManyRequestsError, ValidationError } from './errors';
+import { hasLocationData, sniffImageType, type ImageType } from './imageCheck';
+import { hitLimit } from './rateLimit';
+import { getStorage, StorageUnavailableError } from './storage';
 
-// Storage key ownership (docs/data-model.md → File storage). The presign route (M2) and every
-// write that saves a key check that the key sits under the seller's own shop prefix.
+// Uploads (docs/data-model.md → File storage, decision #52). The phone asks for an upload,
+// sends the file straight to storage, then saves the key through the API, which checks the
+// stored bytes before any row points at it: a real JPEG/PNG/WebP, at most 5 MB, under the
+// seller's own shop prefix, and without location data. Replaced and rejected objects are
+// queued in storage_deletions and deleted right away (the M8 purge retries leftovers).
 
 export const SHOP_KEY_PREFIXES = ['products', 'logos', 'feedback'] as const;
 export type ShopKeyPrefix = (typeof SHOP_KEY_PREFIXES)[number];
+
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const UPLOADS_PER_HOUR = { window: 3600, max: 120 };
 
 /** Throws 403 unless `key` is `{prefix}/{ctx.shopId}/…` for one of `allowed`. */
 export function assertOwnsKey(
@@ -19,4 +33,132 @@ export function assertOwnsKey(
     return key.startsWith(start) && key.length > start.length && !key.includes('..');
   });
   if (!owns) throw new ForbiddenError('This photo upload is not valid.');
+}
+
+const EXTENSIONS: Record<string, ImageType> = {
+  'image/jpeg': 'jpeg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const EXT_OF: Record<ImageType, string> = { jpeg: 'jpg', png: 'png', webp: 'webp' };
+
+export const uploadRequest = z.strictObject({
+  kind: z.enum(['product', 'logo'], { error: 'Unknown upload.' }),
+  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp'], {
+    error: 'Use a JPEG, PNG or WebP photo.',
+  }),
+  size: z
+    .number()
+    .int()
+    .min(1, { error: 'This photo is empty.' })
+    .max(MAX_UPLOAD_BYTES, { error: 'This photo is too big (5 MB at most).' }),
+});
+export type UploadRequest = z.infer<typeof uploadRequest>;
+
+export class UploadsOffError extends HttpError {
+  constructor() {
+    super(503, "Photo uploads aren't switched on yet. Try again later.", 'uploads_off');
+  }
+}
+
+/** POST /api/uploads: a signed upload for one file, at a key the server chooses. */
+export async function createUpload(ctx: SellerCtx, input: UploadRequest, db: Db = getDb()) {
+  if (!(await hitLimit(db, `uploads:${ctx.shopId}`, UPLOADS_PER_HOUR))) {
+    throw new TooManyRequestsError('Too many photos for now. Try again in an hour.', 3600);
+  }
+  const prefix: ShopKeyPrefix = input.kind === 'logo' ? 'logos' : 'products';
+  const key = `${prefix}/${ctx.shopId}/${randomUUID()}.${EXT_OF[EXTENSIONS[input.contentType]!]}`;
+  try {
+    const upload = await getStorage().presignPut(key, input.contentType, input.size);
+    return { key, publicUrl: getStorage().publicUrl(key), ...upload };
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw new UploadsOffError();
+    throw error;
+  }
+}
+
+const MISSING = "We couldn't find that photo. Upload it again.";
+
+/**
+ * Checks a stored upload before a row points at it. Throws (and queues the object for
+ * deletion) when it's missing, too big, not really a JPEG/PNG/WebP (or not the type its
+ * key says), or still carries location data.
+ */
+export async function verifyStoredImage(
+  ctx: SellerCtx,
+  key: string,
+  allowed: readonly ShopKeyPrefix[],
+  db: Db = getDb(),
+): Promise<void> {
+  assertOwnsKey(ctx, key, allowed);
+  let bytes: Uint8Array | null;
+  try {
+    bytes = await getStorage().read(key);
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw new UploadsOffError();
+    throw error;
+  }
+  if (!bytes || bytes.length === 0) throw new ValidationError(MISSING, undefined, 'UPLOAD_MISSING');
+
+  const reject = async (message: string, code: string) => {
+    await queueDeletions(db, [key]);
+    await flushDeletions(db, [key]);
+    throw new ValidationError(message, undefined, code);
+  };
+  if (bytes.length > MAX_UPLOAD_BYTES)
+    await reject('This photo is too big (5 MB at most).', 'UPLOAD_TOO_BIG');
+  const type = sniffImageType(bytes);
+  const expected = key.endsWith('.jpg')
+    ? 'jpeg'
+    : key.endsWith('.png')
+      ? 'png'
+      : key.endsWith('.webp')
+        ? 'webp'
+        : null;
+  if (!type || type !== expected) {
+    await reject("This file isn't a photo. Use a JPEG, PNG or WebP image.", 'NOT_AN_IMAGE');
+  }
+  if (hasLocationData(bytes, type!)) {
+    await reject(
+      'This photo still contains its location. Take or choose it again in the oda app.',
+      'PHOTO_HAS_LOCATION',
+    );
+  }
+}
+
+/** Records objects to delete (in the caller's transaction when given one). */
+export async function queueDeletions(db: Db, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await db
+    .insert(schema.storageDeletions)
+    .values(keys.map((objectKey) => ({ objectKey })))
+    .onConflictDoNothing();
+}
+
+/** Deletes queued objects now; anything that fails stays queued for the purge job (M8). */
+export async function flushDeletions(db: Db, keys: readonly string[]): Promise<void> {
+  const done: string[] = [];
+  for (const key of keys) {
+    try {
+      await getStorage().delete(key);
+      done.push(key);
+    } catch (error) {
+      console.warn(`[storage] delete failed, left for the purge job: ${(error as Error).message}`);
+    }
+  }
+  if (done.length > 0) {
+    await db
+      .delete(schema.storageDeletions)
+      .where(inArray(schema.storageDeletions.objectKey, done));
+  }
+}
+
+/** The public URL for a stored key (null-safe). */
+export function publicUrl(key: string | null | undefined): string | null {
+  if (!key) return null;
+  try {
+    return getStorage().publicUrl(key) || null;
+  } catch {
+    return null;
+  }
 }

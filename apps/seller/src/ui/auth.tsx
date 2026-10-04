@@ -68,11 +68,14 @@ export function AuthScreen({
   footer,
   note,
   back = true,
+  header,
 }: {
   children: ReactNode;
   footer?: ReactNode;
   note?: ReactNode;
   back?: boolean;
+  /** A fixed header above the form (onboarding); it handles the top inset itself. */
+  header?: ReactNode;
 }) {
   const keyboardVisible = useKeyboardVisible();
   const scroll = useRef<ScrollView>(null);
@@ -126,7 +129,8 @@ export function AuthScreen({
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={header ? ['bottom'] : ['top', 'bottom']}>
+      {header}
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <RevealContext.Provider value={revealApi}>
           <ScrollView
@@ -145,7 +149,7 @@ export function AuthScreen({
             }}
           >
             <View ref={content} collapsable={false}>
-              {back ? <BackButton /> : <View style={styles.backSpacer} />}
+              {header ? null : back ? <BackButton /> : <View style={styles.backSpacer} />}
               {children}
             </View>
           </ScrollView>
@@ -200,12 +204,16 @@ type FieldProps = TextInputProps & {
   label: string;
   error?: string | null;
   right?: ReactNode;
+  /** A fixed prefix inside the box (e.g. "+254", "KSh"). */
+  left?: ReactNode;
+  /** Muted text at the end of the label row (e.g. "Optional"). */
+  labelHint?: string;
   /** Shown under the field (e.g. password rules) and kept in view with it. */
   children?: ReactNode;
 };
 
 export const Field = forwardRef<TextInput, FieldProps>(function Field(
-  { label, error, right, children, style, onFocus, onBlur, ...input },
+  { label, error, right, left, labelHint, children, style, onFocus, onBlur, ...input },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
@@ -213,8 +221,12 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   const reveal = useContext(RevealContext);
   return (
     <View ref={block} collapsable={false} style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {labelHint ? <Text style={styles.labelHint}>{labelHint}</Text> : null}
+      </View>
       <View style={[styles.inputBox, focused && styles.inputFocused, !!error && styles.inputError]}>
+        {left ? <View style={styles.prefix}>{left}</View> : null}
         <TextInput
           ref={ref}
           accessibilityLabel={label}
@@ -433,6 +445,22 @@ const styles = StyleSheet.create({
 
   field: { marginTop: spacing.lg },
   label: { ...text('bodyStrong'), color: colors.text, marginBottom: spacing.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  labelHint: { ...text('body'), color: colors.textMuted },
+  prefix: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginLeft: -spacing.md,
+    marginRight: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+    borderRightWidth: sizes.borderWidth,
+    borderRightColor: colors.border,
+    borderTopLeftRadius: radii.lg,
+    borderBottomLeftRadius: radii.lg,
+  },
   // Fixed height: the thicker focus border grows inwards, so the centre line never moves.
   inputBox: {
     height: INPUT_HEIGHT,

@@ -1,4 +1,4 @@
-// Step 47, fix 3: after the right code the seller must land on the placeholder (signed in),
+// Step 47, fix 3: after the right code the seller must land in the app (signed in: onboarding step 1),
 // also after killing and reopening the app. Runs the real Better Auth Expo client (session
 // cookie in SecureStore) against a fake oda server, with React Native and Expo mocked.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -95,7 +95,7 @@ describe('after the right code', () => {
     expect(await authClient.getCookie()).toContain(`session_token=${TOKEN}`);
   });
 
-  it('opens on the placeholder, not Welcome', async () => {
+  it('opens on onboarding, not Welcome', async () => {
     const { authClient, authCall, gate } = await loadApp();
     await authCall(() => authClient.emailOtp.verifyEmail({ email: ME.email, otp: '482913' }));
 
@@ -103,7 +103,7 @@ describe('after the right code', () => {
     // that read it right after the code saw "signed out" and went to Welcome.
     expect(authClient.$store.atoms.session!.get().data).toBeNull();
 
-    expect(await gate()).toEqual({ to: '/start' });
+    expect(await gate()).toEqual({ to: '/onboarding/what-you-sell' });
   });
 
   it('stays signed in after the app is killed and reopened', async () => {
@@ -113,7 +113,7 @@ describe('after the right code', () => {
     );
     vi.resetModules(); // a fresh JS runtime; SecureStore survives
     app = await loadApp();
-    expect(await app.gate()).toEqual({ to: '/start' });
+    expect(await app.gate()).toEqual({ to: '/onboarding/what-you-sell' });
   });
 
   it('goes to Welcome without a session, and forgets a session the server rejects', async () => {

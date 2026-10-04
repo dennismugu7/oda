@@ -17,14 +17,28 @@ describe('startRoute', () => {
     expect(startRoute(false, null)).toEqual({ to: '/welcome' });
   });
 
-  it('sends a signed-in, verified seller on (placeholder until onboarding)', () => {
-    expect(startRoute(true, { kind: 'ok', me: me() })).toEqual({ to: '/start' });
+  it('sends a seller who is still setting up to the step they reached', () => {
+    expect(startRoute(true, { kind: 'ok', me: me() })).toEqual({
+      to: '/onboarding/what-you-sell',
+    });
+    expect(
+      startRoute(true, { kind: 'ok', me: me({ onboarding: { step: 4, done: false } }) }),
+    ).toEqual({ to: '/onboarding/first-product' });
+    expect(
+      startRoute(true, { kind: 'ok', me: me({ onboarding: { step: null, done: false } }) }),
+    ).toEqual({ to: '/onboarding/what-you-sell' });
+  });
+
+  it('sends a seller who finished onboarding on (placeholder until Home)', () => {
+    expect(
+      startRoute(true, { kind: 'ok', me: me({ onboarding: { step: null, done: true } }) }),
+    ).toEqual({ to: '/start' });
   });
 
   it('never sends a signed-in seller to the code screen (accounts exist only once verified)', () => {
     // Decision #49: the code screen is reached only from a sign-up attempt on this phone.
     expect(startRoute(true, { kind: 'ok', me: me({ emailVerified: false }) })).toEqual({
-      to: '/start',
+      to: '/onboarding/what-you-sell',
     });
   });
 

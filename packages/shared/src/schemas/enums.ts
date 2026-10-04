@@ -23,3 +23,14 @@ export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
 
 export const PRODUCT_STATUSES = ['available', 'sold_out', 'hidden'] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
+
+/** Where the seller sells today (onboarding step 2, decision #41). Orders the share buttons. */
+export const CHANNELS = [
+  'whatsapp',
+  'whatsapp_status',
+  'tiktok',
+  'instagram',
+  'facebook',
+  'market_stall',
+] as const;
+export type Channel = (typeof CHANNELS)[number];

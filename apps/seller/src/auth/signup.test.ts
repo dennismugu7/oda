@@ -154,7 +154,7 @@ describe('sign-up in progress on the phone', () => {
     expect(state.starts.map((s) => s.attemptId)).toEqual([undefined, 'attempt-1', undefined]);
   });
 
-  it('the right code clears the attempt; signing in with the typed password lands on the placeholder', async () => {
+  it('the right code clears the attempt; signing in with the typed password lands on onboarding', async () => {
     const app = await loadApp();
     const { data } = await app.startSignup(EMAIL, PASSWORD);
     const verified = await app.verifySignupCode(data!.attemptId, '482913');
@@ -167,7 +167,7 @@ describe('sign-up in progress on the phone', () => {
       app.authClient.signIn.email({ email: EMAIL, password: password! }),
     );
     expect(signedIn.error).toBeNull();
-    expect(await app.gate()).toEqual({ to: '/start' });
+    expect(await app.gate()).toEqual({ to: '/onboarding/what-you-sell' });
   });
 
   it('after a restart the password is gone (never stored): the seller signs in once', async () => {
