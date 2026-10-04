@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strayRootFiles } from '../../../scripts/check-repo-root.mjs';
+import { parseEnvList, publicUrlProblems } from './public-urls.mjs';
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const message = process.argv.slice(2).join(' ').trim();
@@ -19,6 +20,26 @@ if (!message) {
 const before = strayRootFiles();
 if (before.length > 0) {
   console.error(`Remove these from the repo root first: ${before.join(', ')}`);
+  process.exit(1);
+}
+
+// The update is built with the EAS "preview" environment: its URLs must be public https.
+const envList = spawnSync('pnpm', ['exec', 'eas', 'env:list', '--environment', 'preview'], {
+  cwd: app,
+  encoding: 'utf8',
+  shell: process.platform === 'win32',
+});
+if (envList.status !== 0) {
+  console.error(envList.stderr || envList.stdout);
+  console.error('Could not read the EAS "preview" environment; nothing was published.');
+  process.exit(1);
+}
+const problems = publicUrlProblems(parseEnvList(envList.stdout));
+if (problems.length > 0) {
+  for (const problem of problems) console.error(problem);
+  console.error(
+    'Fix the EAS "preview" environment (expo.dev → Environment variables); nothing was published.',
+  );
   process.exit(1);
 }
 

@@ -3,8 +3,14 @@ import { sql } from '@oda/db';
 import { getDb } from './db';
 import { serverEnv } from './env';
 
-/** Throws when the env is invalid or the database doesn't answer. */
+export class ConfigError extends Error {}
+
+/** Throws ConfigError when the env is invalid, or an error when the database doesn't answer. */
 export async function checkHealth(): Promise<void> {
-  serverEnv();
+  try {
+    serverEnv();
+  } catch (error) {
+    throw new ConfigError((error as Error).message);
+  }
   await getDb().execute(sql`select 1`);
 }
