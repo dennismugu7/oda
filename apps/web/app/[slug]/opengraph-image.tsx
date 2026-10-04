@@ -1,17 +1,20 @@
 // The shop's link-preview image (spec §4: WhatsApp, TikTok and Instagram show a rich
 // preview). 1200 × 630, drawn on the server with next/og: the shop's name and link on navy,
 // and up to three product covers. Fonts: Poppins from assets/fonts (OFL).
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { colors } from '@oda/ui-tokens';
-import { initials, loadShop, shopData, shopLink } from '@/server/storefront';
+import {
+  initials,
+  linkFontSize,
+  loadShop,
+  previewFonts,
+  shopData,
+  shopLink,
+} from '@/server/storefront';
 
 export const alt = 'A shop on oda';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-
-const font = (file: string) => readFile(join(process.cwd(), 'assets', 'fonts', file));
 
 function Photo({ src, width, height }: { src: string; width: number; height: number }) {
   return (
@@ -31,10 +34,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const shop = await loadShop(slug);
   const products = (await shopData(shop).catalog()).filter((p) => p.coverUrl).slice(0, 3);
   const link = shopLink(shop.slug).replace(/^https?:\/\//, '');
-  const [bold, medium] = await Promise.all([
-    font('Poppins_700Bold.ttf'),
-    font('Poppins_500Medium.ttf'),
-  ]);
 
   return new ImageResponse(
     <div
@@ -107,12 +106,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           style={{
             display: 'flex',
             alignSelf: 'flex-start',
-            fontSize: 28,
+            // One line always: long links get a smaller size (about 0.58 em per character).
+            fontSize: linkFontSize(link, products.length ? 470 : 1000),
             fontWeight: 500,
             color: '#fff',
             background: colors.navyRaised,
             borderRadius: 999,
             padding: '14px 28px',
+            whiteSpace: 'nowrap',
           }}
         >
           {link}
@@ -148,10 +149,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     </div>,
     {
       ...size,
-      fonts: [
-        { name: 'Poppins', data: bold, weight: 700, style: 'normal' },
-        { name: 'Poppins', data: medium, weight: 500, style: 'normal' },
-      ],
+      fonts: await previewFonts(),
     },
   );
 }

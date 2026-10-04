@@ -8,7 +8,10 @@ const config: NextConfig = {
   poweredByHeader: false,
   // The link-preview images read their fonts from disk at runtime (decision #59).
   // Keys are route globs, so the brackets of [slug] are escaped.
-  outputFileTracingIncludes: { '/\\[slug\\]/opengraph-image': ['./assets/fonts/*.ttf'] },
+  outputFileTracingIncludes: {
+    '/\\[slug\\]/opengraph-image': ['./assets/fonts/*.ttf'],
+    '/\\[slug\\]/p/\\[id\\]/opengraph-image': ['./assets/fonts/*.ttf'],
+  },
   reactStrictMode: true,
 };
 

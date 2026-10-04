@@ -40,3 +40,23 @@ export function whatsappLink(phone: string, shopName: string): string {
 export function takingOrders(shop: PublicShop): boolean {
   return !shop.isPaused && (shop.payNowAvailable || shop.acceptsPayOnDelivery);
 }
+
+/** Preview images: the largest size up to 28 px at which `link` fits on one line in `width` px. */
+export function linkFontSize(link: string, width: number): number {
+  return Math.max(16, Math.min(28, Math.floor(width / (link.length * 0.58))));
+}
+
+/** Preview images draw with Poppins 700/500 (assets/fonts, OFL; traced in next.config.ts). */
+export async function previewFonts() {
+  const { readFile } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  const read = (file: string) => readFile(join(process.cwd(), 'assets', 'fonts', file));
+  const [bold, medium] = await Promise.all([
+    read('Poppins_700Bold.ttf'),
+    read('Poppins_500Medium.ttf'),
+  ]);
+  return [
+    { name: 'Poppins', data: bold, weight: 700 as const, style: 'normal' as const },
+    { name: 'Poppins', data: medium, weight: 500 as const, style: 'normal' as const },
+  ];
+}

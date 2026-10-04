@@ -154,6 +154,8 @@ export function publicRepo(db: Db) {
               position: ph.position,
               width: ph.width,
               height: ph.height,
+              url: publicUrl(ph.objectKey),
+              thumbUrl: publicUrl(ph.thumbKey),
             })),
         }));
       }
