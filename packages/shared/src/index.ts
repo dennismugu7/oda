@@ -8,3 +8,4 @@ export * from './onboarding';
 export * from './share';
 export * from './slug';
 export * from './schemas';
+export * from './catalogue';
