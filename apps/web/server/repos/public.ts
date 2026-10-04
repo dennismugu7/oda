@@ -1,6 +1,22 @@
 import 'server-only';
-import { and, asc, desc, eq, inArray, isNull, ne, type SQL } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
+import { productBadges, type OrderSource, type StoreQuery } from '@oda/shared';
+import { publicUrl } from '../uploads';
 import { checkId, one } from './util';
 
 // Buyer-facing shop pages: only public fields, never buyer data, the seller's email or
@@ -46,6 +62,9 @@ declare const visible: unique symbol;
 export type PublicShop = Awaited<ReturnType<typeof selectShop>>[number] & {
   /** Pay-now needs pay-before on and an active payment account (spec §5.2 step 5). */
   payNowAvailable: boolean;
+  /** "M-Pesa till checked by oda": the active account was verified by an admin. */
+  mpesaChecked: boolean;
+  logoUrl: string | null;
   readonly [visible]: true;
 };
 
@@ -67,10 +86,15 @@ export function publicRepo(db: Db) {
       const row = await shopBy(eq(t.shops.slug, normalized));
       if (row) {
         const [active] = await db
-          .select({ id: t.paymentAccounts.id })
+          .select({ id: t.paymentAccounts.id, status: t.paymentAccounts.verificationStatus })
           .from(t.paymentAccounts)
           .where(and(eq(t.paymentAccounts.shopId, row.id), eq(t.paymentAccounts.isActive, true)));
-        const shop = { ...row, payNowAvailable: row.acceptsPayBefore && !!active } as PublicShop;
+        const shop = {
+          ...row,
+          payNowAvailable: row.acceptsPayBefore && !!active,
+          mpesaChecked: active?.status === 'verified',
+          logoUrl: publicUrl(row.logoPath),
+        } as PublicShop;
         return { kind: 'shop', shop };
       }
       const [old] = await db
@@ -135,12 +159,131 @@ export function publicRepo(db: Db) {
       }
 
       return {
+        /** Visible categories that have a listed product, in the seller's order (spec §5.6). */
         async categories() {
+          const hasProduct = db
+            .select({ one: sql`1` })
+            .from(t.products)
+            .where(and(listed, eq(t.products.categoryId, t.categories.id)));
           return db
             .select({ id: t.categories.id, name: t.categories.name })
             .from(t.categories)
-            .where(and(eq(t.categories.shopId, shop.id), eq(t.categories.isVisible, true)))
+            .where(
+              and(
+                eq(t.categories.shopId, shop.id),
+                eq(t.categories.isVisible, true),
+                exists(hasProduct),
+              ),
+            )
             .orderBy(asc(t.categories.position), asc(t.categories.createdAt));
+        },
+
+        /**
+         * Shop home and search (spec §6.1): listed products filtered by category, text, size and
+         * max price, sorted (default: the seller's order, newest first), as cards with the
+         * cover thumbnail and one badge each.
+         */
+        async catalog(query: StoreQuery = {}, now = new Date()) {
+          const conditions: SQL[] = [listed!];
+          if (query.c) conditions.push(eq(t.products.categoryId, query.c));
+          if (query.max) conditions.push(lte(t.products.price, query.max));
+          if (query.size) conditions.push(sql`${query.size} = any(${t.products.sizes})`);
+          if (query.q) {
+            // Escape LIKE's wildcards so "50%" searches for "50%" (Postgres' default escape is \).
+            const like = `%${query.q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+            conditions.push(or(ilike(t.products.name, like), ilike(t.products.description, like))!);
+          }
+          const order =
+            query.sort === 'popular'
+              ? [desc(t.products.unitsSold), desc(t.products.createdAt)]
+              : query.sort === 'newest'
+                ? [desc(t.products.createdAt)]
+                : query.sort === 'price_asc'
+                  ? [asc(t.products.price), desc(t.products.createdAt)]
+                  : query.sort === 'price_desc'
+                    ? [desc(t.products.price), desc(t.products.createdAt)]
+                    : [asc(t.products.position), desc(t.products.createdAt)];
+          const rows = await db
+            .select(productColumns)
+            .from(t.products)
+            .where(and(...conditions))
+            .orderBy(...order);
+          // Badges compare against the whole shop, not just the filtered rows.
+          const all = await db
+            .select({
+              id: t.products.id,
+              status: t.products.status,
+              unitsSold: t.products.unitsSold,
+              createdAt: t.products.createdAt,
+            })
+            .from(t.products)
+            .where(listed);
+          const badges = productBadges(all, now);
+          const covers = rows.length
+            ? await db
+                .select({
+                  productId: t.productPhotos.productId,
+                  thumbKey: t.productPhotos.thumbKey,
+                })
+                .from(t.productPhotos)
+                .where(
+                  and(
+                    inArray(
+                      t.productPhotos.productId,
+                      rows.map((r) => r.id),
+                    ),
+                    eq(t.productPhotos.position, 0),
+                  ),
+                )
+            : [];
+          const coverOf = new Map(covers.map((c) => [c.productId, publicUrl(c.thumbKey)]));
+          return rows.map((p) => ({
+            id: p.id,
+            categoryId: p.categoryId,
+            name: p.name,
+            price: p.price,
+            compareAtPrice: p.compareAtPrice,
+            status: p.status,
+            /** "+" quick-adds only without sizes and colours (spec §6.1). */
+            hasOptions: p.sizes.length > 0 || (p.colours as unknown[]).length > 0,
+            sizes: p.sizes,
+            ratingAvg: p.ratingAvg,
+            ratingCount: p.ratingCount,
+            badge: badges.get(p.id) ?? null,
+            coverUrl: coverOf.get(p.id) ?? null,
+          }));
+        },
+
+        /** The cart's check: current name, price, status and options of these products. */
+        async lookup(productIds: string[]) {
+          if (productIds.length === 0) return [];
+          const rows = await db
+            .select(productColumns)
+            .from(t.products)
+            .where(and(listed, inArray(t.products.id, productIds)));
+          const products = await withPhotos(rows);
+          return products.map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            compareAtPrice: p.compareAtPrice,
+            status: p.status,
+            sizes: p.sizes,
+            colours: p.colours,
+            categoryId: p.categoryId,
+            coverUrl: p.photos[0] ? publicUrl(p.photos[0].thumbKey) : null,
+          }));
+        },
+
+        /** One visit (already de-duplicated per day by the oda_v cookie). */
+        async recordVisit(day: string, source: OrderSource) {
+          await db
+            .insert(t.shopVisitsDaily)
+            .values({ shopId: shop.id, day, source, visits: 1 })
+            .onConflictDoUpdate({
+              target: [t.shopVisitsDaily.shopId, t.shopVisitsDaily.day, t.shopVisitsDaily.source],
+              set: { visits: sql`${t.shopVisitsDaily.visits} + 1` },
+            });
         },
 
         async deliveryAreas() {
