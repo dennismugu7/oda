@@ -43,7 +43,10 @@ export default function Home() {
   const download = downloadUrl();
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-10 pb-8">
-      <p aria-label="oda" className="text-[44px] leading-none font-bold tracking-[-2px] text-navy">
+      <p
+        aria-label="oda"
+        className="text-[44px] leading-none font-bold tracking-[-2px] text-primary"
+      >
         oda<span className="text-green-bright">.</span>
       </p>
 

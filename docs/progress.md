@@ -11,6 +11,7 @@ Newest entries at the top.
 - **Tried locally** (demo seed run twice: second run added nothing): shop page at 390 px, quick add → green tick + cart bar (kept after reload), favourites, search, bad `?c=` ignored, no browser errors; preview image renders; landing, privacy, terms, 404. Fixed on the way: links nested in links (hydration error) and the visit beacon firing twice in development.
 - **Design comparison (01):** same header, search, chips, grid, badges, heart, tick/"+", cart bar; design-changes applied (no "order in 3h" banner, no stock badges, WhatsApp Chat in the header); "Popular this week / See all" heading → the category name or "All products"; the filter button on the search box comes with the search page (CP3); the delivery line shows only when the shop has delivery areas or pickup.
 - **Not yet built:** product page, cart page, search filters (CP3): product taps and "View cart" show the 404 until then.
+- **CI caught what `check:all` didn't:** the M0 Playwright smoke test expected the orange wordmark on `/`; the landing draft had made it navy. The landing keeps the brand orange (as the app icon), the test now covers the landing (store placeholder, support email) and is renamed `e2e/landing.spec.ts`. **`check:all` gains a last step, web build + Playwright (`pnpm test:e2e`)**, so it runs everything CI runs (CLAUDE.md updated).
 
 **Review stop A — owner steps**
 

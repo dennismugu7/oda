@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('placeholder page renders in Poppins and brand colours', async ({ page }) => {
+test('landing page renders in Poppins and brand colours', async ({ page }) => {
   await page.goto('/');
   const heading = page.getByRole('heading', { name: 'Turn your posts into orders.' });
   await expect(heading).toBeVisible();
@@ -12,9 +12,13 @@ test('placeholder page renders in Poppins and brand colours', async ({ page }) =
   const logoColour = await logo.evaluate((el) => getComputedStyle(el).color);
   expect(logoColour).toBe('rgb(217, 74, 39)'); // #D94A27
 
+  // Without APP_DOWNLOAD_URL the store button is a placeholder (decision #59).
+  await expect(page.getByText('Coming soon to Google Play')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'support@mugu-labs.com' })).toBeVisible();
+
   // Saved for side-by-side comparison with design/ (not a pixel baseline: fonts render differently per OS).
   await page.screenshot({
-    path: test.info().outputPath('placeholder-390x844.png'),
+    path: test.info().outputPath('landing-390x844.png'),
     fullPage: true,
   });
 });
