@@ -190,6 +190,7 @@ export function CheckRow({
   title,
   subtitle,
   icon,
+  iconNode,
   tint,
   iconColor,
   checked,
@@ -198,6 +199,8 @@ export function CheckRow({
   title: string;
   subtitle?: string;
   icon: IconName;
+  /** Replaces `icon` (e.g. a brand mark). */
+  iconNode?: ReactNode;
   tint: string;
   iconColor: string;
   checked: boolean;
@@ -212,7 +215,7 @@ export function CheckRow({
       style={({ pressed }) => [styles.row, checked && styles.rowChecked, pressed && styles.pressed]}
     >
       <View style={[styles.rowIcon, { backgroundColor: tint }]}>
-        <MaterialCommunityIcons name={icon} size={22} color={iconColor} />
+        {iconNode ?? <MaterialCommunityIcons name={icon} size={22} color={iconColor} />}
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{title}</Text>

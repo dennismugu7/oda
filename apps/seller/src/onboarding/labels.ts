@@ -28,6 +28,8 @@ export const CHANNEL_OPTIONS: {
   title: string;
   subtitle?: string;
   icon: IconName;
+  /** Shown instead of `icon`: an official brand mark, or WhatsApp's Status ring (#55). */
+  mark?: 'whatsapp' | 'instagram' | 'facebook' | 'status';
   tint: string;
   iconColor: string;
 }[] = [
@@ -36,6 +38,7 @@ export const CHANNEL_OPTIONS: {
     title: 'WhatsApp chats',
     subtitle: 'Groups and direct messages',
     icon: 'chat-outline',
+    mark: 'whatsapp',
     tint: colors.greenTint,
     iconColor: colors.green,
   },
@@ -43,6 +46,7 @@ export const CHANNEL_OPTIONS: {
     value: 'whatsapp_status',
     title: 'WhatsApp Status',
     icon: 'circle-outline',
+    mark: 'status',
     tint: colors.greenTint,
     iconColor: colors.green,
   },
@@ -57,6 +61,7 @@ export const CHANNEL_OPTIONS: {
     value: 'instagram',
     title: 'Instagram',
     icon: 'instagram',
+    mark: 'instagram',
     tint: colors.peach,
     iconColor: colors.primary,
   },
@@ -64,6 +69,7 @@ export const CHANNEL_OPTIONS: {
     value: 'facebook',
     title: 'Facebook groups',
     icon: 'account-group-outline',
+    mark: 'facebook',
     tint: colors.infoTint,
     iconColor: colors.info,
   },

@@ -9,6 +9,7 @@ import { CHANNEL_OPTIONS } from '@/onboarding/labels';
 import { ONBOARDING_ROUTES } from '@/onboarding/steps';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, FormMessage } from '@/ui/auth';
+import { BrandIcon, StatusRing } from '@/ui/brandIcons';
 import { CheckRow, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, spacing, text } from '@/theme';
 
@@ -60,6 +61,13 @@ function Step({ state }: { state: OnboardingState }) {
             title={option.title}
             subtitle={option.subtitle}
             icon={option.icon}
+            iconNode={
+              option.mark === 'status' ? (
+                <StatusRing size={24} />
+              ) : option.mark ? (
+                <BrandIcon brand={option.mark} size={24} />
+              ) : undefined
+            }
             tint={option.tint}
             iconColor={option.iconColor}
             checked={!startingOut && channels.includes(option.value)}
