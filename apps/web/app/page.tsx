@@ -1,32 +1,104 @@
-// Placeholder landing page for M0. The real landing page ("what oda is" + Get the app) is M4.
-export default function Home() {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-12 pb-6">
-      <div className="flex flex-col items-center gap-3 pt-8 text-center">
-        <p
-          aria-label="oda"
-          className="text-[64px] leading-none font-bold tracking-[-3px] text-primary"
-        >
-          oda<span className="text-green-bright">.</span>
-        </p>
-        <p className="text-title font-medium text-text-secondary">Your free shop link</p>
-      </div>
+// Landing page `/` (M4; wording drafted for the owner's review at review stop A). The store
+// button is config-driven: with APP_DOWNLOAD_URL set (a public https link) it becomes a real
+// download button; without it, a "Coming soon to Google Play" placeholder (decision #59).
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { isPublicBaseUrl } from '@oda/shared';
 
-      <section className="mt-12 rounded-xl bg-primary-tint p-6">
-        <h1 className="text-headline text-navy">Turn your posts into orders.</h1>
-        <p className="mt-2 text-body text-text-secondary">
-          Share one link on WhatsApp, TikTok and Instagram. Buyers pay you directly on M-Pesa.
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'oda · Turn your posts into orders',
+  description:
+    'A free shop link for WhatsApp, TikTok and Instagram sellers in Kenya. Buyers order in a few taps and pay you directly on M-Pesa.',
+};
+
+const SUPPORT_EMAIL = 'support@mugu-labs.com';
+
+const POINTS = [
+  {
+    title: 'Ready in minutes',
+    body: 'Add a photo and a price, and your shop link is ready to share.',
+  },
+  {
+    title: 'Orders, not DMs',
+    body: 'Buyers pick the size, colour and delivery themselves. You get a clear order.',
+  },
+  {
+    title: 'Your money comes straight to you',
+    body: 'Buyers pay your till, Pochi la Biashara or Paybill. oda never touches your money.',
+  },
+  {
+    title: 'Free to start',
+    body: 'One link for your WhatsApp Status, TikTok bio and Instagram.',
+  },
+];
+
+function downloadUrl(): string | null {
+  const url = process.env.APP_DOWNLOAD_URL?.trim();
+  return url && isPublicBaseUrl(url) ? url : null;
+}
+
+export default function Home() {
+  const download = downloadUrl();
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-10 pb-8">
+      <p aria-label="oda" className="text-[44px] leading-none font-bold tracking-[-2px] text-navy">
+        oda<span className="text-green-bright">.</span>
+      </p>
+
+      <section className="mt-10">
+        <h1 className="text-display text-navy">Turn your posts into orders.</h1>
+        <p className="mt-3 text-subtitle font-normal text-text-secondary">
+          A free shop link for WhatsApp, TikTok and Instagram. Buyers order in a few taps and pay
+          you directly on M-Pesa.
         </p>
       </section>
 
-      <div className="mt-auto flex flex-col gap-3 pt-8">
-        <span className="flex h-12 items-center justify-center rounded-pill bg-primary text-button text-text-on-primary">
-          Coming soon to Android
-        </span>
-        <span className="flex h-12 items-center justify-center rounded-pill bg-green-tint text-body-strong text-green">
-          Pay the seller directly on M-Pesa
-        </span>
+      <div className="mt-8">
+        {download ? (
+          <a
+            href={download}
+            className="flex h-14 items-center justify-center rounded-pill bg-primary text-button text-text-on-primary"
+          >
+            Get the oda app
+          </a>
+        ) : (
+          <p
+            aria-disabled="true"
+            className="flex h-14 items-center justify-center rounded-pill bg-surface-muted text-button text-text-secondary"
+          >
+            Coming soon to Google Play
+          </p>
+        )}
+        <p className="mt-2 text-center text-small text-text-muted">For Android phones.</p>
       </div>
+
+      <ul className="mt-10 space-y-3">
+        {POINTS.map((p) => (
+          <li key={p.title} className="rounded-xl bg-background p-5">
+            <h2 className="text-subtitle text-navy">{p.title}</h2>
+            <p className="mt-1 text-body text-text-secondary">{p.body}</p>
+          </li>
+        ))}
+      </ul>
+
+      <footer className="mt-auto pt-12 text-center text-small text-text-secondary">
+        <p>
+          Questions?{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-navy underline">
+            {SUPPORT_EMAIL}
+          </a>
+        </p>
+        <p className="mt-2 flex justify-center gap-4">
+          <Link href="/privacy" className="underline">
+            Privacy
+          </Link>
+          <Link href="/terms" className="underline">
+            Terms
+          </Link>
+        </p>
+      </footer>
     </main>
   );
 }

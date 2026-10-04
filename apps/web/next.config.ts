@@ -6,6 +6,9 @@ const config: NextConfig = {
   // pg is Node-only; keep it out of the bundle.
   serverExternalPackages: ['pg'],
   poweredByHeader: false,
+  // The link-preview images read their fonts from disk at runtime (decision #59).
+  // Keys are route globs, so the brackets of [slug] are escaped.
+  outputFileTracingIncludes: { '/\\[slug\\]/opengraph-image': ['./assets/fonts/*.ttf'] },
   reactStrictMode: true,
 };
 
