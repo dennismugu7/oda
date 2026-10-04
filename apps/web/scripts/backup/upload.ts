@@ -14,7 +14,11 @@ import {
 } from './retention';
 
 const mb = (bytes?: number) =>
-  bytes === undefined ? '?' : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  bytes === undefined
+    ? '?'
+    : bytes < 1024 * 1024
+      ? `${Math.ceil(bytes / 1024)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 async function main() {
   const file = process.argv[2];

@@ -1,4 +1,4 @@
-import { checkHealth } from '@/server/health';
+import { checkHealth, ConfigError } from '@/server/health';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +12,14 @@ export async function GET() {
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch (error) {
+    if (error instanceof ConfigError) {
+      // Names the variables (zod's messages), never their values.
+      console.error('[health] configuration is invalid', error.message);
+      return Response.json(
+        { ok: false, config: 'invalid', commit },
+        { status: 503, headers: { 'cache-control': 'no-store' } },
+      );
+    }
     console.error('[health] database check failed', error);
     return Response.json(
       { ok: false, db: 'down', commit },

@@ -1,8 +1,9 @@
-// Onboarding step 6, "Your shop is live" (design 14, with docs/design-changes.md): the link
-// with Copy, share buttons in the order of the seller's channels (each link tagged ?s=…),
-// a ready-made post in English or Swahili ("Try another"), and the 7-item "Finish your
-// shop" checklist. "See what buyers see" stays hidden until M4 (decision #41 b). Sharing is
-// text + link only in M2 (decision #41 c). Done finishes onboarding.
+// Onboarding step 6, "Your shop is live" (design 14, with docs/design-changes.md and the
+// owner's review stop B changes, Step 58): the link with Copy, share buttons in the order
+// of the seller's channels that open their app directly (src/onboarding/shareActions.ts),
+// the "Finish setting up" checklist near the top, a ready-made post the seller can edit
+// (EN/SW, "Try another"; the shop link is always included, tagged ?s=… per button), and
+// "Go to my shop". "See what buyers see" stays hidden until M4 (decision #41 b).
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
@@ -10,63 +11,111 @@ import {
   captionCount,
   displayUrl,
   formatKsh,
+  postForShare,
   SHARE_LABELS,
   shareButtons,
-  shareUrl,
   type CaptionLanguage,
-  type FinishItem,
   type ShareTarget,
 } from '@oda/shared';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onboardingApi } from '@/onboarding/api';
+import Svg, { Circle } from 'react-native-svg';
+import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import type { IconName } from '@/onboarding/labels';
+import { shareTo, type ShareDeps } from '@/onboarding/shareActions';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
-import { FormMessage } from '@/ui/auth';
+import { Button, FormMessage } from '@/ui/auth';
+import { WHATSAPP_GREEN } from '@/ui/brand';
 import { StepStatus } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
 
-const SHARE_ICONS: Record<ShareTarget, IconName> = {
+// Placeholder glyphs until the official brand icons are added (decision #55).
+const SHARE_ICONS: Record<Exclude<ShareTarget, 'whatsapp_status'>, IconName> = {
   whatsapp: 'whatsapp',
-  whatsapp_status: 'circle-slice-8',
   tiktok: 'music-note',
   instagram: 'instagram',
   facebook: 'facebook',
   more: 'dots-horizontal',
 };
 
-const ITEM_HELP: Partial<Record<FinishItem, string>> = {
-  shared_link: 'Use the share buttons above. Buyers order from your link.',
-  tested_whatsapp: 'Opens your own WhatsApp chat link, the same one buyers tap.',
+const phoneShare: ShareDeps = {
+  openUrl: (url) =>
+    Linking.openURL(url).then(
+      () => true,
+      () => false,
+    ),
+  shareSheet: (message) =>
+    Share.share({ message }).then(
+      (result) => result.action === Share.sharedAction,
+      () => false,
+    ),
+  copy: async (value) => {
+    await Clipboard.setStringAsync(value);
+  },
 };
 
 export default function ShopLive() {
-  const { state, error: loadError, retry } = useOnboarding();
+  const { state, error, retry } = useOnboarding();
+  if (!state?.shop || !state.checklist)
+    return <StepStatus step={6} error={error} onRetry={retry} />;
+  return <Step state={state} />;
+}
+
+/** WhatsApp's Status ring, in WhatsApp green (not a logo). */
+function StatusRing({ size = 26 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26" accessibilityElementsHidden>
+      <Circle
+        cx={13}
+        cy={13}
+        r={10.5}
+        stroke={WHATSAPP_GREEN}
+        strokeWidth={2.4}
+        strokeDasharray="5.2 2.6"
+        fill="none"
+      />
+      <Circle cx={13} cy={13} r={5} fill={WHATSAPP_GREEN} />
+    </Svg>
+  );
+}
+
+function Step({ state }: { state: OnboardingState }) {
+  const shop = state.shop!;
+  const checklist = state.checklist!;
+  const product = state.product;
   const { busy, error, submit, setError } = useSubmit();
   const insets = useSafeAreaInsets();
   const [language, setLanguage] = useState<CaptionLanguage>('en');
   const [index, setIndex] = useState(0);
+  const [edited, setEdited] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  if (!state?.shop || !state.checklist) {
-    return <StepStatus step={6} error={loadError} onRetry={retry} />;
-  }
-  const { shop, product, checklist } = state;
   const base = shop.url.slice(0, shop.url.length - shop.slug.length - 1);
   const cover = product?.photos[0];
-
-  function post(target: ShareTarget) {
-    return caption(language, index, {
-      shop: shop.name,
-      product: product?.name ?? 'new stock',
-      price: product?.price ?? 0,
-      link: shareUrl(base, shop.slug, target),
-    });
-  }
+  const template = caption(language, index, {
+    shop: shop.name,
+    product: product?.name ?? 'new stock',
+    price: product?.price ?? 0,
+    link: shop.url,
+  });
+  const postText = edited ?? template;
+  const linkMissing = postForShare(postText, base, shop.slug, 'more').linkAdded;
 
   async function tick(item: 'shared_link' | 'tested_whatsapp') {
     if (checklist.items.find((i) => i.id === item)?.done) return;
@@ -75,26 +124,11 @@ export default function ShopLive() {
   }
 
   async function share(target: ShareTarget) {
-    const message = post(target);
-    try {
-      if (target === 'whatsapp') {
-        // Straight into WhatsApp's chat picker; without WhatsApp, the share sheet below.
-        const opened = await Linking.openURL(
-          `whatsapp://send?text=${encodeURIComponent(message)}`,
-        ).then(
-          () => true,
-          () => false,
-        );
-        if (opened) {
-          await tick('shared_link');
-          return;
-        }
-      }
-      const result = await Share.share({ message });
-      if (result.action === Share.sharedAction) await tick('shared_link');
-    } catch {
-      setError("Couldn't open sharing on this phone. Copy the link instead.");
-    }
+    setError(null);
+    const { message } = postForShare(postText, base, shop.slug, target);
+    const outcome = await shareTo(target, message, phoneShare);
+    setNotice(outcome.notice);
+    if (outcome.shared) await tick('shared_link');
   }
 
   async function copy() {
@@ -104,12 +138,31 @@ export default function ShopLive() {
   }
 
   async function testWhatsApp() {
-    try {
-      await Linking.openURL(`https://wa.me/${shop.whatsappPhone.replace(/^\+/, '')}`);
-      await tick('tested_whatsapp');
-    } catch {
-      setError("Couldn't open WhatsApp on this phone.");
+    const opened = await phoneShare.openUrl(
+      `https://wa.me/${shop.whatsappPhone.replace(/^\+/, '')}`,
+    );
+    if (opened) await tick('tested_whatsapp');
+    else setError("Couldn't open WhatsApp on this phone.");
+  }
+
+  /** EN/SW and "Try another" replace the text; ask first when the seller edited it. */
+  function changeTemplate(apply: () => void) {
+    if (edited === null || edited === template) {
+      setEdited(null);
+      apply();
+      return;
     }
+    Alert.alert('Replace your text?', 'Your changes to the post will be lost.', [
+      { text: 'Keep my text', style: 'cancel' },
+      {
+        text: 'Replace',
+        style: 'destructive',
+        onPress: () => {
+          setEdited(null);
+          apply();
+        },
+      },
+    ]);
   }
 
   async function done() {
@@ -120,11 +173,19 @@ export default function ShopLive() {
   const buttons = shareButtons(shop.channels);
   const shown = displayUrl(base, shop.slug);
   const slash = shown.lastIndexOf('/');
+  // The WhatsApp test first: it is the one buyers depend on.
+  const items = [...checklist.items].sort(
+    (a, b) => Number(b.id === 'tested_whatsapp') - Number(a.id === 'tested_whatsapp'),
+  );
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={[styles.hero, { paddingTop: insets.top + spacing.sm }]}>
           <View style={styles.heroTop}>
             <View style={styles.heroSide} />
@@ -132,7 +193,14 @@ export default function ShopLive() {
               oda<Text style={styles.logoDot}>.</Text>
             </Text>
             <View style={[styles.heroSide, styles.heroRight]}>
-              <Pressable accessibilityRole="button" hitSlop={12} onPress={done} disabled={busy}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Done, go to my shop"
+                hitSlop={12}
+                onPress={done}
+                disabled={busy}
+                style={styles.doneButton}
+              >
                 <Text style={styles.done}>Done</Text>
               </Pressable>
             </View>
@@ -178,23 +246,101 @@ export default function ShopLive() {
                     <View
                       style={[
                         styles.shareCircle,
-                        i === 0 && styles.shareCircleMain,
+                        i === 0 && target === 'whatsapp' && styles.shareCircleMain,
                         pressed && styles.pressed,
                       ]}
                     >
-                      <MaterialCommunityIcons
-                        name={SHARE_ICONS[target]}
-                        size={26}
-                        color={i === 0 ? colors.textOnNavy : colors.navy}
-                      />
+                      {target === 'whatsapp_status' ? (
+                        <StatusRing />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={SHARE_ICONS[target]}
+                          size={26}
+                          color={i === 0 && target === 'whatsapp' ? colors.textOnNavy : colors.navy}
+                        />
+                      )}
                     </View>
-                    <Text style={[styles.shareLabel, i === 0 && styles.shareLabelMain]}>
+                    <Text
+                      style={[styles.shareLabel, i === 0 && styles.shareLabelMain]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.6}
+                      maxFontSizeMultiplier={1.4}
+                    >
                       {SHARE_LABELS[target]}
                     </Text>
                   </>
                 )}
               </Pressable>
             ))}
+          </View>
+          {notice ? (
+            <FormMessage tone="info" revealKey={notice}>
+              {notice}
+            </FormMessage>
+          ) : null}
+
+          <View style={styles.card}>
+            <View style={styles.finishHead}>
+              <Text accessibilityRole="header" style={styles.finishTitle}>
+                Finish setting up
+              </Text>
+              <View style={styles.countPill}>
+                <Text style={styles.countText}>
+                  {checklist.done} of {checklist.total}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={styles.track}
+              accessibilityRole="progressbar"
+              accessibilityLabel={`${checklist.done} of ${checklist.total} done`}
+            >
+              <View
+                style={[
+                  styles.trackFill,
+                  { width: `${(checklist.done / checklist.total) * 100}%` },
+                ]}
+              />
+            </View>
+            {items.map((item, i) => {
+              const test = item.id === 'tested_whatsapp' && !item.done;
+              return (
+                <View
+                  key={item.id}
+                  style={[styles.item, i > 0 && styles.itemDivider, test && styles.itemFeatured]}
+                  accessibilityLabel={`${item.label}: ${item.done ? 'done' : 'not yet'}`}
+                >
+                  <View style={[styles.itemMark, item.done && styles.itemMarkDone]}>
+                    {item.done ? (
+                      <Feather name="check" size={14} color={colors.textOnNavy} />
+                    ) : null}
+                  </View>
+                  <View style={styles.itemBody}>
+                    <Text style={[styles.itemLabel, item.done && styles.itemLabelDone]}>
+                      {item.label}
+                    </Text>
+                    {test ? (
+                      <>
+                        <Text style={styles.itemHelp}>
+                          See what buyers see when they tap Chat on WhatsApp.
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={testWhatsApp}
+                          style={({ pressed }) => [styles.itemButton, pressed && styles.pressed]}
+                        >
+                          <Text style={styles.itemButtonText}>Open WhatsApp</Text>
+                        </Pressable>
+                      </>
+                    ) : null}
+                    {item.id === 'shared_link' && !item.done ? (
+                      <Text style={styles.itemHelp}>Use the share buttons above.</Text>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
           </View>
 
           <View style={styles.card}>
@@ -218,18 +364,25 @@ export default function ShopLive() {
                   </Text>
                 </View>
               </View>
-              <View style={styles.postText}>
+              <View style={styles.postHead}>
                 <Text style={styles.postTitle}>Ready-made post</Text>
-                <Text style={styles.postBody} selectable>
-                  {caption(language, index, {
-                    shop: shop.name,
-                    product: product?.name ?? 'new stock',
-                    price: product?.price ?? 0,
-                    link: shown,
-                  })}
-                </Text>
+                <Text style={styles.postHint}>Edit it before you share, if you like.</Text>
               </View>
             </View>
+            <TextInput
+              accessibilityLabel="Ready-made post"
+              value={postText}
+              onChangeText={setEdited}
+              multiline
+              maxLength={1000}
+              textAlignVertical="top"
+              style={styles.postInput}
+            />
+            {linkMissing ? (
+              <Text style={styles.linkWarning}>
+                Your shop link isn&apos;t in the text: we&apos;ll add it at the end when you share.
+              </Text>
+            ) : null}
             <View style={styles.postActions}>
               <View style={styles.langToggle} accessibilityRole="radiogroup">
                 {(['en', 'sw'] as const).map((lang) => (
@@ -238,7 +391,7 @@ export default function ShopLive() {
                     accessibilityRole="radio"
                     accessibilityState={{ selected: language === lang }}
                     accessibilityLabel={lang === 'en' ? 'English' : 'Swahili'}
-                    onPress={() => setLanguage(lang)}
+                    onPress={() => lang !== language && changeTemplate(() => setLanguage(lang))}
                     style={[styles.lang, language === lang && styles.langOn]}
                   >
                     <Text style={[styles.langText, language === lang && styles.langTextOn]}>
@@ -249,7 +402,9 @@ export default function ShopLive() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setIndex((n) => (n + 1) % captionCount(language))}
+                onPress={() =>
+                  changeTemplate(() => setIndex((n) => (n + 1) % captionCount(language)))
+                }
                 style={styles.another}
                 hitSlop={8}
               >
@@ -258,58 +413,8 @@ export default function ShopLive() {
               </Pressable>
             </View>
           </View>
-
-          <View style={styles.card}>
-            <View style={styles.finishHead}>
-              <Text style={styles.finishTitle}>Finish your shop</Text>
-              <View style={styles.countPill}>
-                <Text style={styles.countText}>
-                  {checklist.done} of {checklist.total}
-                </Text>
-              </View>
-            </View>
-            <View
-              style={styles.track}
-              accessibilityRole="progressbar"
-              accessibilityLabel={`${checklist.done} of ${checklist.total} done`}
-            >
-              <View
-                style={[
-                  styles.trackFill,
-                  { width: `${(checklist.done / checklist.total) * 100}%` },
-                ]}
-              />
-            </View>
-            {checklist.items.map((item, i) => (
-              <View
-                key={item.id}
-                style={[styles.item, i > 0 && styles.itemDivider]}
-                accessibilityLabel={`${item.label}: ${item.done ? 'done' : 'not yet'}`}
-              >
-                <View style={[styles.itemMark, item.done && styles.itemMarkDone]}>
-                  {item.done ? <Feather name="check" size={14} color={colors.textOnNavy} /> : null}
-                </View>
-                <View style={styles.itemBody}>
-                  <Text style={[styles.itemLabel, item.done && styles.itemLabelDone]}>
-                    {item.label}
-                  </Text>
-                  {!item.done && ITEM_HELP[item.id] ? (
-                    <Text style={styles.itemHelp}>{ITEM_HELP[item.id]}</Text>
-                  ) : null}
-                  {!item.done && item.id === 'tested_whatsapp' ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={testWhatsApp}
-                      style={({ pressed }) => [styles.itemButton, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.itemButtonText}>Open WhatsApp</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-            ))}
-          </View>
           {error ? <FormMessage>{error}</FormMessage> : null}
+          <Button title="Go to my shop" loading={busy} onPress={done} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -327,7 +432,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: radii.sheet + 8,
   },
   heroTop: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
-  heroSide: { width: 64 },
+  heroSide: { width: 72 },
   heroRight: { alignItems: 'flex-end' },
   logo: {
     flex: 1,
@@ -339,7 +444,8 @@ const styles = StyleSheet.create({
     color: colors.textOnNavy,
   },
   logoDot: { color: colors.greenBright },
-  done: { ...text('subtitle'), fontFamily: text('body').fontFamily, color: colors.textMuted },
+  doneButton: { minHeight: 44, justifyContent: 'center' },
+  done: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xl },
   liveCheck: {
     width: 46,
@@ -383,8 +489,8 @@ const styles = StyleSheet.create({
   copyText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
 
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, marginTop: spacing.lg },
-  shareRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  shareItem: { alignItems: 'center', gap: spacing.sm, width: 76 },
+  shareRow: { flexDirection: 'row', gap: spacing.xs },
+  shareItem: { flex: 1, alignItems: 'center', gap: spacing.sm },
   shareCircle: {
     width: 60,
     height: 60,
@@ -395,8 +501,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shareCircleMain: { backgroundColor: colors.green, borderColor: colors.green },
-  shareLabel: { ...text('body'), color: colors.textSecondary },
+  shareCircleMain: { backgroundColor: WHATSAPP_GREEN, borderColor: WHATSAPP_GREEN },
+  shareLabel: {
+    ...text('body'),
+    color: colors.textSecondary,
+    alignSelf: 'stretch',
+    textAlign: 'center',
+  },
   shareLabelMain: { fontFamily: 'Poppins_700Bold', color: colors.navy },
 
   card: {
@@ -407,55 +518,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  postRow: { flexDirection: 'row', gap: spacing.md },
-  mini: {
-    width: 112,
-    backgroundColor: colors.navy,
-    borderRadius: radii.lg,
-    padding: spacing.sm,
-    gap: spacing.sm,
-  },
-  miniShop: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
-  miniPhoto: {
-    height: 80,
-    borderRadius: radii.sm,
-    backgroundColor: colors.beige,
-    overflow: 'hidden',
-  },
-  miniImage: { width: '100%', height: '100%' },
-  miniOrder: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.xxs,
-    alignItems: 'center',
-  },
-  miniOrderText: { fontFamily: 'Poppins_700Bold', fontSize: 10, color: colors.navy },
-  postText: { flex: 1, gap: spacing.xs },
-  postTitle: { ...text('title'), fontSize: 18, color: colors.navy },
-  postBody: { ...text('body'), color: colors.textSecondary },
-  postActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  langToggle: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    padding: 3,
-  },
-  lang: {
-    minWidth: 48,
-    height: 38,
-    borderRadius: radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langOn: { backgroundColor: colors.navy },
-  langText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textSecondary },
-  langTextOn: { color: colors.textOnNavy },
-  another: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
-  anotherText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
-
   finishHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  finishTitle: { ...text('title'), color: colors.navy },
+  finishTitle: { ...text('title'), color: colors.navy, flex: 1 },
   countPill: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.pill,
@@ -467,6 +531,12 @@ const styles = StyleSheet.create({
   trackFill: { height: 6, borderRadius: 3, backgroundColor: colors.green },
   item: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
   itemDivider: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
+  itemFeatured: {
+    backgroundColor: colors.background,
+    borderRadius: radii.lg,
+    borderTopWidth: 0,
+    padding: spacing.md,
+  },
   itemMark: {
     width: 26,
     height: 26,
@@ -497,5 +567,63 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_700Bold',
     color: colors.textOnPrimary,
   },
+
+  postRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  mini: {
+    width: 96,
+    backgroundColor: colors.navy,
+    borderRadius: radii.lg,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  miniShop: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  miniPhoto: {
+    height: 64,
+    borderRadius: radii.sm,
+    backgroundColor: colors.beige,
+    overflow: 'hidden',
+  },
+  miniImage: { width: '100%', height: '100%' },
+  miniOrder: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
+    paddingVertical: spacing.xxs,
+    alignItems: 'center',
+  },
+  miniOrderText: { fontFamily: 'Poppins_700Bold', fontSize: 10, color: colors.navy },
+  postHead: { flex: 1, gap: spacing.xs },
+  postTitle: { ...text('title'), fontSize: 18, color: colors.navy },
+  postHint: { ...text('small'), color: colors.textSecondary },
+  postInput: {
+    ...text('body'),
+    lineHeight: undefined,
+    color: colors.text,
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  linkWarning: { ...text('small'), color: colors.warningText },
+  postActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  langToggle: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    padding: 3,
+  },
+  lang: {
+    minWidth: 48,
+    height: 38,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langOn: { backgroundColor: colors.navy },
+  langText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textSecondary },
+  langTextOn: { color: colors.textOnNavy },
+  another: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
+  anotherText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
   pressed: { opacity: 0.85 },
 });

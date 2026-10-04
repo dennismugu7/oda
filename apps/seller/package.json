@@ -11,7 +11,8 @@
     "doctor": "expo-doctor",
     "deps:check": "expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run",
-    "update:preview": "node scripts/eas-update.mjs"
+    "update:preview": "node scripts/eas-update.mjs",
+    "eas-build-pre-install": "node scripts/public-urls.mjs"
   },
   "dependencies": {
     "@better-auth/expo": "1.7.6",

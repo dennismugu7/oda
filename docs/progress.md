@@ -2,6 +2,69 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Review stop B fixes (owner Step 58; branch `m2b-review-b`)
+
+**Owner's phone test:** passed 1–22, 24, 25; uploads work on staging. Fixes (decision #55):
+
+1. **Shop links were `localhost:3000/…` (critical).** Cause: Vercel had no `PUBLIC_SHOP_BASE_URL`; the server fell back to its local default. Set **`PUBLIC_SHOP_BASE_URL=https://oda-eta.vercel.app`** on Vercel (Config, Production + Preview) with the CLI. The app's EAS `preview` values were already right (`EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SHOP_BASE_URL` = `https://oda-eta.vercel.app`). Guards: the server refuses a non-public base URL on Vercel and `/api/health` answers 503 `config: invalid` (so the deploy check fails); `pnpm update:preview` refuses to publish and EAS refuses to build (non-development) with localhost URLs. Tests: env 1, shared 4 (`isPublicBaseUrl`, `postForShare`), seller 2.
+2. **Brand icons: partly done, blocked.** TikTok's guidelines forbid using its logo without written permission → neutral music-note icon labelled "TikTok". Meta's WhatsApp/Instagram/Facebook packs only download from their brand pages in a browser (signed links; the plain links answer 403), so the owner downloads them; until then the placeholder glyphs stay. Status is now WhatsApp's green ring.
+3. **Share buttons open their targets:** WhatsApp and Status → WhatsApp with the post filled in (+ "Choose My status" hint); TikTok/Instagram/Facebook → caption copied, app (or website) opened, "Caption copied — paste it in your bio or post"; More → share sheet; no WhatsApp → share sheet with a message. Tests: 6.
+4. **Labels on one line:** four equal columns; labels shrink instead of wrapping (font scale capped at 1.4×).
+5. **Done:** white and bold in the header, plus "Go to my shop" at the bottom.
+6. **Editable post:** EN/SW and "Try another" ask before replacing edited text; the shared text always carries the tagged https link (added back at the end if deleted, with a warning under the box).
+7. **Checklist:** "Finish setting up · x of 7" right under the share buttons; "Test your WhatsApp link" first, with "See what buyers see when they tap Chat on WhatsApp." and "Open WhatsApp".
+
+- **JS only:** `deps:check` says the native runtime is unchanged for 0.2.0 (react-native-svg and expo-clipboard are in build `b22e1133`), so this ships as an EAS Update.
+- **Checks** (one at a time): format, lint, typecheck, tests (web 191, seller 65, shared 168, db 23, ui-tokens 3), `deps:check`, Android bundle. Slip: twice I sent several check commands in one message, so they ran in parallel; each was re-run on its own and passed.
+- **Limits:** no app can post straight to WhatsApp Status; TikTok, Instagram and Facebook don't take prefilled text from other apps (by their design). Whether "My status" appears in WhatsApp's list from the WhatsApp button needs the phone.
+
+**Next:** merge, redeploy staging (so the new env var applies), check a shop link from the API, publish the EAS Update; owner retests step 6 and decides on the icons (download Meta's packs; TikTok permission or keep the neutral icon).
+
+## 2026-10-04 · Restore drill passed (owner Step 57)
+
+- **Backup:** `staging/oda-staging-20261004T1009Z.dump.gpg` from `oda-staging-backups` (17 KB encrypted, 91,829 bytes decrypted), from manual run 37194410152. The owner downloaded and decrypted it (passphrase never in chat).
+- **Restore:** `pg_restore --no-owner --no-acl --exit-on-error` into a separate database `oda_restore_drill` in the local `oda-postgres` (Postgres 18); exit 0, about 1 s. The main local database wasn't touched.
+- **Checks** (same as the local database built from the same migrations):
+  - Tables: 26 in `public` (20 data-model tables, the 4 `auth_*` tables, `signup_attempts`, `storage_deletions`) + `drizzle.__drizzle_migrations`.
+  - 15 functions, 24 triggers, 19 enums.
+  - Migrations: 5 rows (`0000`–`0004`); the latest hash matches local `0004_storage_deletions`.
+  - Rows: `auth_user` 2, `auth_account` 2, `profiles` 2, `auth_session` 1, `auth_verification` 2, `rate_limits` 20; `shops`, `products`, `product_photos`, `payment_accounts`, `orders` and the rest 0 (staging has only the hand-test accounts; no shop yet).
+- **Clean-up:** `oda_restore_drill` dropped; the unencrypted dump deleted from Downloads and from the container. The `.gpg` file stays for the owner to delete.
+- **Time:** about 3 minutes from download to checked restore (owner's download + decrypt ≈ 1 min, restore and checks ≈ 1 min, clean-up < 1 min).
+- **Acceptance:** "a backup file appears in R2" (milestones M2, moved from M1 by decision #31) is met with the private Vercel Blob store (decision #54), with a tested restore.
+
+**Next:** the owner runs the review stop B phone test (list in the entry below).
+
+## 2026-10-04 · Storage live on staging, first backup; at review stop B (owner Step 56)
+
+- **Dashboard setup (owner):** public Blob store `oda-staging-images` (fra1) connected to the project for Production + Preview; private `oda-staging-backups` (fra1) not connected. Names checked, no values: Vercel has `STORAGE_DRIVER`, `STORAGE_PUBLIC_BASE_URL`, `BLOB_STORE_ID`, `BLOB_READ_WRITE_TOKEN`, `BLOB_WEBHOOK_PUBLIC_KEY` (Production + Preview; the webhook key isn't used: no upload callbacks); GitHub has `BACKUP_BLOB_READ_WRITE_TOKEN`, `BACKUP_PASSPHRASE` (plus `NEON_STAGING_DATABASE_URL_UNPOOLED`, `VERCEL_DEPLOY_HOOK_STAGING`).
+- **PR #12 merged** (`19a53fa`) after green CI; main CI and `migrate-staging` passed; `/api/health` → `{"ok":true,"db":"up","commit":"19a53fa"}`, so the new env vars are live.
+- **First backup** (manual run 37194410152): dump 92 KB, readable by `pg_restore`; uploaded `staging/oda-staging-20261004T1009Z.dump.gpg`; log: "Kept (1)", "Deleted (0)". The size printed as "0.0 MB"; small files now show in KB (branch `m2b-review-b`).
+- **No EAS Update needed:** nothing under `apps/seller`, `packages/shared` or `packages/ui-tokens` changed since build `b22e1133` (`97d9812`).
+- **Restore drill:** waiting for the owner's OK (download ≈ 92 KB; restored into a separate database in the running local `oda-postgres`, no image download).
+- **Not checked yet on real storage:** a phone upload through the Blob presigned URL (no staging account on this machine); the phone test below covers it.
+
+**Review stop B: phone test (Redmi, staging)**
+
+1. Install the 0.2.0 APK over 0.1.0. → It opens; a signed-in account without a shop lands on "What do you sell?" (step 1 of 6, one segment filled).
+2. Sign up with a new email, enter the code. → Step 1.
+3. Step 1: pick "Clothes & fashion", Next. → Step 2 ("Where do you sell today?"). (Optional: Skip on a second account → step 2, and its shop preview later says "Something else".)
+4. Step 2: tick WhatsApp chats and TikTok, then tap "I'm just starting out". → The other ticks clear. Tick WhatsApp chats and TikTok again, Next. → Step 3.
+5. **Kill and resume at step 2:** go Back to step 2, kill the app (swipe away), reopen. → Opens on step 3 (step 2 was already saved: steps only move forward); Back shows step 2 with WhatsApp chats and TikTok ticked.
+6. Step 3: type a shop name. → "Checking your link…", then "✓ <domain>/<link> is yours". Tap Edit, type `admin`. → "That link is taken" (or a reserved-link message) with suggestions; tap one. → "is yours".
+7. **Kill and resume at step 3:** kill before tapping Next, reopen. → Opens on step 3 (nothing saved yet, fields empty).
+8. Step 3 again: name, WhatsApp number `712 345 678` (also try `0712…`), tap the avatar, pick a logo from the gallery, Next. → Step 4; the logo is kept (going Back shows it).
+9. Step 4: tap "Add a cover photo" → "Take a photo". → Camera permission prompt the first time; after the shot, the tile shows a spinner, then the photo with "Retake" and "Cover photo".
+10. "Add more" → "Choose from gallery", pick 2. → Both upload (spinners, then thumbnails with ×). Remove one with ×. "Retake" the cover from the gallery. → The cover changes.
+11. Sizes: the chips are XS S M L XL XXL Free size; tick M and L; "+ Other" → `One size` → Add. → It appears ticked. Name `Ankara wrap dress`, price `2500` (shows `2,500`), Add product. → Step 5.
+12. Step 4 without a photo (second account, or try before adding one): Add product. → "Add a photo of your product. Buyers want to see it."
+13. **Kill and resume at step 5:** kill on step 5, reopen. → Opens on step 5.
+14. Step 5: Till with `12` → Continue. → "Enter the Till number: 5 to 7 digits." Then **Skip for now**. → Step 6.
+15. Step 6: "Your shop is live", the link with Copy (→ "Copied"; paste somewhere to check), share buttons WhatsApp · TikTok · Status · More (your channels first). WhatsApp → WhatsApp's chat picker with the post and a link ending `?s=wa`; send it to yourself. → Back in oda, "Share your link" is ticked.
+16. EN/SW and "Try another" change the post. "Open WhatsApp" under "Test your WhatsApp link" → your own chat opens; back in oda the item is ticked. No "See what buyers see".
+17. Done. → The placeholder with your shop name and link. Kill and reopen. → The placeholder again (onboarding finished).
+18. Anything odd (a stuck spinner, a message you didn't expect, a photo that didn't show): note the step and the time.
+
 ## 2026-10-04 · M2b CP0 + CP2 code: Vercel Blob storage and nightly backup (branch `m2b-storage`, owner Step 55)
 
 - **Storage approved (owner):** Vercel Blob for staging (public images store, private backups store) and `@vercel/blob` (2.8.0, in `apps/web`). Local dev keeps the local driver; production → R2 in M11. Decision #54.
