@@ -43,6 +43,7 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
           id: true,
           name: true,
           slug: true,
+          businessType: true,
           onboardingStep: true,
           onboardingCompletedAt: true,
         },
@@ -60,7 +61,9 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
         email: user!.email,
         emailVerified: user!.emailVerified,
         onboarding: { step, done: step === null },
-        shop: shop ? { id: shop.id, name: shop.name, slug: shop.slug } : null,
+        shop: shop
+          ? { id: shop.id, name: shop.name, slug: shop.slug, businessType: shop.businessType }
+          : null,
       };
     },
 

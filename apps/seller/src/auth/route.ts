@@ -1,11 +1,18 @@
 // Where the app opens, from the session and GET /api/me (pure, so it is unit-tested).
+import type { BusinessType } from '@oda/shared';
 import { routeForStep, type OnboardingRoute } from '../onboarding/steps';
 
 export interface Me {
   email: string;
   emailVerified: boolean;
   onboarding: { step: number | null; done: boolean };
-  shop: { id: string; name: string; slug: string } | null;
+  shop: {
+    id: string;
+    name: string;
+    slug: string;
+    /** Sets the size presets offered for products (decision #41 d). */
+    businessType?: BusinessType;
+  } | null;
 }
 
 export type MeResult =
