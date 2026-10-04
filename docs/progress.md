@@ -2,6 +2,18 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Fix 2 built (sign-up attempts), PR #8 merged, EAS Update published (branch `m2a-followup-2`)
+
+- **Design approved with changes** (owner): no user row until the code is entered; attempt id in SecureStore; row lock on verify; HMAC-SHA256 codes; lazy cleanup; all limits kept. Built as decision #49 (`apps/web/server/signup.ts`, `signup_attempts`, migration `0003_signup_attempts`, `/api/signup/start|resend|verify`; app `src/auth/signup.ts`, code screen, start gate resume). Better Auth's sign-up and email-OTP endpoints and plugin removed.
+- **Not through Better Auth's internal adapter:** it runs its own transaction and can't hold our locks, so the account is inserted directly in the verify transaction, mirroring Better Auth's own sign-up (user + `credential` account, password hashed by Better Auth's configured hasher via `auth.$context`) plus the profile; a test signs in through Better Auth with the result.
+- **One behaviour adjusted while testing:** a successful verify deletes only its own attempt (not every attempt for the email), so a racing or later attempt for the same email always gets "This email already has a shop. Sign in?" and is deleted when used (your race rule), instead of sometimes "expired" depending on timing.
+- **Tests:** web 121 (sign-up 18: takeover, cross-attempt code, two-attempt race and same-attempt race, resume from the same phone with the newest password, forgot password on a mid-sign-up email sends nothing, cleanup incl. batches, all limits, HMAC storage, expiry; race tests run 3× clean), seller 45 (sign-up on the phone 8: killed app resumes on the code screen, resume vs new attempt, cleared on verify/expiry/sign-out, password never stored, offline), shared 147, db 23, ui-tokens 3; Playwright 6. Format, lint, typecheck, web build, `deps:check`, Android bundle (`pnpm exec expo`), `db:reset` (migration + seed) — each run on its own.
+- **PR #8 merged** (`e61c31b`): CI → `migrate-staging` → deploy hook → `/api/health` `{"ok":true,"db":"up","commit":"e61c31b"}`. Staging smoke without sending email: bad email 422, weak password 422, unknown attempt 404, Better Auth `sign-up/email` and `email-otp/verify-email` 404.
+- **EAS Update published** after the deploy (the update needs the new routes): `preview`, runtime 0.1.0, update group `ed5a8506-e91e-412c-bd24-6cf2cdf6c422`, commit `b704b14`.
+- Supabase stacks `bookflow` and `dashboardx-local` still stopped (data kept).
+
+**Next:** owner retests test 4 (and the sign-up flow) on the Redmi; fixes go on `m2a-followup-2`.
+
 ## 2026-10-04 · Phone test fixes 1, 3, 4, 5 shipped as EAS Update; fix 2 proposed (branch `m2a-eas-preview`, PR #8)
 
 Owner's phone test of build `e21b8131` on staging: passed 1, 2, 5, 6, 9–17. Fixes (all app-side JS, `bfe7e90`):
