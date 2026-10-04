@@ -2,6 +2,21 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Restore drill passed (owner Step 57)
+
+- **Backup:** `staging/oda-staging-20261004T1009Z.dump.gpg` from `oda-staging-backups` (17 KB encrypted, 91,829 bytes decrypted), from manual run 37194410152. The owner downloaded and decrypted it (passphrase never in chat).
+- **Restore:** `pg_restore --no-owner --no-acl --exit-on-error` into a separate database `oda_restore_drill` in the local `oda-postgres` (Postgres 18); exit 0, about 1 s. The main local database wasn't touched.
+- **Checks** (same as the local database built from the same migrations):
+  - Tables: 26 in `public` (20 data-model tables, the 4 `auth_*` tables, `signup_attempts`, `storage_deletions`) + `drizzle.__drizzle_migrations`.
+  - 15 functions, 24 triggers, 19 enums.
+  - Migrations: 5 rows (`0000`–`0004`); the latest hash matches local `0004_storage_deletions`.
+  - Rows: `auth_user` 2, `auth_account` 2, `profiles` 2, `auth_session` 1, `auth_verification` 2, `rate_limits` 20; `shops`, `products`, `product_photos`, `payment_accounts`, `orders` and the rest 0 (staging has only the hand-test accounts; no shop yet).
+- **Clean-up:** `oda_restore_drill` dropped; the unencrypted dump deleted from Downloads and from the container. The `.gpg` file stays for the owner to delete.
+- **Time:** about 3 minutes from download to checked restore (owner's download + decrypt ≈ 1 min, restore and checks ≈ 1 min, clean-up < 1 min).
+- **Acceptance:** "a backup file appears in R2" (milestones M2, moved from M1 by decision #31) is met with the private Vercel Blob store (decision #54), with a tested restore.
+
+**Next:** the owner runs the review stop B phone test (list in the entry below).
+
 ## 2026-10-04 · Storage live on staging, first backup; at review stop B (owner Step 56)
 
 - **Dashboard setup (owner):** public Blob store `oda-staging-images` (fra1) connected to the project for Production + Preview; private `oda-staging-backups` (fra1) not connected. Names checked, no values: Vercel has `STORAGE_DRIVER`, `STORAGE_PUBLIC_BASE_URL`, `BLOB_STORE_ID`, `BLOB_READ_WRITE_TOKEN`, `BLOB_WEBHOOK_PUBLIC_KEY` (Production + Preview; the webhook key isn't used: no upload callbacks); GitHub has `BACKUP_BLOB_READ_WRITE_TOKEN`, `BACKUP_PASSPHRASE` (plus `NEON_STAGING_DATABASE_URL_UNPOOLED`, `VERCEL_DEPLOY_HOOK_STAGING`).
