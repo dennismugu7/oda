@@ -19,7 +19,7 @@ export type StartRoute =
   | { to: '/welcome' }
   | { to: '/verify'; email: string }
   | { to: OnboardingRoute } // the onboarding step to resume (M2b)
-  | { to: '/start' } // after onboarding: placeholder until M6's Home
+  | { to: '/home' } // after onboarding: the tabs (Home's dashboard arrives in M6)
   | { to: 'offline' }
   | { to: 'unreachable' }
   | { to: 'error' };
@@ -40,6 +40,6 @@ export function startRoute(hasSession: boolean, me: MeResult | null): StartRoute
       // Every account has a verified email (decision #49: accounts exist only after the code).
       // Not finished setting up: back to the step they reached.
       if (!me.me.onboarding.done) return { to: routeForStep(me.me.onboarding.step) };
-      return { to: '/start' };
+      return { to: '/home' };
   }
 }

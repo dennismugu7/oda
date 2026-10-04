@@ -2,6 +2,22 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M2 tagged; M3 CP1 + CP2, at review stop A (branch `m3-catalogue`, owner Step 60)
+
+- **GPS read-back passed** (entry below), PR #15 merged (`348435f`), **`main` tagged `m2-done`**.
+- **M3 plan approved** with the owner's answers (decision #57).
+- **CP1 catalogue API** (`dc29870`): `apps/web/server/repos/catalogue.ts` (on `sellerRepo`), `server/catalogueRoutes.ts`, 8 route files under `/api/products` and `/api/categories`; shared `catalogue.ts` (photo list 1–5 without repeats, category order/assignment inputs, 15 colour presets, 10-minute undo window).
+- **CP2 app shell:** tabs Home · Orders · + · Shop · More (`app/(tabs)/`), raised navy "+" opening `/products/new` (a placeholder until CP4), placeholders with one line each ("Your orders will show here", …), Sign out in More, the start gate and step 6 now go to `/home`; `app/start.tsx` removed. Expo Router's own tabs (JS only; `deps:check`: native runtime unchanged for 0.2.0).
+- **Tests:** catalogue API 12 (create with ordered photos and cover; bad input incl. server-owned fields, was-price, unknown/foreign category, writes nothing; edit status only; was-price against the stored price; filters and counts; photo reorder/cover/remove with files deleted; another shop's file 403, fake file and GPS 422 (deleted), more than 5 / none 422; delete + undo, undo after 10 minutes 404; categories order, counts, thumbnail, rename/hide, position only via order, exact-set reorder, assignment, delete keeps products; full seller isolation (404) and 401/404); shared catalogue 3; seller start gate updated. Totals: web 203, shared 171, seller 67.
+- **Flaky test fixed (M2a):** "lets a locked seller reset their password" failed once: rate limits use clock-aligned windows (`floor(epoch / 900) * 900`) and the run hit 13:30 UTC, so the 5 wrong passwords straddled two windows and no lock happened. The two lockout tests now wait out a window edge first (`awayFromWindowEdge`, at most ~11 s, timeout 30 s). The limit itself is unchanged (fixed windows, decision #44 a).
+- **Checks** (one at a time, apart from one slip: typecheck and lint were sent in one message and ran in parallel; both passed): typecheck, lint, tests (all packages green after the fix), `deps:check`, Android bundle.
+- **Drag library check (desk only):** `react-native-draggable-flatlist` 4.0.3 allows reanimated ≥ 2.8 and gesture-handler ≥ 2, so 4.5.1 / 2.32 fit its peer ranges; last release May 2025, and past reanimated majors broke it (issues #466, #389), so it is tried on the phone at CP4 before relying on it.
+- **Not on staging yet:** CP1/CP2 are on the branch (not merged, no EAS Update). For the review stop A phone check: merge (the API is additive, no migration) and publish an update — owner to say.
+
+**Design comparison (tab bar vs 15/19):** same five slots with the raised navy "+" and "Add product" label; Feather line icons close to the images; no Orders badge yet (M5). Placeholders: navy header with the tab title (and shop name/email), one card with an icon, a title and one line.
+
+**Next:** review stop A (owner): API + tab bar; then CP3 Shop tab.
+
 ## 2026-10-04 · Official brand marks shipped; M2b gate report (owner Step 59)
 
 - **Brand marks (decision #56):** WhatsApp green glyph SVG, Instagram black glyph SVG and the Facebook primary logo PNG, copied byte for byte from the owner's downloads of Meta's packs into `apps/seller/assets/brands/` (README: source, pack, rules). Used on step 2 and the step 6 share buttons; TikTok keeps the neutral icon, Status the green ring. The packs had no guideline PDFs, so the rules are those of the brand pages (decision #55). Temporary unzip folder deleted; the full packs are not in the repo. Tests: brand marks 2 (embedded SVG identical to the files; colours unchanged).
