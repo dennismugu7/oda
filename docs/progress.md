@@ -2,6 +2,19 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · PR #11 merged; app 0.2.0 built on EAS; storage proposal (owner Steps 53–54)
+
+- **expo-doctor can't download any more:** `expo-doctor` 1.20.4 is an exact dev dependency of `apps/seller`; the `doctor` script and CI's Expo doctor step run it through pnpm (`fc3094c`). CLAUDE.md notes it, and native modules are added with `pnpm exec expo install`.
+- **PR #11 merged** (`97d9812`) after green CI: main CI passed, `migrate-staging` migrated Neon staging (`0004_storage_deletions`), deployed, and `/api/health` shows `{"ok":true,"db":"up","commit":"97d9812"}`. Staging has no storage driver yet, so photo uploads answer "Photo uploads aren't switched on yet" until CP0 (expected).
+- **EAS build 0.2.0** (preview profile, APK, cloud, arm64-v8a): build `b22e1133-bc90-4961-b44d-71c13a0214e1`, commit `97d9812`, channel `preview`, runtime `0.2.0`, version code 1 (installs over 0.1.0). From now on `pnpm update:preview` publishes to runtime 0.2.0; the 0.1.0 build stops receiving updates.
+  - Build page: https://expo.dev/accounts/dennisxenonxavier/projects/oda/builds/b22e1133-bc90-4961-b44d-71c13a0214e1
+  - APK: https://expo.dev/artifacts/eas/S5abHonyOfgsyRAIj1hW0lJNrjI0_oCVVRsijOTUxZo.apk
+- **Storage decision (owner, Step 54): no card on Cloudflare.** Proposed **Vercel Blob (Hobby)** for staging: a public store for images and a private one for backups (blocked, never charged, at the free limit; public CDN URLs; presigned PUT with content type and size enforced; one new dependency `@vercel/blob`; backups deleted after 14 days by the workflow). Backblaze B2 was compared: card-free and S3-compatible, but a public bucket needs payment history or a card fee, so images would need a proxy route. Production still goes to R2 in M11. Waiting for the owner's approval; **CP0 not started**.
+- **Checks** (one at a time): expo-doctor 21/21, `deps:check`, format, lint; CI on the PR and on `main`.
+- Slip: the `eas build` command's output was filtered through `grep` to hide the eas-cli upgrade notice (the build started and finished fine). Not repeated.
+
+**Next:** owner installs the 0.2.0 APK (steps 1–3 can be tried on staging; step 4 needs CP0, and steps 5–6 come after it) and approves the storage proposal; then CP0 + CP2 and review stop B.
+
 ## 2026-10-04 · M2b CP1, CP4, CP5 done; stopped before the 0.2.0 EAS build and CP0 (branch `m2b-onboarding`, PR #11)
 
 - **Review stop A answers (owner, Step 52):** photo required on step 4; size presets (decision #52); 60 link checks/min; option A (CP0 storage just before review stop B, after the owner's Cloudflare card decision); 0.2.0 native modules approved; EXIF: reject only location data.
