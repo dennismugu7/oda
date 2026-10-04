@@ -2,6 +2,45 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Official brand marks shipped; M2b gate report (owner Step 59)
+
+- **Brand marks (decision #56):** WhatsApp green glyph SVG, Instagram black glyph SVG and the Facebook primary logo PNG, copied byte for byte from the owner's downloads of Meta's packs into `apps/seller/assets/brands/` (README: source, pack, rules). Used on step 2 and the step 6 share buttons; TikTok keeps the neutral icon, Status the green ring. The packs had no guideline PDFs, so the rules are those of the brand pages (decision #55). Temporary unzip folder deleted; the full packs are not in the repo. Tests: brand marks 2 (embedded SVG identical to the files; colours unchanged).
+- **PR #14 merged** (`652464f`, includes the Windows quoting fix for `update:preview`). **EAS Update** to `preview`, runtime 0.2.0: group `4346b7e8-6246-47b1-8202-3f40202f16c8` (assets only, no native build; `deps:check`: native runtime unchanged). EAS reported "no new assets" to upload although the Facebook PNG is new to the update's asset list (54 assets, was 53): check on the phone that the Facebook logo appears.
+- **Checks** (one at a time): seller typecheck, lint, tests (67), `deps:check`, Android bundle, format; CI on PR #14 and `main`.
+
+**M2b gate (milestones.md M2 + definition of done)**
+
+- ✅ A backup file appears in the private store: `staging/oda-staging-20261004T1009Z.dump.gpg` (run 37194410152), restore drill passed (entry below). The nightly schedule runs from `main`.
+- ✅ One EAS cloud build finishes and installs on the Redmi 15c: `b22e1133` (0.2.0), installed and tested by the owner (plus `e21b8131` for M2a).
+- ✅ A new email can sign up, verify, finish onboarding and land on the app: owner's review stop B (1–22, 24, 25) and retests; the landing screen is the shop placeholder until Home in M6 (decision #53 f).
+- ✅ The shop exists with 1 product: the onboarding flow and API tests (`server/onboarding.test.ts`, 26) and the owner's run; photos uploaded to Blob on staging.
+- ✅ Killing the app mid-onboarding resumes at the same step: owner's test at steps 2, 3 and 5; start-gate tests (`auth-logic.test.ts`).
+- ✅ Reset password end to end and the welcome side-by-side check: M2a gate (`m2a-done`).
+- ✅ Camera and gallery photos with real Blob uploads; Skip payment: owner's review stop B.
+- ✅ **One uploaded staging photo has no GPS EXIF (read back, owner Step 60):** `products/ab93a03c-…/e1ba0ade-….jpg` (227,705 bytes, 1077 × 1600, the phone's re-encoded full photo). Its only metadata: a JFIF header (APP0) and an ICC colour profile (APP2, 472 bytes). No EXIF segment, no XMP, no "GPS" bytes anywhere; the server's `hasLocationData` returns false.
+- ✅ Lint, typecheck, tests locally and in CI (web 191, seller 67, shared 168, db 23, ui-tokens 3).
+- ✅ New logic has unit tests; new endpoints have authorization tests (onboarding 26 incl. seller isolation, uploads 22 incl. another shop's prefix, wrong type/size, GPS). No new buyer web flows in M2b (Playwright 6 from M2a still pass in CI).
+- ✅ Screens compared with the designs: 09–14 on the Redmi at review stop B and the step 6 retest; differences listed in the CP4/CP5 entry, decisions #53, #55, #56.
+- ✅ Web deployed to staging (`652464f`, health OK); the app runs on the Redmi via the EAS preview build + updates.
+- ✅ progress.md updated.
+
+**Gate passed:** all items ✅; `main` tagged `m2-done` after this entry is merged.
+
+**Carried forward**
+
+- Terms / Privacy links open `/terms` and `/privacy`, which 404 until M4.
+- Vercel CLI logged in on the laptop and `apps/web/.vercel` linked: `vercel logout` before M11.
+- `.wslconfig` (12 GB cap) proposed, not applied.
+- M8 purge: `signup_attempts` older than 7 days; leftover `storage_deletions`; unreferenced keys under `products/` and `logos/` (photos picked but never saved).
+- M10: automated UI tests (jest-expo/Maestro) for the screens, now checked by hand.
+- M11: production object storage on Cloudflare R2 (replacing Vercel Blob) with a custom image domain; `armeabi-v7a`; production keystore and EAS environment; production Neon and Resend; Vercel Hobby is non-commercial (decision #10).
+- eas-cli 24.8.0 (24.10.0 available), not upgraded.
+- TikTok logo only with TikTok's written permission (neutral icon until then).
+- Whether "My status" shows in WhatsApp's list from the Status button: owner to confirm on the phone (decision #55 b).
+- Blob usage: check the Hobby usage page after the first week (estimate in the CP0 entry).
+
+**Next:** M3 (plan approved, Step 60) on branch `m3-catalogue`: CP1 catalogue API → CP2 app shell → review stop A.
+
 ## 2026-10-04 · Review stop B fixes (owner Step 58; branch `m2b-review-b`)
 
 **Owner's phone test:** passed 1–22, 24, 25; uploads work on staging. Fixes (decision #55):

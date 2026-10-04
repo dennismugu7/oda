@@ -32,7 +32,7 @@ Monorepo + tooling + an empty but deployed skeleton.
 - **Accept:** one command rebuilds the local DB from zero and seeds it; authorization tests prove seller isolation and anon lockout; state machine tests cover every transition in `order-lifecycle.md`; a migration merged to `main` is applied to Neon staging before the deployment that uses it goes live; re-running the Android setup script on this laptop reports everything in place, and repairs a deliberately reverted ninja.
 
 ## M2 · Seller auth & onboarding
-**Status: M2a closed 2026-10-04** (gate passed; PRs #7, #8, #9 merged, `main` `0ea9631`, tag `m2a-done`; owner's Redmi hand test 1–18 passed via EAS preview build `e21b8131` + EAS Updates). The one EAS cloud build (decision #31 c) is done (`e21b8131`). **M2b not started.** Decisions #40–#50.
+**Status: closed 2026-10-04.** M2a: gate passed (PRs #7–#10, tag `m2a-done`, EAS build `e21b8131`). M2b: gate passed (PRs #11–#14 and the gate docs, tag `m2-done`; EAS build `b22e1133` (0.2.0) + EAS Updates; owner's review stop B and retests on the Redmi; storage on Vercel Blob instead of R2 for staging, decision #54; backup + restore drill). Decisions #40–#56.
 Screens 01–14, email templates 04 and 06, web `/reset-password` (07, 08).
 - Better Auth (email + password + 6-digit email OTP) in apps/web, Expo client integration, forgot/reset flow, session persistence, resumable onboarding, slug check, photo capture/upload with resizing, payment account setup.
 - Resend configured on staging so emails actually arrive (sending domain: a subdomain of mugu-labs.com).
