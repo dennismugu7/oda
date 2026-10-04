@@ -2,6 +2,19 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Retest passed; form messages no longer hidden behind the keyboard (branch `m2a-followup-2`, PR #9)
+
+- **Owner's retest of 3, 4, 7, 8, 10, 18: passed.** One issue: on Sign in a wrong password (and "You're offline…") showed behind the keyboard.
+- **Fix (Step 49, app-only JS, `4927793`):**
+  1. Every submit (sign up, sign in, forgot password, the code, Resend) closes the keyboard first.
+  2. Form-level messages use one component, `FormMessage` (`src/ui/auth.tsx`): it scrolls itself into view whenever it appears or its text changes (after the keyboard has closed and the view has grown), for errors and info ("We sent you a new code.").
+  3. Announced by screen readers: `accessibilityRole="alert"` + `accessibilityLiveRegion="polite"`.
+  - Fields now report blur, so a closing keyboard doesn't scroll back to the last field over a new message. Field-level errors still stay in view with the focused field (Step 47, fix 1). The code screen no longer re-opens the keyboard over its own error (tap the boxes to type again) and closes it when the attempt has expired.
+- **Checks** (one at a time): format, lint, typecheck, tests (web 121, seller 45, shared 147, db 23, ui-tokens 3), `deps:check`, Android bundle (`pnpm exec expo`). No new automated test for the scroll/announce behaviour: it's React Native UI (no jest-expo until M10, decision #40), checked by the owner on the phone.
+- **EAS Update published:** `preview`, runtime 0.1.0, update group `ee61fb7a-d50a-475f-9f59-2831304d02c7`. The first publish attempt failed ("EAS project not configured") and left an empty `app.json` at the repo root (that attempt apparently didn't start in `apps/seller`); the file was removed and the retry, from `apps/seller` with the real config, succeeded (its commit shows `*` only because of that stray file).
+
+**Next:** owner checks the messages on the phone; then the M2a gate.
+
 ## 2026-10-04 · Fix 2 built (sign-up attempts), PR #8 merged, EAS Update published (branch `m2a-followup-2`)
 
 - **Design approved with changes** (owner): no user row until the code is entered; attempt id in SecureStore; row lock on verify; HMAC-SHA256 codes; lazy cleanup; all limits kept. Built as decision #49 (`apps/web/server/signup.ts`, `signup_attempts`, migration `0003_signup_attempts`, `/api/signup/start|resend|verify`; app `src/auth/signup.ts`, code screen, start gate resume). Better Auth's sign-up and email-OTP endpoints and plugin removed.
