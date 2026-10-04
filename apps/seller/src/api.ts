@@ -35,3 +35,37 @@ export async function fetchMe(): Promise<MeResult> {
   if (result.data) return result.data;
   return result.error?.code === 'OFFLINE' ? { kind: 'offline' } : { kind: 'unreachable' };
 }
+
+export interface ApiError {
+  status: number;
+  code?: string;
+  message?: string;
+  /** Per-field messages from the server's input checks. */
+  fields?: Record<string, string>;
+  retryAfter?: number;
+}
+
+/**
+ * A JSON call to our API with the session, the offline check and the 15 s timeout; never
+ * throws. Errors carry the server's own wording (written for sellers).
+ */
+export async function apiJson<T>(
+  path: string,
+  init: { method?: 'GET' | 'POST'; body?: unknown } = {},
+): Promise<{ data: T | null; error: ApiError | null }> {
+  const result = await guardedCall<T>(
+    async () => {
+      const res = await apiFetch(path, {
+        method: init.method ?? (init.body === undefined ? 'GET' : 'POST'),
+        headers: init.body === undefined ? undefined : { 'content-type': 'application/json' },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      });
+      const json = (await res.json().catch(() => null)) as
+        (T & { error?: Omit<ApiError, 'status'> }) | null;
+      if (res.ok && json) return { data: json };
+      return { error: { status: res.status, ...(json?.error ?? {}) } };
+    },
+    { isOnline },
+  );
+  return { data: result.data, error: result.error as ApiError | null };
+}

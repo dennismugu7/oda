@@ -48,6 +48,9 @@ export const onboardingPhoto = z.strictObject({
   height: z.number().int().min(1).max(10_000).nullable().default(null),
 });
 
+/** A product has a cover photo plus up to 4 more. */
+export const PRODUCT_PHOTOS_MAX = 5;
+
 /** Step 4: the first product. The first photo is the cover; up to 5 photos. */
 export const onboardingProduct = z.strictObject({
   name: requiredText(1, 80, 'Product name'),
@@ -61,7 +64,7 @@ export const onboardingProduct = z.strictObject({
   photos: z
     .array(onboardingPhoto)
     .min(1, { error: 'Add a photo of the product.' })
-    .max(5, { error: 'Add at most 5 photos.' }),
+    .max(PRODUCT_PHOTOS_MAX, { error: `Add at most ${PRODUCT_PHOTOS_MAX} photos.` }),
 });
 export type OnboardingProduct = z.infer<typeof onboardingProduct>;
 

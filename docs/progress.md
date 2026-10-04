@@ -2,6 +2,30 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M2b CP1, CP4, CP5 done; stopped before the 0.2.0 EAS build and CP0 (branch `m2b-onboarding`, PR #11)
+
+- **Review stop A answers (owner, Step 52):** photo required on step 4; size presets (decision #52); 60 link checks/min; option A (CP0 storage just before review stop B, after the owner's Cloudflare card decision); 0.2.0 native modules approved; EXIF: reject only location data.
+- **CP1 uploads** (`923b510`, decision #52): storage interface (local / s3 / disabled), `POST /api/uploads`, server byte checks (real JPEG/PNG/WebP matching the key, ≤ 5 MB, no GPS in EXIF (JPEG, PNG, WebP) or XMP; orientation-only EXIF accepted), replaced photos/logos queued in `storage_deletions` (migration `0004`) and deleted. Tests: uploads 19, image checks 16 (fixtures for each format: GPS rejected, none accepted, orientation-only accepted), onboarding updated (photo replace deletes the old objects).
+- **CP4/CP5 screens** (decision #53): onboarding steps 09–14 under `apps/seller/app/onboarding/` (what-you-sell, where-you-sell, name-shop, first-product, payment, live), shared pieces in `src/ui/onboarding.tsx` (navy header with back, Skip on steps 1–2, 6-segment progress; choice cards, check rows, chips), state and submit hooks in `src/onboarding/useOnboarding.ts`, words/icons/error wording in `src/onboarding/labels.ts`. Photos: camera or gallery, re-encoded on the phone and uploaded at once (`src/onboarding/photos.ts`, `nativePhotos.ts`). Step 6: link + Copy, share buttons from the seller's channels with `?s=` tags, EN/SW post with "Try another", 7-item checklist, "Test your WhatsApp link", Done → complete. The start gate now opens the step reached; finished sellers get the placeholder (shop name + link) until M6. The shared field gained a prefix (`+254`, `KSh`) and a label hint ("Optional").
+- **0.2.0 prepared** (CP5): `version` 0.2.0, the 8 native modules from Step 52 installed with `pnpm exec expo install`, image-picker permission texts, `native-runtime.json` rewritten. `deps:check` green; expo-doctor 21/21; Android bundle exported (`pnpm exec expo export`, 5 MB Hermes bundle).
+- **Tests:** web 182, shared 164 (share links/buttons/captions 6), seller 57 (steps ↔ screens, size chips, photo re-encoding: never the picked file, full + thumbnail, uploads off, failed upload, logo; start gate to the reached step; error wording), db 23, ui-tokens 3.
+- **Checks** (one at a time): format, lint, typecheck, tests, `deps:check`, expo-doctor, Android bundle.
+
+**Design comparison (from the code; not yet seen on a phone, that's review stop B)**
+- All steps: progress = step number (decision #32); lowercase "oda" in step 5's subtitle; icons are Material Community line icons close to the images (TikTok uses a music note, Status a ring).
+- 11: the link domain comes from config; "Checking your link…" while typing; a taken link shows the reason and up to 3 suggestions; Edit opens a link field; once a logo is set, "remove it" appears. The flag is a simplified three-band flag.
+- 12: before a photo there's an "Add a cover photo" tile (camera or gallery); extra photos show as a row of thumbnails with ×; "+ Other" opens an inline size field; fashion presets are XS–XXL + Free size (the image shows S–XL).
+- 13: wording from design-changes ("M-Pesa till checked by oda", Skip line); Paybill adds "Account number buyers enter: a fixed number / the order number" (not in the image).
+- 14: no "See what buyers see" (#41 b); the checklist has 7 items ("x of 7"), help text and a button only on the two items that can be done here; share buttons follow the seller's channels.
+
+**Open / carried forward**
+- **Staging has no bucket yet** (`STORAGE_DRIVER` unset → uploads answer 503 "Photo uploads aren't switched on yet"): step 4 can't be finished on staging until CP0. The owner decides on the Cloudflare card first.
+- Photos uploaded but never saved (picked, then removed or retaken before "Add product", or an abandoned onboarding) aren't referenced by any row: the M8 purge must also sweep unreferenced keys under `products/` and `logos/`, not only `storage_deletions`.
+- The local `expo-doctor` script runs `npx expo-doctor@1`, which fetched expo-doctor 1.20.4 (a few MB) into the npx cache this time.
+- The Supabase stacks `bookflow` and `dashboardx-local` are running again (they restarted with Docker); left as they are.
+
+**Next:** owner: approve starting the 0.2.0 EAS build (preview profile) and decide on the Cloudflare card; then CP0 + CP2, review stop B.
+
 ## 2026-10-04 · M2b CP3 onboarding API, at review stop A (branch `m2b-onboarding`)
 
 - PR #10 (M2a gate docs) merged (`babb927`). M2b plan approved with changes (decision #51): order CP3 → review stop A → CP1 → CP4 → CP5 → review stop B → CP0 + CP2 → hand test → gate; storage behind one interface; EXIF stripping with a test and byte-checked file types; `r2.dev` staging only.
