@@ -2,6 +2,24 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Review stop B fixes (owner Step 58; branch `m2b-review-b`)
+
+**Owner's phone test:** passed 1–22, 24, 25; uploads work on staging. Fixes (decision #55):
+
+1. **Shop links were `localhost:3000/…` (critical).** Cause: Vercel had no `PUBLIC_SHOP_BASE_URL`; the server fell back to its local default. Set **`PUBLIC_SHOP_BASE_URL=https://oda-eta.vercel.app`** on Vercel (Config, Production + Preview) with the CLI. The app's EAS `preview` values were already right (`EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SHOP_BASE_URL` = `https://oda-eta.vercel.app`). Guards: the server refuses a non-public base URL on Vercel and `/api/health` answers 503 `config: invalid` (so the deploy check fails); `pnpm update:preview` refuses to publish and EAS refuses to build (non-development) with localhost URLs. Tests: env 1, shared 4 (`isPublicBaseUrl`, `postForShare`), seller 2.
+2. **Brand icons: partly done, blocked.** TikTok's guidelines forbid using its logo without written permission → neutral music-note icon labelled "TikTok". Meta's WhatsApp/Instagram/Facebook packs only download from their brand pages in a browser (signed links; the plain links answer 403), so the owner downloads them; until then the placeholder glyphs stay. Status is now WhatsApp's green ring.
+3. **Share buttons open their targets:** WhatsApp and Status → WhatsApp with the post filled in (+ "Choose My status" hint); TikTok/Instagram/Facebook → caption copied, app (or website) opened, "Caption copied — paste it in your bio or post"; More → share sheet; no WhatsApp → share sheet with a message. Tests: 6.
+4. **Labels on one line:** four equal columns; labels shrink instead of wrapping (font scale capped at 1.4×).
+5. **Done:** white and bold in the header, plus "Go to my shop" at the bottom.
+6. **Editable post:** EN/SW and "Try another" ask before replacing edited text; the shared text always carries the tagged https link (added back at the end if deleted, with a warning under the box).
+7. **Checklist:** "Finish setting up · x of 7" right under the share buttons; "Test your WhatsApp link" first, with "See what buyers see when they tap Chat on WhatsApp." and "Open WhatsApp".
+
+- **JS only:** `deps:check` says the native runtime is unchanged for 0.2.0 (react-native-svg and expo-clipboard are in build `b22e1133`), so this ships as an EAS Update.
+- **Checks** (one at a time): format, lint, typecheck, tests (web 191, seller 65, shared 168, db 23, ui-tokens 3), `deps:check`, Android bundle. Slip: twice I sent several check commands in one message, so they ran in parallel; each was re-run on its own and passed.
+- **Limits:** no app can post straight to WhatsApp Status; TikTok, Instagram and Facebook don't take prefilled text from other apps (by their design). Whether "My status" appears in WhatsApp's list from the WhatsApp button needs the phone.
+
+**Next:** merge, redeploy staging (so the new env var applies), check a shop link from the API, publish the EAS Update; owner retests step 6 and decides on the icons (download Meta's packs; TikTok permission or keep the neutral icon).
+
 ## 2026-10-04 · Restore drill passed (owner Step 57)
 
 - **Backup:** `staging/oda-staging-20261004T1009Z.dump.gpg` from `oda-staging-backups` (17 KB encrypted, 91,829 bytes decrypted), from manual run 37194410152. The owner downloaded and decrypted it (passphrase never in chat).
