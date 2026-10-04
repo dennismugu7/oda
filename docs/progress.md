@@ -2,6 +2,46 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M2b CP0 + CP2 code: Vercel Blob storage and nightly backup (branch `m2b-storage`, owner Step 55)
+
+- **Storage approved (owner):** Vercel Blob for staging (public images store, private backups store) and `@vercel/blob` (2.8.0, in `apps/web`). Local dev keeps the local driver; production → R2 in M11. Decision #54.
+- **CP0 driver `vercel-blob`** (`apps/web/server/storage.ts`): upload URL locked to the server-chosen key, type and size, **10 minutes** (delegation token and URL both carry the limits; no random suffix, no overwrite); `get()` for the byte check, `del()` for deletions, public CDN URLs from `STORAGE_PUBLIC_BASE_URL`. All drivers now expire upload URLs after 10 minutes. `.env.example` documents the staging variables.
+- **CP2 nightly backup** (`.github/workflows/backup-staging.yml`, `apps/web/scripts/backup/`): `pg_dump` 18 → `pg_restore --list` → gpg AES-256 (decryption checked before the plain dump is removed) → private store `staging/oda-staging-<UTC>.dump.gpg` → delete backups older than 14 days; the log lists kept and deleted files. Restore steps are in the workflow's header comment. The restore drill comes after the first real backup (download size given first).
+- **Tests:** Blob driver 3 (exact presign options incl. 10 min, path, type, size, no overwrite; signing key not returned; read/missing/delete; config errors; local driver also 10 min); retention 5 (14-day boundary both sides, the newest and just-uploaded file are never deleted, non-backup files ignored, empty store). Totals: web 190, seller 57, shared 164, db 23, ui-tokens 3.
+- **Checks:** format, lint, typecheck, tests. Slip: I started the four checks in one batch and, with format:check moved to the background, they ran in parallel; under that load (plus two busy bookflow Expo web servers on ports 8099/8100, left alone) 3 seller and 3 web password-hash tests timed out at 5 s and one seller test saw attempts out of order. Re-run one at a time: seller 57/57, web 190/190.
+- **Nothing has run against staging** (owner: wait until the dashboard setup is done).
+
+**Blob operations per month (staging estimate, Hobby: 2,000 advanced, 10,000 simple, 1 GB, 10 GB transfer)**
+
+| What | Advanced | Simple |
+|---|---|---|
+| Product photo: 2 PUTs (full + thumbnail); logo: 1 | 2 per photo | – |
+| Byte/EXIF check: `get()` of each new file (always a cache miss) | – | 2 per photo |
+| Signed-token issue per upload (not listed as a billed operation in Vercel's pricing; counted to be safe) | (2 per photo) | – |
+| Shop pages: first view of each image (later views are cache hits, free) | – | ≤ 2 per photo |
+| Deletes (replaced photos, rejected files, old backups) | free | – |
+| Backup: 1 PUT + 1 `list` per night | 60 | – |
+| Dashboard browsing (counts as advanced) | ~50 | – |
+
+At 300 photos a month (heavy hand testing): 710–1,310 advanced (limit 2,000) and ≤ 1,200 simple (limit 10,000); storage ≈ 300 × 350 KB ≈ 105 MB plus 14 backups of a few MB each (limit 1 GB). The limit allows about 470 photos a month if token issues count (about 940 if they don't). If Blob hits a limit it stops for 30 days (no charge): uploads would then fail on staging. Check the Blob usage page after the first week.
+
+**Carried forward (new):** production object storage on Cloudflare R2 (M11), replacing Vercel Blob; the M8 purge must also sweep unreferenced keys (picked but never saved photos).
+
+**Next:** owner does the dashboard setup (Step 54 list) and says when it's complete; then a first upload on staging, a manual backup run, the restore drill, and review stop B.
+
+## 2026-10-04 · PR #11 merged; app 0.2.0 built on EAS; storage proposal (owner Steps 53–54)
+
+- **expo-doctor can't download any more:** `expo-doctor` 1.20.4 is an exact dev dependency of `apps/seller`; the `doctor` script and CI's Expo doctor step run it through pnpm (`fc3094c`). CLAUDE.md notes it, and native modules are added with `pnpm exec expo install`.
+- **PR #11 merged** (`97d9812`) after green CI: main CI passed, `migrate-staging` migrated Neon staging (`0004_storage_deletions`), deployed, and `/api/health` shows `{"ok":true,"db":"up","commit":"97d9812"}`. Staging has no storage driver yet, so photo uploads answer "Photo uploads aren't switched on yet" until CP0 (expected).
+- **EAS build 0.2.0** (preview profile, APK, cloud, arm64-v8a): build `b22e1133-bc90-4961-b44d-71c13a0214e1`, commit `97d9812`, channel `preview`, runtime `0.2.0`, version code 1 (installs over 0.1.0). From now on `pnpm update:preview` publishes to runtime 0.2.0; the 0.1.0 build stops receiving updates.
+  - Build page: https://expo.dev/accounts/dennisxenonxavier/projects/oda/builds/b22e1133-bc90-4961-b44d-71c13a0214e1
+  - APK: https://expo.dev/artifacts/eas/S5abHonyOfgsyRAIj1hW0lJNrjI0_oCVVRsijOTUxZo.apk
+- **Storage decision (owner, Step 54): no card on Cloudflare.** Proposed **Vercel Blob (Hobby)** for staging: a public store for images and a private one for backups (blocked, never charged, at the free limit; public CDN URLs; presigned PUT with content type and size enforced; one new dependency `@vercel/blob`; backups deleted after 14 days by the workflow). Backblaze B2 was compared: card-free and S3-compatible, but a public bucket needs payment history or a card fee, so images would need a proxy route. Production still goes to R2 in M11. Waiting for the owner's approval; **CP0 not started**.
+- **Checks** (one at a time): expo-doctor 21/21, `deps:check`, format, lint; CI on the PR and on `main`.
+- Slip: the `eas build` command's output was filtered through `grep` to hide the eas-cli upgrade notice (the build started and finished fine). Not repeated.
+
+**Next:** owner installs the 0.2.0 APK (steps 1–3 can be tried on staging; step 4 needs CP0, and steps 5–6 come after it) and approves the storage proposal; then CP0 + CP2 and review stop B.
+
 ## 2026-10-04 · M2b CP1, CP4, CP5 done; stopped before the 0.2.0 EAS build and CP0 (branch `m2b-onboarding`, PR #11)
 
 - **Review stop A answers (owner, Step 52):** photo required on step 4; size presets (decision #52); 60 link checks/min; option A (CP0 storage just before review stop B, after the owner's Cloudflare card decision); 0.2.0 native modules approved; EXIF: reject only location data.

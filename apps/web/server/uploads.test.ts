@@ -9,7 +9,14 @@ import { jpeg, png, tiff, webp } from '@/test/imageFixtures';
 import { storedPhoto } from '@/test/storage';
 import { getDb } from './db';
 import { getOnboarding, postAnswer, postLogo, postProduct, postShop } from './onboardingRoutes';
-import { getStorage, resetStorageForTests, writeLocalObject } from './storage';
+import {
+  type BlobApi,
+  getStorage,
+  resetStorageForTests,
+  UPLOAD_TTL_SECONDS,
+  vercelBlobStorage,
+  writeLocalObject,
+} from './storage';
 
 // Uploads (decision #52) with the local storage driver: signed uploads at keys the server
 // chooses, byte-checked files without location data, and deletion of replaced files.
@@ -328,7 +335,7 @@ describe('S3-compatible driver (R2 or other), no network', () => {
     expect(url.origin + url.pathname).toBe(
       `https://acc123.r2.cloudflarestorage.com/oda-staging/products/${shopId}/a.jpg`,
     );
-    expect(url.searchParams.get('X-Amz-Expires')).toBe('900');
+    expect(url.searchParams.get('X-Amz-Expires')).toBe('600');
     expect(url.searchParams.get('X-Amz-Signature')).toMatch(/^[0-9a-f]{64}$/);
     expect(url.searchParams.get('X-Amz-SignedHeaders')?.split(';')).toEqual(
       expect.arrayContaining(['content-length', 'content-type', 'host']),
@@ -350,5 +357,109 @@ describe('S3-compatible driver (R2 or other), no network', () => {
     );
     expect(storageDriver({ VERCEL: '1' }).driver).toBe('disabled');
     expect(storageDriver({}).driver).toBe('local');
+  });
+});
+
+describe('Vercel Blob driver (staging, decision #54), no network', () => {
+  const NOW = Date.UTC(2026, 9, 4, 12, 0, 0);
+  const BASE = 'https://abc123.public.blob.vercel-storage.com';
+
+  function fakeBlob(overrides: Partial<BlobApi> = {}) {
+    const calls: { fn: string; args: unknown[] }[] = [];
+    const api: BlobApi = {
+      issueSignedToken: (async (...args: unknown[]) => {
+        calls.push({ fn: 'issueSignedToken', args });
+        return { delegationToken: 'dt', clientSigningToken: 'cst', validUntil: NOW + 600_000 };
+      }) as BlobApi['issueSignedToken'],
+      presignUrl: (async (...args: unknown[]) => {
+        calls.push({ fn: 'presignUrl', args });
+        return { presignedUrl: 'https://blob.vercel-storage.com/?signed=1' };
+      }) as BlobApi['presignUrl'],
+      get: (async () => null) as BlobApi['get'],
+      del: (async (...args: unknown[]) => {
+        calls.push({ fn: 'del', args });
+      }) as BlobApi['del'],
+      ...overrides,
+    };
+    return { api, calls };
+  }
+
+  it('upload URLs last 10 minutes and are locked to the key, type and size', async () => {
+    expect(UPLOAD_TTL_SECONDS).toBe(600);
+    const { api, calls } = fakeBlob();
+    const storage = vercelBlobStorage({ STORAGE_PUBLIC_BASE_URL: `${BASE}/` }, api, () => NOW);
+    const key = `products/${randomUUID()}/a.jpg`;
+    const up = await storage.presignPut(key, 'image/jpeg', 1234);
+    const limits = {
+      allowedContentTypes: ['image/jpeg'],
+      maximumSizeInBytes: 1234,
+      validUntil: NOW + 600_000,
+    };
+    expect(calls[0]).toEqual({
+      fn: 'issueSignedToken',
+      args: [{ pathname: key, operations: ['put'], ...limits }],
+    });
+    expect(calls[1]).toEqual({
+      fn: 'presignUrl',
+      args: [
+        { delegationToken: 'dt', clientSigningToken: 'cst', validUntil: NOW + 600_000 },
+        {
+          operation: 'put',
+          pathname: key,
+          access: 'public',
+          ...limits,
+          addRandomSuffix: false,
+          allowOverwrite: false,
+        },
+      ],
+    });
+    expect(up).toEqual({
+      url: 'https://blob.vercel-storage.com/?signed=1',
+      method: 'PUT',
+      headers: { 'content-type': 'image/jpeg' },
+      expiresAt: new Date(NOW + 600_000).toISOString(),
+    });
+    expect(JSON.stringify(up)).not.toContain('cst'); // the signing key never leaves the server
+    expect(storage.publicUrl(key)).toBe(`${BASE}/${key}`);
+  });
+
+  it('reads the stored bytes (null when missing) and deletes by key', async () => {
+    const bytes = jpeg();
+    const { api, calls } = fakeBlob({
+      get: (async (key: string) =>
+        key.endsWith('there.jpg')
+          ? {
+              statusCode: 200,
+              stream: new Response(Buffer.from(bytes)).body!,
+              headers: new Headers(),
+              blob: {},
+            }
+          : null) as unknown as BlobApi['get'],
+    });
+    const storage = vercelBlobStorage({ STORAGE_PUBLIC_BASE_URL: BASE }, api);
+    expect(await storage.read('products/x/there.jpg')).toEqual(new Uint8Array(bytes));
+    expect(await storage.read('products/x/gone.jpg')).toBeNull();
+    await storage.delete('products/x/there.jpg');
+    expect(calls).toContainEqual({ fn: 'del', args: ['products/x/there.jpg'] });
+  });
+
+  it('is chosen only when fully configured, and the local driver also expires in 10 minutes', async () => {
+    const { storageDriver } = await import('./storage');
+    expect(() => storageDriver({ VERCEL: '1', STORAGE_DRIVER: 'vercel-blob' })).toThrow(
+      /needs STORAGE_PUBLIC_BASE_URL/,
+    );
+    expect(
+      storageDriver({
+        VERCEL: '1',
+        STORAGE_DRIVER: 'vercel-blob',
+        STORAGE_PUBLIC_BASE_URL: BASE,
+        BLOB_STORE_ID: 'store_abc',
+      }).driver,
+    ).toBe('vercel-blob');
+    const before = Date.now();
+    const up = await getStorage().presignPut(`products/${randomUUID()}/a.jpg`, 'image/jpeg', 10);
+    const ttl = (Date.parse(up.expiresAt) - before) / 1000;
+    expect(ttl).toBeGreaterThan(590);
+    expect(ttl).toBeLessThanOrEqual(601);
   });
 });
