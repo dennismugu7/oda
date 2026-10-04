@@ -35,6 +35,7 @@ export function startRoute(hasSession: boolean, me: MeResult | null): StartRoute
     case 'error':
       return { to: 'error' };
     case 'ok':
-      return me.me.emailVerified ? { to: '/start' } : { to: '/verify', email: me.me.email };
+      // Every account has a verified email (decision #49: accounts exist only after the code).
+      return { to: '/start' };
   }
 }

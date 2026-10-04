@@ -10,6 +10,8 @@ export class HttpError extends Error {
     message: string,
     readonly code: string,
     readonly fields?: Record<string, string>,
+    /** Seconds until the action can be tried again (rate limits, cooldowns). */
+    readonly retryAfter?: number,
   ) {
     super(message);
     this.name = new.target.name;
@@ -42,8 +44,8 @@ export class ConflictError extends HttpError {
 }
 
 export class TooManyRequestsError extends HttpError {
-  constructor(message = 'Too many tries. Try again in a few minutes.') {
-    super(429, message, 'rate_limited');
+  constructor(message = 'Too many tries. Try again in a few minutes.', retryAfter?: number) {
+    super(429, message, 'rate_limited', undefined, retryAfter);
   }
 }
 
@@ -136,7 +138,14 @@ export function toResponse(error: unknown): Response {
   const http = error instanceof HttpError ? error : fromDatabaseError(error);
   if (http) {
     return Response.json(
-      { error: { code: http.code, message: http.message, fields: http.fields } },
+      {
+        error: {
+          code: http.code,
+          message: http.message,
+          fields: http.fields,
+          retryAfter: http.retryAfter,
+        },
+      },
       { status: http.status },
     );
   }

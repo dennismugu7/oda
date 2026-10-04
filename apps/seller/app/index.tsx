@@ -11,6 +11,7 @@ import { fetchMe } from '@/api';
 import { authClient, signOutLocal } from '@/auth/client';
 import { OFFLINE_MESSAGE, UNREACHABLE_MESSAGE } from '@/auth/errors';
 import type { StartRoute } from '@/auth/route';
+import { getPendingSignup } from '@/auth/signup';
 import { resolveStart } from '@/auth/start';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
@@ -33,6 +34,7 @@ export default function StartGate() {
       getCookie: () => authClient.getCookie(),
       fetchMe,
       signOutLocal,
+      getPendingSignup,
     }).then((next) => {
       if (cancelled) return;
       switch (next.to) {
@@ -42,7 +44,8 @@ export default function StartGate() {
           setProblem(next.to);
           return;
         case '/verify':
-          router.replace({ pathname: '/verify', params: { email: next.email, send: '1' } });
+          // A sign-up in progress on this phone: back to its code screen.
+          router.replace({ pathname: '/verify', params: { email: next.email, resumed: '1' } });
           return;
         default:
           router.replace(next.to);

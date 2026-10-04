@@ -21,10 +21,10 @@ describe('startRoute', () => {
     expect(startRoute(true, { kind: 'ok', me: me() })).toEqual({ to: '/start' });
   });
 
-  it('sends an unverified seller to the code screen', () => {
+  it('never sends a signed-in seller to the code screen (accounts exist only once verified)', () => {
+    // Decision #49: the code screen is reached only from a sign-up attempt on this phone.
     expect(startRoute(true, { kind: 'ok', me: me({ emailVerified: false }) })).toEqual({
-      to: '/verify',
-      email: 'amani@example.test',
+      to: '/start',
     });
   });
 

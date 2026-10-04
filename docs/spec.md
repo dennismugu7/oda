@@ -42,7 +42,7 @@ Screens are in `design/app/`. Deviations from the designs are listed in `design-
 Bottom tabs: **Home · Orders · + · Shop · More** ("+" = add product). UI text always writes the brand in lowercase: **oda**.
 
 ### 5.1 Auth (screens 01–08)
-- Implementation: **Better Auth** inside `apps/web` (email + password, the **email OTP plugin** with 6-digit codes and ~10 min expiry for sign-up verification, password reset by emailed link), with Better Auth's Expo integration in the seller app (session token in SecureStore). Emails are sent with Resend using the designs in screens 04 and 06. Sign-in and code attempts are rate-limited.
+- Implementation: **Better Auth** inside `apps/web` (email + password sign-in, sessions, password reset by emailed link), with Better Auth's Expo integration in the seller app (session in SecureStore). Sign-up and its 6-digit code (~10 min expiry) are oda's own: the account is created only when the code is entered, with the password chosen in that sign-up attempt (decision #49). Emails are sent with Resend using the designs in screens 04 and 06. Sign-in and code attempts are rate-limited.
 - Welcome → Sign in / Create new shop.
 - Sign up: email + password (min 8 chars, must include a number). A 6-digit code is sent to the email → verify screen (resend with a 60s cooldown; "check spam" hint).
 - Sign in: email + password. Forgot password → email with a reset link → web page `/reset-password` (screens 07, 08) → back to the app.

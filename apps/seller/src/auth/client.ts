@@ -6,6 +6,7 @@ import { API_URL } from '@/config';
 import { isOnline } from '@/net';
 import { CALL_TIMEOUT_MS, guardedCall, type CallResult } from './call';
 import type { AuthError } from './errors';
+import { clearPendingSignup } from './signup';
 
 // Better Auth's Expo client (decision #43): the session cookie lives in SecureStore and is
 // sent as a Cookie header, with `expo-origin: oda://` (server: the oda:// origin plugin).
@@ -37,6 +38,7 @@ export function authCall<T>(
  */
 export async function signOutLocal(): Promise<void> {
   await guardedCall(() => authClient.signOut(), { isOnline });
+  await clearPendingSignup();
   await SecureStore.deleteItemAsync(`${STORAGE_PREFIX}_cookie`).catch(() => {});
   await SecureStore.deleteItemAsync(`${STORAGE_PREFIX}_session_data`).catch(() => {});
 }

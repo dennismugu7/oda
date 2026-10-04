@@ -6,9 +6,11 @@ export interface AuthError {
   status?: number;
   code?: string;
   message?: string;
+  /** Seconds before trying again (rate limits, the 60 s code cooldown). */
+  retryAfter?: number;
 }
 
-export type ErrorAction = 'verify-email' | 'sign-in-instead' | 'resend-code' | null;
+export type ErrorAction = 'verify-email' | 'sign-in-instead' | 'resend-code' | 'start-again' | null;
 
 export interface FriendlyError {
   message: string;
@@ -21,7 +23,14 @@ export const UNREACHABLE_MESSAGE = "Couldn't reach oda. Try again.";
 const GENERIC = 'Something went wrong. Please try again.';
 
 /** Codes whose message our server writes for sellers (decisions #43–#45). */
-const SERVER_WORDED = new Set(['RATE_LIMITED', 'WEAK_PASSWORD', 'EMAIL_HAS_ACCOUNT']);
+const SERVER_WORDED = new Set([
+  'RATE_LIMITED',
+  'rate_limited',
+  'WEAK_PASSWORD',
+  'EMAIL_HAS_ACCOUNT',
+  'NO_CODE',
+  'invalid', // input checks from our API (zod messages written for sellers)
+]);
 
 export function friendlyAuthError(error: AuthError | null | undefined): FriendlyError {
   if (!error) return { message: GENERIC, action: null };
@@ -36,6 +45,13 @@ export function friendlyAuthError(error: AuthError | null | undefined): Friendly
     return {
       message: error.message,
       action: code === 'EMAIL_HAS_ACCOUNT' ? 'sign-in-instead' : null,
+    };
+  }
+  // The sign-up attempt is gone (expired after 7 days, or used): start again.
+  if (error.status === 404 && code === 'not_found') {
+    return {
+      message: error.message ?? 'This sign-up has expired. Start again.',
+      action: 'start-again',
     };
   }
   switch (code) {

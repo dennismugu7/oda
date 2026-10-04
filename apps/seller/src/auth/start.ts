@@ -10,6 +10,8 @@ export interface StartDeps {
   fetchMe: () => Promise<MeResult>;
   /** Forget a session the server no longer accepts. */
   signOutLocal: () => Promise<void>;
+  /** This phone's sign-up in progress (decision #49), if any. */
+  getPendingSignup?: () => Promise<{ email: string } | null>;
 }
 
 export const START_TIMEOUT_MS = 20_000;
@@ -25,7 +27,11 @@ export async function resolveStart(deps: StartDeps): Promise<StartRoute> {
 async function decide(deps: StartDeps): Promise<StartRoute> {
   const cookie = await deps.getCookie();
   const hasSession = !!cookie && /session_token=/.test(cookie);
-  if (!hasSession) return startRoute(false, null);
+  if (!hasSession) {
+    // A killed app reopens on the code screen of its sign-up in progress.
+    const pending = await deps.getPendingSignup?.();
+    return pending ? { to: '/verify', email: pending.email } : startRoute(false, null);
+  }
   const me = await deps.fetchMe();
   if (me.kind === 'signed-out') await deps.signOutLocal().catch(() => {});
   return startRoute(true, me);

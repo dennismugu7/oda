@@ -21,7 +21,9 @@ import {
 import { colors, spacing, text } from '@/theme';
 
 export default function SignIn() {
-  const params = useLocalSearchParams<{ email?: string }>();
+  // ready=1: the account was just created from the code, but the app no longer holds the
+  // password (it was restarted), so the seller signs in once.
+  const params = useLocalSearchParams<{ email?: string; ready?: string }>();
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -46,13 +48,7 @@ export default function SignIn() {
       router.replace('/');
       return;
     }
-    const friendly = friendlyAuthError(authError);
-    if (friendly.action === 'verify-email') {
-      // Right password, email not confirmed yet: the code screen sends a fresh code.
-      router.push({ pathname: '/verify', params: { email: emailCheck.data, send: '1' } });
-      return;
-    }
-    setError(friendly.message);
+    setError(friendlyAuthError(authError).message);
   }
 
   return (
@@ -66,7 +62,11 @@ export default function SignIn() {
     >
       <Wordmark />
       <Title>Welcome back</Title>
-      <Subtitle>Sign in to your shop.</Subtitle>
+      <Subtitle>
+        {params.ready === '1'
+          ? 'Your shop account is ready. Sign in with the password you chose.'
+          : 'Sign in to your shop.'}
+      </Subtitle>
 
       <View style={styles.form}>
         <Field

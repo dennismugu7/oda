@@ -2,13 +2,10 @@ import 'server-only';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
-import { bearer, emailOTP } from 'better-auth/plugins';
+import { bearer } from 'better-auth/plugins';
 import { and, desc, eq, like } from 'drizzle-orm';
 import { schema } from '@oda/db';
 import {
-  OTP_LENGTH,
-  OTP_MAX_ATTEMPTS,
-  OTP_TTL_SECONDS,
   passwordProblem,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -19,7 +16,7 @@ import {
 } from '@oda/shared';
 import { z } from 'zod';
 import { getDb } from './db';
-import { resetPasswordEmail, verificationCodeEmail } from './email/templates';
+import { resetPasswordEmail } from './email/templates';
 import { sendEmail } from './email/transport';
 import { ensureProfile } from './profiles';
 import {
@@ -31,8 +28,10 @@ import {
   type Limit,
 } from './rateLimit';
 
-// Better Auth (docs/spec.md §5.1, decisions #34, #43): email + password, a 6-digit email code
-// to verify new accounts, password reset by emailed link to the web /reset-password page.
+// Better Auth (docs/spec.md §5.1, decisions #34, #43, #49): email + password sign-in,
+// sessions, password reset by emailed link to the web /reset-password page. Sign-up and its
+// 6-digit code are oda's own (server/signup.ts): accounts are created only once the email is
+// proven, so Better Auth's sign-up and email-code endpoints are not served.
 // Sessions: the seller app (cookie in SecureStore via Better Auth's Expo client); bearer
 // tokens stay for server tests. Only the endpoints in AUTH_ROUTES are reachable over HTTP
 // (app/api/auth/[...all]/route.ts).
@@ -73,15 +72,7 @@ export const AUTH_LIMITS = {
 /** The HTTP endpoints the app and the web use; everything else Better Auth offers is 404. */
 export const AUTH_ROUTES = {
   GET: ['/get-session'],
-  POST: [
-    '/sign-up/email',
-    '/sign-in/email',
-    '/sign-out',
-    '/email-otp/send-verification-otp',
-    '/email-otp/verify-email',
-    '/request-password-reset',
-    '/reset-password',
-  ],
+  POST: ['/sign-in/email', '/sign-out', '/request-password-reset', '/reset-password'],
 } as const;
 
 const signInFailKey = (email: string) => `signin-fail:${email.trim().toLowerCase()}`;
@@ -105,17 +96,6 @@ async function limitOrThrow(key: string, limit: Limit, message: string): Promise
 function weakPassword(password: unknown): void {
   const problem = typeof password === 'string' ? passwordProblem(password) : 'Enter a password.';
   if (problem) throw new APIError('BAD_REQUEST', { code: 'WEAK_PASSWORD', message: problem });
-}
-
-/** When the newest verification code for this email was created. */
-async function lastCodeSentAt(email: string): Promise<Date | null> {
-  const [row] = await getDb()
-    .select({ createdAt: schema.authVerification.createdAt })
-    .from(schema.authVerification)
-    .where(eq(schema.authVerification.identifier, `email-verification-otp-${email}`))
-    .orderBy(desc(schema.authVerification.createdAt))
-    .limit(1);
-  return row?.createdAt ?? null;
 }
 
 /** When the user's two newest reset links were created, newest first. */
@@ -150,22 +130,6 @@ async function checkLimitsAndRules(ctx: Parameters<Parameters<typeof createAuthM
   const db = getDb();
 
   switch (ctx.path) {
-    case '/sign-up/email': {
-      weakPassword(body.password);
-      await limitOrThrow(`signup-ip:${ip}`, AUTH_LIMITS.signUpPerIp, 'Too many new accounts.');
-      // Owner's choice (decision #43): say so plainly instead of Better Auth's generic reply.
-      const existing = await db.query.authUser.findFirst({
-        columns: { id: true },
-        where: eq(schema.authUser.email, email),
-      });
-      if (existing) {
-        throw new APIError('UNPROCESSABLE_ENTITY', {
-          code: 'EMAIL_HAS_ACCOUNT',
-          message: 'This email already has a shop. Sign in?',
-        });
-      }
-      return;
-    }
     case '/sign-in/email': {
       const failures = AUTH_LIMITS.signInFailuresPerEmail;
       if (email && (await isLimited(db, signInFailKey(email), failures))) {
@@ -176,24 +140,6 @@ async function checkLimitsAndRules(ctx: Parameters<Parameters<typeof createAuthM
         );
       }
       await limitOrThrow(`signin-ip:${ip}`, AUTH_LIMITS.signInPerIp, 'Too many sign-in attempts.');
-      return;
-    }
-    case '/email-otp/send-verification-otp': {
-      if (body.type !== 'email-verification') {
-        throw new APIError('BAD_REQUEST', { code: 'INVALID_TYPE', message: 'Not available.' });
-      }
-      const wait = resendWaitSeconds(await lastCodeSentAt(email));
-      if (wait > 0) {
-        tooMany(`Wait ${wait} seconds before asking for a new code.`, wait);
-      }
-      await limitOrThrow(`code-send:${email}`, AUTH_LIMITS.codeSendsPerEmail, 'Too many codes.');
-      await limitOrThrow(`code-send-ip:${ip}`, AUTH_LIMITS.codeSendsPerIp, 'Too many codes.');
-      return;
-    }
-    case '/email-otp/verify-email': {
-      const message = 'Too many tries.';
-      await limitOrThrow(`code-check:${email}`, AUTH_LIMITS.codeChecksPerEmail, message);
-      await limitOrThrow(`code-check-ip:${ip}`, AUTH_LIMITS.codeChecksPerIp, message);
       return;
     }
     case '/request-password-reset': {
@@ -291,26 +237,7 @@ export const authOptions = {
       await sendEmail(resetPasswordEmail(user.email, resetPageUrl(base, token)));
     },
   },
-  emailVerification: {
-    // After the code is checked the app is signed in straight away.
-    autoSignInAfterVerification: true,
-    sendOnSignIn: false,
-  },
-  plugins: [
-    bearer(),
-    expoOrigin,
-    emailOTP({
-      otpLength: OTP_LENGTH,
-      expiresIn: OTP_TTL_SECONDS,
-      allowedAttempts: OTP_MAX_ATTEMPTS,
-      storeOTP: 'hashed',
-      overrideDefaultEmailVerification: true,
-      async sendVerificationOTP({ email, otp, type }) {
-        if (type !== 'email-verification') return;
-        await sendEmail(verificationCodeEmail(email, otp));
-      },
-    }),
-  ],
+  plugins: [bearer(), expoOrigin],
   hooks: { before: beforeHook, after: afterHook },
   databaseHooks: {
     user: {

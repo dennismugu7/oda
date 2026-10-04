@@ -1,14 +1,22 @@
-// 03 Confirm your email: the 6-digit code (Better Auth email OTP). Changes from the image:
-// 6 boxes, a 60 s resend countdown, Poppins and brand colours (design-changes.md).
-// Params: email; send=1 asks for a fresh code on open (from sign-in or the start gate).
+// 03 Confirm your email: the 6-digit code for this phone's sign-up attempt (decision #49).
+// Changes from the image: 6 boxes, a 60 s resend countdown, Poppins and brand colours
+// (design-changes.md). The attempt id comes from SecureStore, so a killed app reopens
+// here. Params: email; resumed=1 ("Finish signing up"); codeSent=0|1; retryAfter (seconds).
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { OTP_LENGTH } from '@oda/shared';
 import { authCall, authClient } from '@/auth/client';
 import { cleanCode, formatCountdown, resendAvailableAt, secondsUntil } from '@/auth/countdown';
-import { friendlyAuthError } from '@/auth/errors';
-import { AuthScreen, Button, ErrorMessage, InfoNote, Subtitle, Title } from '@/ui/auth';
+import { friendlyAuthError, type FriendlyError } from '@/auth/errors';
+import {
+  getPendingSignup,
+  passwordFor,
+  resendSignupCode,
+  verifySignupCode,
+  type PendingSignup,
+} from '@/auth/signup';
+import { AuthScreen, Button, ErrorMessage, InfoNote, Link, Subtitle, Title } from '@/ui/auth';
 import { colors, radii, sizes, spacing, text } from '@/theme';
 
 function useSecondsUntil(at: number): number {
@@ -22,68 +30,82 @@ function useSecondsUntil(at: number): number {
 }
 
 export default function Verify() {
-  const { email = '', send } = useLocalSearchParams<{ email: string; send?: string }>();
+  const params = useLocalSearchParams<{
+    email?: string;
+    resumed?: string;
+    codeSent?: string;
+    retryAfter?: string;
+  }>();
+  const [attempt, setAttempt] = useState<PendingSignup | null | undefined>(undefined);
+  const email = attempt?.email ?? params.email ?? '';
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FriendlyError | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [resendAt, setResendAt] = useState(() => resendAvailableAt(Date.now()));
+  const [resendAt, setResendAt] = useState(() =>
+    resendAvailableAt(Date.now(), params.retryAfter ? Number(params.retryAfter) : undefined),
+  );
   const wait = useSecondsUntil(resendAt);
   const input = useRef<TextInput>(null);
-  const asked = useRef(false);
-
-  const requestCode = useCallback(
-    async (manual: boolean) => {
-      setError(null);
-      setInfo(null);
-      const { error: authError } = await authCall(() =>
-        authClient.emailOtp.sendVerificationOtp({ email, type: 'email-verification' }),
-      );
-      if (authError) {
-        const retryAfter = (authError as { retryAfter?: number }).retryAfter;
-        if (authError.status === 429 && retryAfter !== undefined) {
-          // A code went out moments ago: just show the countdown.
-          setResendAt(resendAvailableAt(Date.now(), retryAfter));
-          if (manual) setError(friendlyAuthError(authError).message);
-          return;
-        }
-        setError(friendlyAuthError(authError).message);
-        return;
-      }
-      setResendAt(resendAvailableAt(Date.now()));
-      setCode('');
-      if (manual) setInfo('We sent you a new code.');
-    },
-    [email],
-  );
 
   useEffect(() => {
-    if (send === '1' && !asked.current) {
-      asked.current = true;
-      void requestCode(false);
+    let cancelled = false;
+    getPendingSignup().then((pending) => {
+      if (!cancelled) setAttempt(pending);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const resend = useCallback(async () => {
+    if (!attempt) return;
+    setError(null);
+    setInfo(null);
+    const { data, error: apiError } = await resendSignupCode(attempt.attemptId);
+    if (apiError) {
+      if (apiError.retryAfter !== undefined) {
+        setResendAt(resendAvailableAt(Date.now(), apiError.retryAfter));
+      }
+      setError(friendlyAuthError(apiError));
+      return;
     }
-  }, [send, requestCode]);
+    setResendAt(resendAvailableAt(Date.now(), data?.retryAfter || undefined));
+    setCode('');
+    setInfo('We sent you a new code.');
+  }, [attempt]);
 
   const verify = useCallback(
     async (value: string) => {
-      if (value.length !== OTP_LENGTH || busy) return;
+      if (!attempt || value.length !== OTP_LENGTH || busy) return;
       setBusy(true);
       setError(null);
       setInfo(null);
-      const { error: authError } = await authCall(() =>
-        authClient.emailOtp.verifyEmail({ email, otp: value }),
-      );
-      setBusy(false);
-      if (authError) {
-        setError(friendlyAuthError(authError).message);
+      const { error: apiError } = await verifySignupCode(attempt.attemptId, value);
+      if (apiError) {
+        setBusy(false);
+        setError(friendlyAuthError(apiError));
         setCode('');
         input.current?.focus();
         return;
       }
-      // Signed in by the server (auto sign-in after the code): the start gate takes over.
-      router.replace('/');
+      // The account exists now. Sign in with the password typed on the sign-up screen; if
+      // the app was restarted since (it isn't kept on the phone), ask for it.
+      const password = passwordFor(attempt.email);
+      if (password) {
+        const signedIn = await authCall(() =>
+          authClient.signIn.email({ email: attempt.email, password }),
+        );
+        setBusy(false);
+        if (!signedIn.error) {
+          router.replace('/');
+          return;
+        }
+      }
+      setBusy(false);
+      router.replace({ pathname: '/sign-in', params: { email: attempt.email, ready: '1' } });
     },
-    [email, busy],
+    [attempt, busy],
   );
 
   function onChange(value: string) {
@@ -99,14 +121,17 @@ export default function Verify() {
           title="Verify"
           onPress={() => void verify(code)}
           loading={busy}
-          disabled={code.length !== OTP_LENGTH}
+          disabled={code.length !== OTP_LENGTH || !attempt}
         />
       }
       note={<InfoNote icon="info">Nothing yet? Check your spam folder.</InfoNote>}
     >
-      <Title>Confirm your email</Title>
+      <Title>{params.resumed === '1' ? 'Finish signing up' : 'Confirm your email'}</Title>
       <Subtitle>
-        We sent a {OTP_LENGTH}-digit code to{'\n'}
+        {params.resumed === '1' && params.codeSent === '1'
+          ? 'We sent a new code to'
+          : `We sent a ${OTP_LENGTH}-digit code to`}
+        {'\n'}
         <Text style={styles.email}>{email}</Text>
       </Subtitle>
 
@@ -141,7 +166,31 @@ export default function Verify() {
         />
       </Pressable>
 
-      {error ? <ErrorMessage>{error}</ErrorMessage> : null}
+      {attempt === null && !error ? (
+        <ErrorMessage>
+          This sign-up has expired.{' '}
+          <Link onPress={() => router.replace('/sign-up')}>Start again</Link>
+        </ErrorMessage>
+      ) : null}
+      {error ? (
+        <ErrorMessage>
+          {error.message}
+          {error.action === 'start-again' ? (
+            <>
+              {' '}
+              <Link onPress={() => router.replace('/sign-up')}>Start again</Link>
+            </>
+          ) : null}
+          {error.action === 'sign-in-instead' ? (
+            <>
+              {' '}
+              <Link onPress={() => router.replace({ pathname: '/sign-in', params: { email } })}>
+                Sign in
+              </Link>
+            </>
+          ) : null}
+        </ErrorMessage>
+      ) : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
 
       <Text style={styles.resend}>
@@ -149,11 +198,7 @@ export default function Verify() {
         {wait > 0 ? (
           <Text style={styles.countdown}>Resend in {formatCountdown(wait)}</Text>
         ) : (
-          <Text
-            accessibilityRole="button"
-            style={styles.resendLink}
-            onPress={() => void requestCode(true)}
-          >
+          <Text accessibilityRole="button" style={styles.resendLink} onPress={() => void resend()}>
             Resend
           </Text>
         )}

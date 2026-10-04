@@ -5,6 +5,10 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 
 ## Accounts & shops
 
+**signup_attempts**: sign-ups in progress (decision #49). Nothing exists in `auth_user` until the code is entered.
+- `id` (the attempt id: returned only to the phone that started it, never emailed), `email` (lowercase), `password_hash` (Better Auth's hash of the password chosen in this attempt), `code_hash` (HMAC-SHA256 of `{id}:{code}`, keyed from the server secret; null until a code is sent), `code_expires_at` (10 min), `code_attempts` (max 3 wrong), `last_sent_at` (60 s cooldown per email), `created_at`
+- Verify locks the attempt (`SELECT … FOR UPDATE`, plus a per-email advisory lock) and, in one transaction, creates `auth_user` (verified), the credential `auth_account` with this attempt's `password_hash`, and `profiles`, then deletes this attempt. Any other attempt for the email is refused ("already has a shop") and deleted when it is used. Attempts older than 7 days are deleted lazily on each sign-up start (batches of 100) and by `/api/cron/purge` (M8). Indexes: `email`, `created_at`.
+
 **profiles**: one per auth user
 - `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `is_admin bool default false`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists), `deleted_at`
 

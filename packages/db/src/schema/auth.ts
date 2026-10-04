@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, id, tstz, updatedAt } from './columns';
 
 // Better Auth's core tables (decision #34): prefixed auth_ because "user" is reserved in
@@ -65,4 +65,29 @@ export const authVerification = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [index('auth_verification_identifier_idx').on(t.identifier)],
+);
+
+/**
+ * Sign-ups in progress (decision #49). Nothing exists in auth_user until the code is
+ * entered: each attempt holds its own pending password hash and its own code (HMAC), and
+ * only the attempt whose code is entered creates the account. Attempts older than 7 days
+ * are deleted lazily (and by /api/cron/purge in M8).
+ */
+export const signupAttempts = pgTable(
+  'signup_attempts',
+  {
+    id: id(),
+    email: text('email').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    /** HMAC-SHA256 of `${id}:${code}`; null until a code has been sent (cooldown). */
+    codeHash: text('code_hash'),
+    codeExpiresAt: tstz('code_expires_at'),
+    codeAttempts: integer('code_attempts').notNull().default(0),
+    lastSentAt: tstz('last_sent_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('signup_attempts_email_idx').on(t.email),
+    index('signup_attempts_created_at_idx').on(t.createdAt),
+  ],
 );
