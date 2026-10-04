@@ -3,7 +3,8 @@
 // of the seller's channels that open their app directly (src/onboarding/shareActions.ts),
 // the "Finish setting up" checklist near the top, a ready-made post the seller can edit
 // (EN/SW, "Try another"; the shop link is always included, tagged ?s=… per button), and
-// "Go to my shop". "See what buyers see" stays hidden until M4 (decision #41 b).
+// "Go to my shop". "See what buyers see" opens the real shop in the in-app browser (M4,
+// decision #60).
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
@@ -36,6 +37,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import type { IconName } from '@/onboarding/labels';
+import { openBuyerView } from '@/catalogue/preview';
 import { shareTo, type ShareDeps } from '@/onboarding/shareActions';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, FormMessage } from '@/ui/auth';
@@ -213,6 +215,15 @@ function Step({ state }: { state: OnboardingState }) {
               <Text style={styles.copyText}>{copied ? 'Copied' : 'Copy'}</Text>
             </Pressable>
           </View>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => openBuyerView(shop.url)}
+            hitSlop={8}
+            style={styles.seeBuyers}
+          >
+            <Text style={styles.seeBuyersText}>See what buyers see</Text>
+            <Feather name="arrow-right" size={18} color={colors.textOnNavy} />
+          </Pressable>
         </View>
 
         <View style={styles.body}>
@@ -466,6 +477,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
+  seeBuyers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    minHeight: 44,
+    alignSelf: 'flex-start',
+  },
+  seeBuyersText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
   copyText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
 
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, marginTop: spacing.lg },

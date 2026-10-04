@@ -74,7 +74,7 @@ export default function Home() {
             Coming soon to Google Play
           </p>
         )}
-        <p className="mt-2 text-center text-small text-text-muted">For Android phones.</p>
+        <p className="mt-2 text-center text-small text-text-secondary">For Android phones.</p>
       </div>
 
       <ul className="mt-10 space-y-3">

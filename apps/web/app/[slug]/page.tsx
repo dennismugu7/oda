@@ -124,7 +124,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
       <div className="mt-4 flex gap-2 px-4">
         <form
           action={`/${shop.slug}/search`}
-          className="flex flex-1 items-center gap-2 rounded-pill border border-border px-4"
+          className="flex flex-1 items-center gap-2 rounded-pill border border-border px-4 focus-within:border-navy focus-within:ring-2 focus-within:ring-navy"
         >
           <svg
             viewBox="0 0 24 24"
@@ -250,7 +250,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
         )}
       </section>
 
-      <footer className="mt-10 px-4 text-center text-small text-text-muted">
+      <footer className="mt-10 px-4 text-center text-small text-text-secondary">
         <p>
           Pay the seller directly on M-Pesa{shop.acceptsPayOnDelivery ? ' or on delivery' : ''}.
         </p>
