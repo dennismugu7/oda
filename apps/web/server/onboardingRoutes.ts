@@ -2,6 +2,7 @@ import 'server-only';
 import { z } from 'zod';
 import {
   onboardingAnswer,
+  onboardingLogo,
   onboardingPayment,
   onboardingProduct,
   onboardingShop,
@@ -70,6 +71,15 @@ export const postShop = handle(async (request) => {
   const db = getDb();
   const ctx = await requireUser(request, db);
   await onboardingUserRepo(db, ctx).saveShop(parseInput(onboardingShop, await body(request)));
+  return state(request);
+});
+
+/** POST /api/onboarding/logo: step 3's logo (or null to remove it). */
+export const postLogo = handle(async (request) => {
+  const db = getDb();
+  const ctx = await requireSeller(request, db);
+  const { logoPath } = parseInput(onboardingLogo, await body(request));
+  await onboardingShopRepo(db, ctx).saveLogo(logoPath);
   return state(request);
 });
 

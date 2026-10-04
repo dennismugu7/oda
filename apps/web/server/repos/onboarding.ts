@@ -15,6 +15,7 @@ import {
 } from '@oda/shared';
 import type { SellerCtx, UserCtx } from '../authz';
 import { ConflictError, withDbErrors } from '../errors';
+import { flushDeletions, publicUrl, queueDeletions, verifyStoredImage } from '../uploads';
 import { sellerRepo } from './seller';
 import { userRepo } from './user';
 
@@ -112,6 +113,7 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
           url: `${shopBaseUrl}/${shop.slug}`,
           whatsappPhone: shop.whatsappPhone,
           logoPath: shop.logoPath,
+          logoUrl: publicUrl(shop.logoPath),
           businessType: shop.businessType,
           channels: shop.channels,
         },
@@ -121,7 +123,11 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
               name: product.name,
               price: product.price,
               sizes: product.sizes,
-              photos,
+              photos: photos.map((p) => ({
+                ...p,
+                url: publicUrl(p.objectKey),
+                thumbUrl: publicUrl(p.thumbKey),
+              })),
             }
           : null,
         payment: {
@@ -241,30 +247,67 @@ export function onboardingShopRepo(db: Db, ctx: SellerCtx) {
     /** Step 4: the first product with its photos (first = cover); replaces them on a redo. */
     async saveProduct(input: OnboardingProduct) {
       await shopInProgress();
-      const [first] = await db
-        .select({ id: t.products.id })
-        .from(t.products)
-        .where(and(eq(t.products.shopId, ctx.shopId), isNull(t.products.deletedAt)))
-        .orderBy(asc(t.products.createdAt))
-        .limit(1);
-      const fields = { name: input.name, price: input.price, sizes: input.sizes };
-      const product = first
-        ? await seller.updateProduct(first.id, fields)
-        : await seller.createProduct({
-            ...fields,
-            description: null,
-            compareAtPrice: null,
-            categoryId: null,
-            status: 'available',
-            colours: [],
-            position: 0,
-          });
-      if (first) await db.delete(t.productPhotos).where(eq(t.productPhotos.productId, product.id));
-      for (const [position, photo] of input.photos.entries()) {
-        await seller.addProductPhoto(product.id, { ...photo, position });
+      // Every photo must really be stored, a JPEG/PNG/WebP without location data (#52).
+      for (const photo of input.photos) {
+        await verifyStoredImage(ctx, photo.objectKey, ['products'], db);
+        await verifyStoredImage(ctx, photo.thumbKey, ['products'], db);
       }
-      await reachStep(db, ctx.shopId, 5);
+      const replaced: string[] = [];
+      const product = await db.transaction(async (tx) => {
+        const scoped = sellerRepo(tx as unknown as Db, ctx);
+        const [first] = await tx
+          .select({ id: t.products.id })
+          .from(t.products)
+          .where(and(eq(t.products.shopId, ctx.shopId), isNull(t.products.deletedAt)))
+          .orderBy(asc(t.products.createdAt))
+          .limit(1);
+        const fields = { name: input.name, price: input.price, sizes: input.sizes };
+        const row = first
+          ? await scoped.updateProduct(first.id, fields)
+          : await scoped.createProduct({
+              ...fields,
+              description: null,
+              compareAtPrice: null,
+              categoryId: null,
+              status: 'available',
+              colours: [],
+              position: 0,
+            });
+        if (first) {
+          // Going back to step 4: the old photos go, and their stored files with them.
+          const old = await tx
+            .delete(t.productPhotos)
+            .where(eq(t.productPhotos.productId, row.id))
+            .returning({
+              objectKey: t.productPhotos.objectKey,
+              thumbKey: t.productPhotos.thumbKey,
+            });
+          const kept = new Set(input.photos.flatMap((p) => [p.objectKey, p.thumbKey]));
+          replaced.push(
+            ...old.flatMap((p) => [p.objectKey, p.thumbKey]).filter((k) => !kept.has(k)),
+          );
+          await queueDeletions(tx as unknown as Db, replaced);
+        }
+        for (const [position, photo] of input.photos.entries()) {
+          await scoped.addProductPhoto(row.id, { ...photo, position });
+        }
+        await reachStep(tx as unknown as Db, ctx.shopId, 5);
+        return row;
+      });
+      await flushDeletions(db, replaced);
       return product;
+    },
+
+    /** Step 3's logo (tap the avatar in the preview), or null to remove it. */
+    async saveLogo(logoPath: string | null) {
+      const shop = await shopInProgress();
+      if (logoPath) await verifyStoredImage(ctx, logoPath, ['logos'], db);
+      const old = shop.logoPath && shop.logoPath !== logoPath ? [shop.logoPath] : [];
+      await db.transaction(async (tx) => {
+        await tx.update(t.shops).set({ logoPath }).where(eq(t.shops.id, ctx.shopId));
+        await queueDeletions(tx as unknown as Db, old);
+      });
+      await flushDeletions(db, old);
     },
 
     /**

@@ -127,7 +127,41 @@ describe('step 5', () => {
 describe('size presets', () => {
   it('cover every business type', () => {
     for (const type of BUSINESS_TYPES) expect(SIZE_PRESETS[type], type).toBeDefined();
-    expect(SIZE_PRESETS.fashion).toEqual(['S', 'M', 'L', 'XL']);
+    expect(SIZE_PRESETS.fashion).toEqual(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free size']);
+    expect(SIZE_PRESETS.shoes_bags).toEqual([
+      '36',
+      '37',
+      '38',
+      '39',
+      '40',
+      '41',
+      '42',
+      '43',
+      '44',
+      '45',
+    ]);
+    expect(SIZE_PRESETS.food_drinks).toEqual([]);
+  });
+
+  it('fit the limits together with custom sizes (20 sizes, 20 characters each)', () => {
+    const sizes = [...SIZE_PRESETS.shoes_bags, 'One size', '42 wide', 'Twenty chars exactly'];
+    expect('Twenty chars exactly').toHaveLength(20);
+    const ok = onboardingProduct.parse({ name: 'Sandals', price: 1800, sizes, photos: [photo(1)] });
+    expect(ok.sizes).toHaveLength(13);
+    const tooLong = onboardingProduct.safeParse({
+      name: 'X',
+      price: 1,
+      sizes: ['x'.repeat(21)],
+      photos: [photo(1)],
+    });
+    expect(tooLong.success).toBe(false);
+    const tooMany = onboardingProduct.safeParse({
+      name: 'X',
+      price: 1,
+      sizes: Array.from({ length: 21 }, (_, i) => `S${i}`),
+      photos: [photo(1)],
+    });
+    expect(tooMany.error?.issues[0]?.message).toBe('Add at most 20 sizes.');
   });
 });
 

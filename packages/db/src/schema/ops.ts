@@ -126,3 +126,14 @@ export const rateLimits = pgTable(
     index('rate_limits_window_idx').on(t.windowStart),
   ],
 );
+
+/**
+ * Storage objects to delete (decision #52): replaced or rejected photos and logos. Rows are
+ * written in the same transaction that drops the reference; the object is deleted right
+ * after, and the row removed. Anything left (a failed delete) is retried by
+ * /api/cron/purge (M8).
+ */
+export const storageDeletions = pgTable('storage_deletions', {
+  objectKey: text('object_key').primaryKey(),
+  createdAt: createdAt(),
+});

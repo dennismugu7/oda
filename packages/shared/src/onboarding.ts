@@ -9,6 +9,10 @@ import { channels, paymentAccountInput, shopCreate } from './schemas/write';
 
 export const ONBOARDING_STEPS = 6;
 
+/** Sizes on a product: at most 20, each at most 20 characters. */
+export const SIZES_MAX = 20;
+export const SIZE_MAX_LENGTH = 20;
+
 /** Steps 1–2 (before the shop exists): an answer, or Skip. */
 export const onboardingAnswer = z.union([
   z.strictObject({
@@ -33,6 +37,9 @@ export interface OnboardingDraft {
 export const onboardingShop = shopCreate.pick({ name: true, slug: true, whatsappPhone: true });
 export type OnboardingShop = z.infer<typeof onboardingShop>;
 
+/** Step 3's logo (tap the avatar in the preview); null removes it. */
+export const onboardingLogo = z.strictObject({ logoPath: objectKey.nullable() });
+
 /** One photo, already resized on the phone into a full image and a thumbnail. */
 export const onboardingPhoto = z.strictObject({
   objectKey,
@@ -45,9 +52,10 @@ export const onboardingPhoto = z.strictObject({
 export const onboardingProduct = z.strictObject({
   name: requiredText(1, 80, 'Product name'),
   price: shillings('Price').min(1, { error: 'Price must be at least KSh 1.' }),
+  // Presets are suggestions: sellers add their own ("One size", "42 wide") and remove any.
   sizes: z
-    .array(requiredText(1, 20, 'A size'))
-    .max(30, { error: 'Add at most 30 sizes.' })
+    .array(requiredText(1, SIZE_MAX_LENGTH, 'A size'))
+    .max(SIZES_MAX, { error: `Add at most ${SIZES_MAX} sizes.` })
     .transform((list) => [...new Set(list)])
     .default([]),
   photos: z
@@ -64,10 +72,13 @@ export const onboardingPayment = z.union([
 ]);
 export type OnboardingPayment = z.infer<typeof onboardingPayment>;
 
-/** Size chips offered on step 4 for the business type (decision #41: no categories). */
+/**
+ * Size chips suggested on step 4 for the business type (decision #41: no categories; owner,
+ * Step 52). Suggestions only: the seller can remove them and add their own.
+ */
 export const SIZE_PRESETS: Record<BusinessType, readonly string[]> = {
-  fashion: ['S', 'M', 'L', 'XL'],
-  shoes_bags: ['38', '39', '40', '41', '42', '43'],
+  fashion: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free size'],
+  shoes_bags: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'],
   baby_kids: ['0–6m', '6–12m', '1–2y', '3–4y', '5–6y'],
   beauty_hair: [],
   food_drinks: [],

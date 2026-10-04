@@ -69,6 +69,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **reports**: from buyers: `order_id`, `message`, `contact_phone`, `status` (ticket_status), `admin_note`
 **deletion_requests**: `email`, `shop_slug null`, `reason`, `status` (ticket_status), `processed_at`
 **rate_limits** (Postgres table, fixed-window counter via an upsert function): `key`, `window_start`, `count`
+**storage_deletions**: `object_key` (pk), `created_at`: stored files to delete (replaced or rejected photos/logos), queued in the same transaction that drops the reference; retried by `/api/cron/purge` (decision #52)
 
 ## File storage (Cloudflare R2)
 R2 public access applies to a whole bucket, so public and private files live in separate buckets (decision #42). Per environment:
@@ -77,7 +78,7 @@ R2 public access applies to a whole bucket, so public and private files live in 
 - **Private backups bucket** (staging `oda-backups-staging`): the nightly encrypted `pg_dump` files
 Each bucket has its own API token, scoped to that bucket.
 
-Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads`). The API checks that the caller owns the shop (or holds the order token, for review photos), and enforces content type (JPEG/PNG/WebP) and max size (5 MB). The client uploads straight to R2, then saves the key through the API. Deleting a product/shop deletes its objects (directly, or via the purge job).
+Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads`; storage interface local / S3-compatible / disabled, byte checks incl. location data, `storage_deletions` queue for replaced files: decision #52). The API checks that the caller owns the shop (or holds the order token, for review photos), and enforces content type (JPEG/PNG/WebP) and max size (5 MB). The client uploads straight to R2, then saves the key through the API. Deleting a product/shop deletes its objects (directly, or via the purge job).
 
 ## Authorization (replaces database RLS)
 - The database is reachable **only from the server** (`apps/web` API routes and server components). The seller app and the browser never get database credentials.

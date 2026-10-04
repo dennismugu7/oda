@@ -16,6 +16,7 @@ import {
 } from './onboardingRoutes';
 import { getDb } from './db';
 import { signUpVerified } from '@/test/auth';
+import { storedPhoto } from '@/test/storage';
 
 // Seller onboarding API, steps 1–6 (decision #51), through the route handlers with real
 // sessions, against oda_test.
@@ -54,6 +55,7 @@ async function newSeller(email = `seller-${randomUUID().slice(0, 8)}@example.tes
 
 type Seller = Awaited<ReturnType<typeof newSeller>>;
 
+/** Keys only (not stored): for requests rejected before the storage check. */
 const photo = (shopId: string, n: number) => ({
   objectKey: `products/${shopId}/p${n}.jpg`,
   thumbKey: `products/${shopId}/p${n}_thumb.jpg`,
@@ -78,7 +80,7 @@ async function throughStep4(s: Seller) {
     name: 'Ankara wrap dress',
     price: 2500,
     sizes: ['M', 'L'],
-    photos: [photo(shopId, 1), photo(shopId, 2)],
+    photos: [await storedPhoto(shopId, 1), await storedPhoto(shopId, 2)],
   });
   expect(res.status).toBe(200);
   return shopId;
@@ -94,7 +96,7 @@ describe('steps 1–2: answers in the draft', () => {
 
     const one = await s.call(postAnswer, { step: 1, businessType: 'fashion' });
     expect(one.json).toMatchObject({ step: 2, draft: { businessType: 'fashion' } });
-    expect(one.json.sizePresets).toEqual(['S', 'M', 'L', 'XL']);
+    expect(one.json.sizePresets).toEqual(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free size']);
     expect((await s.me()).onboarding).toEqual({ step: 2, done: false });
 
     const two = await s.call(postAnswer, { step: 2, channels: ['tiktok', 'whatsapp'] });
@@ -263,7 +265,11 @@ describe('step 4: the first product', () => {
   it('a redo replaces the product and its photos (still one product)', async () => {
     const s = await newSeller();
     const shopId = await throughStep4(s);
-    await s.call(postProduct, { name: 'Kitenge top', price: 1200, photos: [photo(shopId, 9)] });
+    await s.call(postProduct, {
+      name: 'Kitenge top',
+      price: 1200,
+      photos: [await storedPhoto(shopId, 9)],
+    });
     const products = await db()
       .select()
       .from(schema.products)
@@ -344,7 +350,7 @@ describe('step 5: where buyers pay', () => {
     await s.call(postProduct, {
       name: 'Dress',
       price: 100,
-      photos: [photo((await s.call(getOnboarding)).json.shop.id, 1)],
+      photos: [await storedPhoto((await s.call(getOnboarding)).json.shop.id, 1)],
     });
     for (const extra of [
       { verificationStatus: 'verified' },

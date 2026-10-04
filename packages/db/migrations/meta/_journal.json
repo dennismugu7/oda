@@ -29,6 +29,13 @@
       "when": 1791088891304,
       "tag": "0003_signup_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791100691971,
+      "tag": "0004_storage_deletions",
+      "breakpoints": true
     }
   ]
 }
