@@ -37,7 +37,9 @@ Newest entries at the top.
 17. Shop tab chips now show the categories with products (e.g. "Dresses 1").
 18. More → Sign out → Welcome. Sign in again → Home.
 
-**Next:** merge to `main` (staging) → EAS Update → owner's review stop B.
+- **Shipped:** PR #17 merged (`8797ec9`); main CI and `migrate-staging` passed; `/api/health` → `{"ok":true,"db":"up","commit":"8797ec9"}`. EAS Update to `preview`, runtime 0.2.0: group `bd21e850-3d3e-47cf-bd85-a38cb003c2c3` ("M3: Shop tab, add/edit product, categories"); no native build.
+
+**Next:** owner's review stop B (list above).
 
 ## 2026-10-04 · M2 tagged; M3 CP1 + CP2, at review stop A (branch `m3-catalogue`, owner Step 60)
 
