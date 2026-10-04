@@ -3,7 +3,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, View, type TextInput } from 'react-native';
+import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
 import { emailSchema, passwordProblem } from '@oda/shared';
 import { startSignup } from '@/auth/signup';
 import { friendlyAuthError, type FriendlyError } from '@/auth/errors';
@@ -36,6 +36,8 @@ export default function SignUp() {
   const passwordError = submitted ? passwordProblem(password) : null;
 
   async function submit() {
+    // Close the keyboard so the answer (or an error) is never hidden behind it (Step 49).
+    Keyboard.dismiss();
     setSubmitted(true);
     setError(null);
     if (!emailCheck.success || passwordProblem(password)) return;
@@ -111,7 +113,7 @@ export default function SignUp() {
       </View>
 
       {error ? (
-        <ErrorMessage>
+        <ErrorMessage revealKey={error.message}>
           {error.message}
           {error.action === 'sign-in-instead' ? (
             <>

@@ -2,7 +2,7 @@
 // whether or not the email has an account (decision #43); the link opens the web page 07.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, View } from 'react-native';
 import { emailSchema } from '@oda/shared';
 import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError } from '@/auth/errors';
@@ -30,6 +30,8 @@ export default function ForgotPassword() {
   const emailError = submitted && !emailCheck.success ? emailCheck.error.issues[0]?.message : null;
 
   async function submit() {
+    // Close the keyboard so the answer (or an error) is never hidden behind it (Step 49).
+    Keyboard.dismiss();
     setSubmitted(true);
     setError(null);
     if (!emailCheck.success) return;
