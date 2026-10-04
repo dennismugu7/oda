@@ -2,6 +2,40 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M2a gate passed, tag `m2a-done`
+
+**Owner's phone retest A–E passed**; the M2a hand test (1–18) is complete after the fixes.
+
+**Safe EAS updates (decision #50):** `pnpm update:preview "What changed"` always publishes from `apps/seller` (`apps/seller/scripts/eas-update.mjs`), needs a message, and refuses to run, or fails, when `app.json`/`app.config.*`/`eas.json` exist at the repo root; CI step **No stray Expo files at the repo root** (`scripts/check-repo-root.mjs`). Tested: clean root passes, a stray `app.json` fails, the update script refuses with it or without a message. CLAUDE.md Commands updated.
+
+**PR #9 merged** (`0ea9631`): CI → `migrate-staging` → deploy hook → `/api/health` `{"ok":true,"db":"up","commit":"0ea9631"}`. No app code changed since the last EAS Update (only the update script), so no new update.
+
+**Gate (milestones.md M2, auth parts + definition of done):**
+
+- ✅ CI green: PR #9 and `main` `0ea9631` (lint, typecheck, tests, web build, Playwright, Expo checks, root check, staging migrate install); `migrate-staging` success.
+- ✅ Unit + authorization tests: web 121 (auth flows incl. rate limits, lockout, reset, origin plugin, IP header, no secrets in logs; sign-up attempts 18 incl. takeover, cross-attempt code, races, cleanup, limits, HMAC), seller 45 (start gate, offline/timeouts, session after the code, attempt resume), shared 147, db 23, ui-tokens 3.
+- ✅ Playwright for the web reset pages: 6 (reset end to end through the emailed link, expired/made-up/query tokens, no referrer, local outbox).
+- ✅ Screens compared with the designs: web 07/08 and emails 04/06 at review stop A (Playwright/rendered screenshots); app 01–05, forgot password and placeholder on the Redmi by the owner (m2a-preview-1 check, hand test). Agreed differences: no Google/Facebook buttons; Poppins and brand colours everywhere; sentence case; labels above fields; password rules listed under the field (app + web); 6-digit code (email image shows 8); lowercase "oda"; no social icons or "Contact us" in emails; 06 has a button + plain link; 08 brand-green tick, "Open oda app" and the laptop line; new screens (forgot password, "link expired", placeholder, offline/error states); welcome card per the approved preview (Nairobi · Kilimani, product tiles, no badge, tick on the baseline, ring visible from the start as in the preview); "Finish signing up" state; main button pinned above the keyboard, terms/links hidden while typing.
+- ✅ Staging deployed with real Resend email: `mail.oda.mugu-labs.com` verified; the owner received codes and reset links on staging during the hand test.
+- ✅ Phone test on the Redmi via EAS: build `e21b8131` + updates `d40eb07a`, `ed5a8506`, `ee61fb7a`; 1–18 and A–E passed (owner).
+- ✅ progress.md updated (this entry).
+- **Tag `m2a-done`** on `0ea9631`, pushed.
+
+**Carried forward:**
+
+- Terms / Privacy links on sign up open `/terms` and `/privacy`, which 404 until M4.
+- Vercel CLI logged in on the laptop as `dennismugu7-6048` and `apps/web/.vercel` linked: `vercel logout` before M11 (or when no longer needed).
+- `.wslconfig` (12 GB cap, gradual reclaim) proposed, not applied.
+- Supabase stacks `bookflow` and `dashboardx-local` stopped (data kept); restart with `supabase start` in `C:/Users/denni/projects/bookflow`, and in the folder holding dashboardx-local's `supabase/config.toml` (not found under `~/projects`).
+- npx cache folder from the accidental Expo download (322 MB) can be deleted: `%LocalAppData%/npm-cache/_npx/249ca9fcd30c476a`.
+- M8: `/api/cron/purge` must also delete `signup_attempts` older than 7 days (only the lazy cleanup runs now).
+- M10: automated UI tests (jest-expo/Maestro) for keyboard/scroll/announce behaviour, now checked by hand only.
+- M11: release builds add `armeabi-v7a` (#23); production keystore and EAS environment; production Neon project; Resend production key.
+- eas-cli 24.8.0 installed (24.10.0 available; not upgraded: no downloads without asking).
+- Staging holds the owner's hand-test accounts (disposable).
+
+**Next:** M2b plan for the owner's approval (not started).
+
 ## 2026-10-04 · Retest passed; form messages no longer hidden behind the keyboard (branch `m2a-followup-2`, PR #9)
 
 - **Owner's retest of 3, 4, 7, 8, 10, 18: passed.** One issue: on Sign in a wrong password (and "You're offline…") showed behind the keyboard.
