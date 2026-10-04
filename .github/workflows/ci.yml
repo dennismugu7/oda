@@ -85,7 +85,7 @@ jobs:
 
       - name: Expo doctor
         working-directory: apps/seller
-        run: npx --yes expo-doctor@1
+        run: pnpm run doctor
 
       - uses: actions/upload-artifact@v7
         if: always()
