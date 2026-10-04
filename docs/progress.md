@@ -2,6 +2,35 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M4 CP3–CP6 (product, cart, search, app buyer view, tests), at review stop B (owner Steps 64–65)
+
+- **Review stop A passed** (owner): Demo Duka on the phone (header, Chat, Share, photos, badges, Sold out, chips, search, hearts, "+" → tick + cart bar, WhatsApp preview), landing wording approved, /privacy, /terms. Demo seed ran on staging first time (run 37215797135: 12 products, photos on Blob). `check:all` with web build + Playwright approved.
+- **Shipped to staging as we went:** PR #20 (`d915c9f`, CP3) and PR #21 (`14f3aef`, CP4–CP6); CI, `migrate-staging` and `/api/health` green each time; staging answers 404 for unknown shops and serves robots.txt.
+- **CP3:** product page (02) + product preview image; cart (03) re-checked with the server; search (07) with filters and sort; the shop preview image's link stays on one line (decision #60 a–c).
+- **CP4:** error page with "Try again", robots.txt. A shop-page loading screen was tried and removed: it made unknown shops answer 200 instead of 404 (Playwright caught it; decision #60 d).
+- **CP5:** the app opens the real shop in the in-app browser from step 6 ("See what buyers see →"), the Shop tab ("View") and the product form ("View in shop"). **EAS Update** `e7774d37-45e1-4fa7-a0eb-d1a3d4535120` (preview, runtime 0.2.0, `14f3aef`); no native build.
+- **CP6:** Playwright `e2e/storefront.spec.ts` (a shop built through the API; browse → quick add → search → product with required size and quantity → cart re-checked → quantity change; 404 status). Accessibility pass (AA contrast for small text, search page heading, visible focus on search boxes, motion-safe skeleton, ≥ 44 px targets, labelled inputs).
+- **Tests:** web 216 (cart reconcile 4), seller 76, shared 177, db 23, ui-tokens 3, Playwright 8. `check:all` passed (one run failed on the loading-screen 404, fixed).
+- **PageSpeed Insights: not measured yet.** The API answered 429 (the anonymous daily quota for everyone is used up) and pagespeed.web.dev from this machine said "Unable to resolve" the URL. Indicative lab run instead (headless Chrome, Lighthouse's mobile throttling: 4× CPU, ~1.6 Mbps, 150 ms RTT, 3 runs on staging): FCP 1.5–4.6 s, LCP 2.0–4.7 s (the 4.7 s run was a cold start), CLS 0, ~415 KB transferred. The score needs a real PSI run (review stop B item 1).
+
+**Design comparison (02, 03, 07):** same structure; design-changes applied (no stock/arrival lines, no size guide, "x sold" only from 5, payment wording, delivery card only with areas/pickup, "Calculated at checkout"); the cart's checkout button says "Checkout opens soon" until M5; search filters are a panel of selects (category, size, max price, sort) rather than a sheet; "Goes well with" heading without the category name.
+
+**Review stop B — phone test (staging + app update)**
+
+1. **PageSpeed:** open https://pagespeed.web.dev/ → paste `https://oda-eta.vercel.app/demo-duka` → Analyze → **Mobile** tab. Expected: Performance ≥ 85. Send me the report link (the "Copy link" button) and the score.
+2. Shop https://oda-eta.vercel.app/demo-duka → tap **Demo wrap dress**. Expected: photo, "Bestseller", "12 sold", KES 2,500 with KES 3,200 crossed out and "Save 22%", colours Maroon/Navy, sizes S–XL, "Pay the seller on delivery" card.
+3. Tap **Add to cart** without choosing. Expected: "Choose a colour." Choose Maroon → "Choose a size."; choose M, tap + → button "Add to cart · KES 5,000" → tap → "Added to your cart" + "View cart →".
+4. Back on the shop: the dress card shows the green tick; heart and cart icon count work on the product page.
+5. **View cart.** Expected: "Maroon · Size M", qty 2, KES 2,500 each, subtotal KES 5,000, "Goes well with" 2 products from other categories (with "Choose" or "+ Add"), "Delivery: Calculated at checkout", bottom "Checkout opens soon".
+6. In the cart, − to 1 → total KES 2,500; − again → line removed → "Your cart is empty" with "Keep shopping".
+7. Search: on the shop, type `demo` → Enter → search page "12 products for “demo”". **Filters & sort** → Size M, Sort Price: low to high → Show results → chip "Size M ×", 5 products, cheapest first; tap the chip × → filter gone.
+8. Search `zzz` → "Nothing matches." with "see all products".
+9. Paste a **product link** into WhatsApp (e.g. copy from the browser on the wrap dress page). Expected: preview with the photo, name, price and shop; the shop link preview now has the link on one line (WhatsApp may cache the old shop preview for a while).
+10. Open https://oda-eta.vercel.app/demo-duka/p/00000000-0000-4000-8000-000000000000 → the oda "This page isn't here" page.
+11. **App** (close and reopen twice to get update `e7774d37`): Shop tab → **View** → the shop opens in the in-app browser (navy bar); close it → back in the app.
+12. App: open a product → header "View in shop" → that product's page in the in-app browser.
+13. App: onboarding step 6 isn't reachable for a finished account; to see "See what buyers see →", sign up a new account and go through onboarding (optional), or skip this item.
+
 ## 2026-10-04 · M4 CP1 + CP2 (storefront data, shop home, demo seed), at review stop A (branch `m4-storefront`, owner Step 63)
 
 - **M3 closed:** PR #18 merged (`5430412`), tag `m3-done`. **M4 plan approved** with the owner's decisions (decision #59).
