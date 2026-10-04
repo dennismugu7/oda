@@ -33,6 +33,7 @@ import {
   type ProductDraft,
 } from '@/catalogue/form';
 import { PhotoStrip, type Slot } from '@/catalogue/PhotoStrip';
+import { openBuyerView, shopPageUrl } from '@/catalogue/preview';
 import { announceDeleted } from '@/catalogue/undo';
 import { errorMessage } from '@/onboarding/labels';
 import { nativePhotoDeps, pickPhotos, type PickSource } from '@/onboarding/nativePhotos';
@@ -114,6 +115,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       product={product}
       categories={categories}
       sizePresets={SIZE_PRESETS[me?.shop?.businessType ?? 'other']}
+      shopSlug={me?.shop?.slug ?? null}
       onCategoryAdded={(c) => setCategories((list) => [...(list ?? []), c])}
     />
   );
@@ -132,11 +134,13 @@ function Editor({
   product,
   categories,
   sizePresets,
+  shopSlug,
   onCategoryAdded,
 }: {
   product: Product | null;
   categories: Category[];
   sizePresets: readonly string[];
+  shopSlug: string | null;
   onCategoryAdded: (category: Category) => void;
 }) {
   const [draft, setDraft] = useState<ProductDraft>(() =>
@@ -367,6 +371,14 @@ function Editor({
         <Header
           title={draft.name.trim() || (product ? product.name : 'New product')}
           subtitle={product && product.unitsSold > 0 ? `${product.unitsSold} sold` : null}
+          link={
+            product && shopSlug
+              ? {
+                  label: 'View in shop',
+                  onPress: () => openBuyerView(shopPageUrl(shopSlug, product.id)),
+                }
+              : null
+          }
           onBack={leave}
           onMenu={product ? () => setSheet('menu') : undefined}
         />

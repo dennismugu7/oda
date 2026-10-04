@@ -76,7 +76,7 @@ export function ProductGrid({
             <p className="mt-0.5 flex items-baseline gap-2">
               <span className="text-subtitle font-bold text-navy">{formatKes(p.price)}</span>
               {p.compareAtPrice ? (
-                <span className="text-small text-text-muted line-through">
+                <span className="text-small text-text-secondary line-through">
                   {formatKes(p.compareAtPrice)}
                 </span>
               ) : null}

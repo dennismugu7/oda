@@ -117,7 +117,7 @@ export default async function ProductPage({ params }: Props) {
       <p className="mt-3 flex flex-wrap items-baseline gap-3">
         <span className="text-display text-navy">{formatKes(product.price)}</span>
         {product.compareAtPrice ? (
-          <span className="text-subtitle text-text-muted line-through">
+          <span className="text-subtitle text-text-secondary line-through">
             {formatKes(product.compareAtPrice)}
           </span>
         ) : null}

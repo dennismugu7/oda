@@ -26,7 +26,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
       <div className="mt-4 space-y-6 text-body text-text-secondary [&_h2]:text-title [&_h2]:text-navy [&_p]:mt-2">
         {children}
       </div>
-      <p className="mt-10 text-small text-text-muted">
+      <p className="mt-10 text-small text-text-secondary">
         Questions:{' '}
         <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-navy underline">
           {SUPPORT_EMAIL}

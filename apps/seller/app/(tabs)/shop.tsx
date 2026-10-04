@@ -1,7 +1,7 @@
 // Shop tab (design 19; design-changes: 18-products is merged in): the shop card with Share,
 // filter chips (All, categories, Sold out, Hidden), search, and the product list. Tap a
-// product to edit it; long-press to change its status. "View" (the buyer shop) arrives with
-// the storefront in M4. After a delete, "Product deleted · Undo" shows for ~5 seconds.
+// product to edit it; long-press to change its status. "View" opens the real buyer shop in
+// the in-app browser (19b-preview, decision #60). After a delete, "Product deleted · Undo" shows for ~5 seconds.
 import Feather from '@expo/vector-icons/Feather';
 import { displayUrl, formatKsh, shareUrl, type ProductStatus } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
@@ -32,6 +32,7 @@ import {
   UNDO_SECONDS,
   type Deleted,
 } from '@/catalogue/undo';
+import { openBuyerView, shopPageUrl } from '@/catalogue/preview';
 import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { Button, FormMessage } from '@/ui/auth';
@@ -170,6 +171,16 @@ export default function ShopTab() {
               {shop ? displayUrl(SHOP_BASE_URL, shop.slug) : ' '}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View your shop as buyers see it"
+            disabled={!shop}
+            onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
+            style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
+          >
+            <Feather name="eye" size={16} color={colors.textOnNavy} />
+            <Text style={styles.viewText}>View</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Share your shop link"
@@ -394,6 +405,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.navyMuted,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    height: 44,
+  },
+  viewText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
   shareText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
   listHead: { paddingTop: spacing.lg, gap: spacing.md },
   chips: { paddingHorizontal: spacing.lg, gap: spacing.sm },

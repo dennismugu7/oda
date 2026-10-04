@@ -84,6 +84,7 @@ export default async function Search({ params, searchParams }: Props) {
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-surface pb-32">
       <VisitBeacon slug={shop.slug} />
+      <h1 className="sr-only">Search {shop.name}</h1>
       <div className="flex items-center gap-2 px-4 pt-5">
         <Link
           href={`/${shop.slug}`}
@@ -103,7 +104,7 @@ export default async function Search({ params, searchParams }: Props) {
         </Link>
         <form
           action={`/${shop.slug}/search`}
-          className="flex flex-1 items-center gap-2 rounded-pill border-2 border-navy px-4"
+          className="flex flex-1 items-center gap-2 rounded-pill border-2 border-navy px-4 focus-within:ring-2 focus-within:ring-primary"
         >
           <label className="sr-only" htmlFor="q">
             Search {shop.name}

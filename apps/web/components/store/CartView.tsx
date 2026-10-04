@@ -158,7 +158,7 @@ export function CartView({
                   type="button"
                   aria-label={`Remove ${c.line.name}`}
                   onClick={() => changeQty(i, 0)}
-                  className="-mt-1 -mr-2 flex size-11 items-center justify-center text-text-muted"
+                  className="-mt-1 -mr-2 flex size-11 items-center justify-center text-text-secondary"
                 >
                   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                     <path
@@ -304,7 +304,7 @@ export function CartView({
               ? 'Update your cart to continue'
               : 'Checkout opens soon'}
         </p>
-        <p className="mt-2 text-center text-small text-text-muted">
+        <p className="mt-2 text-center text-small text-text-secondary">
           No account needed · Pay the seller directly on M-Pesa
         </p>
       </div>
