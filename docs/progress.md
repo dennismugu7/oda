@@ -2,6 +2,24 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M4 CP1 + CP2 (storefront data, shop home, demo seed), at review stop A (branch `m4-storefront`, owner Step 63)
+
+- **M3 closed:** PR #18 merged (`5430412`), tag `m3-done`. **M4 plan approved** with the owner's decisions (decision #59).
+- **CP1** (`3d19c7a`): shared `storefront.ts` (visit sources, query parsing, badges, Nairobi day, `oda_v` cookie); `publicRepo` gains `catalog()` (filters, sorts, badges, covers), non-empty visible `categories()`, `lookup()`, `recordVisit()`, and `mpesaChecked` / `logoUrl` on the shop; public endpoints `POST /api/shops/:slug/visit` and `/cart`.
+- **CP2:** shop home `app/[slug]/page.tsx` (states: paused, not taking orders, branded 404 for unknown/suspended/deleted; old links redirect), link-preview image `app/[slug]/opengraph-image.tsx`, landing page `/` (draft wording, `APP_DOWNLOAD_URL`), `/privacy` + `/terms` placeholders, cart/favourites on the device (`lib/store/cart.ts`, `components/store/`), demo seed `server/demoSeed/` + manual workflow `demo-seed-staging.yml`.
+- **Tests:** storefront data 6 (filters, sorts incl. popular/newest/price, search in name and description with `%` literal, badges, hidden/deleted/other-shop products never listed, categories only visible and non-empty, till tick only when verified, cart lookup leaves out hidden/deleted/other shops and checks ids, visits once per browser per day by source, unknown tags direct, old link counts for the new shop, unknown/suspended 404); shared storefront 6; cart logic 3. Totals: web 212, shared 177, seller 76, db 23, ui-tokens 3. `check:all` passed.
+- **Tried locally** (demo seed run twice: second run added nothing): shop page at 390 px, quick add → green tick + cart bar (kept after reload), favourites, search, bad `?c=` ignored, no browser errors; preview image renders; landing, privacy, terms, 404. Fixed on the way: links nested in links (hydration error) and the visit beacon firing twice in development.
+- **Design comparison (01):** same header, search, chips, grid, badges, heart, tick/"+", cart bar; design-changes applied (no "order in 3h" banner, no stock badges, WhatsApp Chat in the header); "Popular this week / See all" heading → the category name or "All products"; the filter button on the search box comes with the search page (CP3); the delivery line shows only when the shop has delivery areas or pickup.
+- **Not yet built:** product page, cart page, search filters (CP3): product taps and "View cart" show the 404 until then.
+- **CI caught what `check:all` didn't:** the M0 Playwright smoke test expected the orange wordmark on `/`; the landing draft had made it navy. The landing keeps the brand orange (as the app icon), the test now covers the landing (store placeholder, support email) and is renamed `e2e/landing.spec.ts`. **`check:all` gains a last step, web build + Playwright (`pnpm test:e2e`)**, so it runs everything CI runs (CLAUDE.md updated).
+
+**Review stop A — owner steps**
+
+1. **Add the GitHub secret** (never in the chat): Vercel → Storage → `oda-staging-images` → its settings/`.env.local` tab → copy the **read-write token** (`BLOB_READ_WRITE_TOKEN`) → GitHub → `dennismugu7/oda` → Settings → Secrets and variables → Actions → New repository secret → name `STAGING_IMAGES_BLOB_READ_WRITE_TOKEN`, paste, Add. Tell me when it's done.
+2. I run **Actions → demo-seed-staging → Run workflow** and check the shop.
+3. On the phone, open **https://oda-eta.vercel.app/demo-duka**: header, Chat, Share, search, chips, badges, heart, "+" on products without options (green tick, cart bar), Sold out card. Paste the link into WhatsApp to see the preview image.
+4. Review the landing page **https://oda-eta.vercel.app/** wording and **/privacy**, **/terms**.
+
 ## 2026-10-04 · M3 gate passed (owner Step 62)
 
 **Owner's review stop B on the Redmi: items 1–18 passed**, including drag to reorder for photos and categories, no crashes.

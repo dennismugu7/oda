@@ -3,7 +3,7 @@
 // first failure and ends with a summary of each step's result.
 //
 // Steps: format → lint → typecheck → tests → repo root → Expo dependencies + native runtime
-// → Android JS bundle. Turbo runs each package one at a time too (--concurrency=1), and the
+// → Android JS bundle → web build + Playwright. Turbo runs each package one at a time too (--concurrency=1), and the
 // tests always run for real (--force: the database tests depend on more than the files).
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -36,6 +36,8 @@ const steps = [
       bundleDir,
     ],
   ],
+  // Builds the web app and runs Playwright (390 × 844), as CI does.
+  ['web build + playwright', 'pnpm', ['test:e2e']],
 ];
 
 const results = [];

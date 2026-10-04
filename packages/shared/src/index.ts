@@ -9,3 +9,4 @@ export * from './share';
 export * from './slug';
 export * from './schemas';
 export * from './catalogue';
+export * from './storefront';
