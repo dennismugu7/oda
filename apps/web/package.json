@@ -17,6 +17,7 @@
     "@oda/db": "workspace:*",
     "@oda/shared": "workspace:*",
     "@oda/ui-tokens": "workspace:*",
+    "@vercel/blob": "^2.8.0",
     "aws4fetch": "^1.0.20",
     "better-auth": "1.7.6",
     "drizzle-orm": "^0.45.3",

@@ -2,6 +2,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import * as blobSdk from '@vercel/blob';
 import { AwsClient } from 'aws4fetch';
 import { z } from 'zod';
 import { authBaseUrl } from './auth';
@@ -12,8 +13,11 @@ import { isDeployed } from './email/transport';
 //             Development and tests only; refused on Vercel.
 // - s3:       any S3-compatible bucket (Cloudflare R2 first): presigned PUT URLs, the phone
 //             uploads straight to the bucket; public reads from STORAGE_PUBLIC_BASE_URL.
-// - disabled: no provider yet (staging before CP0): uploads answer 503.
+// - vercel-blob: a public Vercel Blob store (staging, decision #54): presigned PUT URLs
+//             locked to the key, type and size; public CDN reads from STORAGE_PUBLIC_BASE_URL.
+// - disabled: no provider yet: uploads answer 503.
 // Default: local off Vercel; on Vercel s3 when configured, otherwise disabled.
+// Every upload URL expires after 10 minutes (owner, Step 55).
 
 export interface PresignedUpload {
   url: string;
@@ -24,7 +28,7 @@ export interface PresignedUpload {
 }
 
 export interface ObjectStorage {
-  readonly driver: 'local' | 's3' | 'disabled';
+  readonly driver: 'local' | 's3' | 'vercel-blob' | 'disabled';
   presignPut(key: string, contentType: string, size: number): Promise<PresignedUpload>;
   /** The object's bytes, or null when it doesn't exist. */
   read(key: string): Promise<Uint8Array | null>;
@@ -39,10 +43,10 @@ export class StorageUnavailableError extends Error {
   }
 }
 
-const UPLOAD_TTL_SECONDS = 15 * 60;
+export const UPLOAD_TTL_SECONDS = 10 * 60;
 
 const envSchema = z.object({
-  STORAGE_DRIVER: z.enum(['local', 's3', 'disabled']).optional(),
+  STORAGE_DRIVER: z.enum(['local', 's3', 'vercel-blob', 'disabled']).optional(),
   STORAGE_DIR: z.string().default('.uploads'),
   STORAGE_S3_ENDPOINT: z.url().optional(),
   STORAGE_S3_BUCKET: z.string().min(1).optional(),
@@ -50,6 +54,10 @@ const envSchema = z.object({
   STORAGE_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
   STORAGE_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   STORAGE_PUBLIC_BASE_URL: z.url().optional(),
+  // Vercel Blob: set by Vercel when the store is connected to the project (OIDC on Vercel,
+  // or the static read-write token).
+  BLOB_STORE_ID: z.string().min(1).optional(),
+  BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
 });
 
 type StorageEnv = z.infer<typeof envSchema>;
@@ -64,6 +72,10 @@ function s3Configured(env: StorageEnv): boolean {
   );
 }
 
+function blobConfigured(env: StorageEnv): boolean {
+  return !!(env.STORAGE_PUBLIC_BASE_URL && (env.BLOB_STORE_ID || env.BLOB_READ_WRITE_TOKEN));
+}
+
 export function storageDriver(env: Record<string, string | undefined> = process.env) {
   const parsed = envSchema.parse(env);
   const deployed = isDeployed(env as NodeJS.ProcessEnv);
@@ -73,6 +85,8 @@ export function storageDriver(env: Record<string, string | undefined> = process.
     throw new Error('STORAGE_DRIVER=local is not allowed on Vercel');
   if (driver === 's3' && !s3Configured(parsed))
     throw new Error('S3 storage is not fully configured');
+  if (driver === 'vercel-blob' && !blobConfigured(parsed))
+    throw new Error('Vercel Blob storage needs STORAGE_PUBLIC_BASE_URL and a connected store');
   return { driver, env: parsed };
 }
 
@@ -204,6 +218,57 @@ function s3Storage(env: StorageEnv): ObjectStorage {
   };
 }
 
+// Vercel Blob ------------------------------------------------------------------------------
+
+/** The @vercel/blob calls the driver uses (injected in tests). */
+export interface BlobApi {
+  issueSignedToken: typeof blobSdk.issueSignedToken;
+  presignUrl: typeof blobSdk.presignUrl;
+  get: typeof blobSdk.get;
+  del: typeof blobSdk.del;
+}
+
+export function vercelBlobStorage(
+  env: Pick<StorageEnv, 'STORAGE_PUBLIC_BASE_URL'>,
+  api: BlobApi = blobSdk,
+  now: () => number = Date.now,
+): ObjectStorage {
+  const base = env.STORAGE_PUBLIC_BASE_URL!.replace(/\/+$/, '');
+  return {
+    driver: 'vercel-blob',
+    async presignPut(key, contentType, size) {
+      const validUntil = now() + UPLOAD_TTL_SECONDS * 1000;
+      // The delegation itself is scoped to this one key, type, size and 10 minutes; the URL
+      // repeats the limits, and never overwrites or renames (the server chose the key).
+      const limits = { allowedContentTypes: [contentType], maximumSizeInBytes: size, validUntil };
+      const token = await api.issueSignedToken({ pathname: key, operations: ['put'], ...limits });
+      const { presignedUrl } = await api.presignUrl(token, {
+        operation: 'put',
+        pathname: key,
+        access: 'public',
+        ...limits,
+        addRandomSuffix: false,
+        allowOverwrite: false,
+      });
+      return {
+        url: presignedUrl,
+        method: 'PUT',
+        headers: { 'content-type': contentType },
+        expiresAt: new Date(validUntil).toISOString(),
+      };
+    },
+    async read(key) {
+      const result = await api.get(key, { access: 'public' });
+      if (!result || result.statusCode !== 200) return null;
+      return new Uint8Array(await new Response(result.stream).arrayBuffer());
+    },
+    async delete(key) {
+      await api.del(key);
+    },
+    publicUrl: (key) => `${base}/${key}`,
+  };
+}
+
 // Disabled --------------------------------------------------------------------------------
 
 const disabledStorage: ObjectStorage = {
@@ -220,7 +285,13 @@ export function getStorage(): ObjectStorage {
   if (cached) return cached;
   const { driver, env } = storageDriver();
   cached =
-    driver === 'local' ? localStorage(env) : driver === 's3' ? s3Storage(env) : disabledStorage;
+    driver === 'local'
+      ? localStorage(env)
+      : driver === 's3'
+        ? s3Storage(env)
+        : driver === 'vercel-blob'
+          ? vercelBlobStorage(env)
+          : disabledStorage;
   return cached;
 }
 

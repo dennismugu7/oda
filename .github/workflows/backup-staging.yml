@@ -1,0 +1,86 @@
+name: backup-staging
+
+# Nightly encrypted backup of Neon staging (docs/data-model.md → Backups, decision #54):
+# pg_dump (Postgres 18, Neon's major) → checked with pg_restore --list → encrypted with gpg
+# (AES-256, passphrase BACKUP_PASSPHRASE) → private Vercel Blob store, keeping 14 days.
+# The plain dump never leaves the runner. Restore: download the file from the store,
+#   gpg --decrypt oda-staging-<time>.dump.gpg > oda.dump
+#   pg_restore --no-owner --no-acl --clean --if-exists -d "<database url>" oda.dump
+on:
+  schedule:
+    - cron: '30 23 * * *' # 02:30 in Nairobi
+  workflow_dispatch:
+
+concurrency:
+  group: backup-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Back up Neon staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check the secrets are set
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets.BACKUP_BLOB_READ_WRITE_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::Repository secret NEON_STAGING_DATABASE_URL_UNPOOLED is not set."; exit 1
+          fi
+          if [ -z "$BACKUP_BLOB_READ_WRITE_TOKEN" ]; then
+            echo "::error::Repository secret BACKUP_BLOB_READ_WRITE_TOKEN is not set (the private backups store's read-write token)."; exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 20 ]; then
+            echo "::error::Repository secret BACKUP_PASSPHRASE is missing or shorter than 20 characters."; exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter "@oda/web..."
+
+      - name: Dump (pg_dump 18, custom format)
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/backup"
+          docker run --rm -e DATABASE_URL_UNPOOLED -v "$RUNNER_TEMP/backup:/backup" postgres:18 \
+            sh -c 'pg_dump --format=custom --no-owner --no-acl --file=/backup/oda.dump "$DATABASE_URL_UNPOOLED"'
+          docker run --rm -v "$RUNNER_TEMP/backup:/backup" postgres:18 \
+            sh -c 'pg_restore --list /backup/oda.dump > /dev/null'
+          echo "Dump: $(du -h "$RUNNER_TEMP/backup/oda.dump" | cut -f1), readable by pg_restore."
+
+      - name: Encrypt (gpg, AES-256)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          cd "$RUNNER_TEMP/backup"
+          printf '%s' "$BACKUP_PASSPHRASE" > passphrase
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file passphrase \
+            --symmetric --cipher-algo AES256 --output oda.dump.gpg oda.dump
+          # Check it decrypts before the plain files go.
+          gpg --batch --pinentry-mode loopback --passphrase-file passphrase \
+            --decrypt oda.dump.gpg | cmp - oda.dump
+          rm -f passphrase oda.dump
+
+      - name: Upload and keep 14 days
+        env:
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets.BACKUP_BLOB_READ_WRITE_TOKEN }}
+        run: pnpm --filter @oda/web exec tsx scripts/backup/upload.ts "$RUNNER_TEMP/backup/oda.dump.gpg"
+
+      - name: Remove local files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/backup"
