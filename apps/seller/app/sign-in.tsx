@@ -3,7 +3,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, View, type TextInput } from 'react-native';
+import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
 import { emailSchema } from '@oda/shared';
 import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError } from '@/auth/errors';
@@ -36,6 +36,8 @@ export default function SignIn() {
   const passwordError = submitted && !password ? 'Enter your password.' : null;
 
   async function submit() {
+    // Close the keyboard so the answer (or an error) is never hidden behind it (Step 49).
+    Keyboard.dismiss();
     setSubmitted(true);
     setError(null);
     if (!emailCheck.success || !password) return;

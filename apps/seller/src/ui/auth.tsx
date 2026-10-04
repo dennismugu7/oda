@@ -45,8 +45,16 @@ export function useKeyboardVisible(): boolean {
   return visible;
 }
 
-/** Lets a Field ask its screen to scroll it (and its rules) into view when focused. */
-const RevealContext = createContext<((block: View | null) => void) | null>(null);
+/**
+ * Lets a Field ask its screen to scroll it (and its rules) into view while focused, and a
+ * form-level message to scroll itself into view when it appears (Step 49).
+ */
+interface Reveal {
+  focus: (block: View | null) => void;
+  blur: (block: View | null) => void;
+  show: (block: View | null) => void;
+}
+const RevealContext = createContext<Reveal | null>(null);
 
 /**
  * Auth page layout (Step 47, fix 1). The main button sits in a footer pinned above the
@@ -73,8 +81,7 @@ export function AuthScreen({
   const viewport = useRef(0);
   const scrollY = useRef(0);
 
-  const reveal = useCallback(() => {
-    const block = focused.current;
+  const scrollTo = useCallback((block: View | null) => {
     if (!block || !content.current) return;
     block.measureLayout(
       content.current,
@@ -91,24 +98,37 @@ export function AuthScreen({
     );
   }, []);
 
+  /** Keeps the focused field (with its error and rules) in view. */
+  const reveal = useCallback(() => scrollTo(focused.current), [scrollTo]);
+
   useEffect(() => {
     // Once the keyboard is up (and the view has shrunk), bring the focused field into view.
     const sub = Keyboard.addListener('keyboardDidShow', () => setTimeout(reveal, 50));
     return () => sub.remove();
   }, [reveal]);
 
-  const onFocusBlock = useMemo(
-    () => (block: View | null) => {
-      focused.current = block;
-      setTimeout(reveal, 50);
-    },
-    [reveal],
+  const revealApi = useMemo<Reveal>(
+    () => ({
+      focus: (block) => {
+        focused.current = block;
+        setTimeout(reveal, 50);
+      },
+      blur: (block) => {
+        if (focused.current === block) focused.current = null;
+      },
+      // After the keyboard closes (submit dismisses it) the view grows; scroll once it has.
+      show: (block) => {
+        setTimeout(() => scrollTo(block), 50);
+        setTimeout(() => scrollTo(block), 350);
+      },
+    }),
+    [reveal, scrollTo],
   );
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
-        <RevealContext.Provider value={onFocusBlock}>
+        <RevealContext.Provider value={revealApi}>
           <ScrollView
             ref={scroll}
             style={styles.flex}
@@ -202,11 +222,12 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           style={[styles.input, style]}
           onFocus={(e) => {
             setFocused(true);
-            reveal?.(block.current);
+            reveal?.focus(block.current);
             onFocus?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
+            reveal?.blur(block.current);
             onBlur?.(e);
           }}
           {...input}
@@ -322,14 +343,46 @@ export function Link({ children, onPress }: { children: ReactNode; onPress: () =
   );
 }
 
-export function ErrorMessage({ children }: { children: ReactNode }) {
+/**
+ * A form-level message (wrong password, offline, too many tries…). It scrolls itself into
+ * view whenever it appears or its text changes, and screen readers announce it (Step 49).
+ * `revealKey` is what counts as a new message (defaults to string children).
+ */
+export function FormMessage({
+  children,
+  tone = 'error',
+  revealKey,
+}: {
+  children: ReactNode;
+  tone?: 'error' | 'info';
+  revealKey?: string;
+}) {
+  const block = useRef<View>(null);
+  const reveal = useContext(RevealContext);
+  const key = revealKey ?? (typeof children === 'string' ? children : undefined);
+  useEffect(() => {
+    reveal?.show(block.current);
+  }, [reveal, key]);
+  const error = tone === 'error';
   return (
-    <View accessibilityLiveRegion="polite" style={styles.errorBox}>
-      <Feather name="alert-circle" size={18} color={colors.warningTextStrong} />
-      <Text style={styles.errorText}>{children}</Text>
+    <View
+      ref={block}
+      collapsable={false}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={error ? styles.errorBox : styles.infoBox}
+    >
+      <Feather
+        name={error ? 'alert-circle' : 'check-circle'}
+        size={18}
+        color={error ? colors.warningTextStrong : colors.green}
+      />
+      <Text style={error ? styles.errorText : styles.infoText}>{children}</Text>
     </View>
   );
 }
+
+export const ErrorMessage = FormMessage;
 
 export function InfoNote({ icon, children }: { icon: 'info' | 'shield'; children: ReactNode }) {
   return (
@@ -450,6 +503,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   errorText: { ...text('body'), color: colors.warningTextStrong, flex: 1 },
+  infoBox: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+    backgroundColor: colors.greenTint,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
+  infoText: { ...text('body'), color: colors.green, flex: 1 },
   note: {
     flexDirection: 'row',
     gap: spacing.sm,

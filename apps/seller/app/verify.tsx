@@ -4,7 +4,7 @@
 // here. Params: email; resumed=1 ("Finish signing up"); codeSent=0|1; retryAfter (seconds).
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { OTP_LENGTH } from '@oda/shared';
 import { authCall, authClient } from '@/auth/client';
 import { cleanCode, formatCountdown, resendAvailableAt, secondsUntil } from '@/auth/countdown';
@@ -16,7 +16,16 @@ import {
   verifySignupCode,
   type PendingSignup,
 } from '@/auth/signup';
-import { AuthScreen, Button, ErrorMessage, InfoNote, Link, Subtitle, Title } from '@/ui/auth';
+import {
+  AuthScreen,
+  Button,
+  ErrorMessage,
+  FormMessage,
+  InfoNote,
+  Link,
+  Subtitle,
+  Title,
+} from '@/ui/auth';
 import { colors, radii, sizes, spacing, text } from '@/theme';
 
 function useSecondsUntil(at: number): number {
@@ -51,7 +60,10 @@ export default function Verify() {
   useEffect(() => {
     let cancelled = false;
     getPendingSignup().then((pending) => {
-      if (!cancelled) setAttempt(pending);
+      if (cancelled) return;
+      setAttempt(pending);
+      // Nothing to type into: keep the keyboard off the "expired" message.
+      if (!pending) Keyboard.dismiss();
     });
     return () => {
       cancelled = true;
@@ -60,6 +72,7 @@ export default function Verify() {
 
   const resend = useCallback(async () => {
     if (!attempt) return;
+    Keyboard.dismiss();
     setError(null);
     setInfo(null);
     const { data, error: apiError } = await resendSignupCode(attempt.attemptId);
@@ -78,6 +91,7 @@ export default function Verify() {
   const verify = useCallback(
     async (value: string) => {
       if (!attempt || value.length !== OTP_LENGTH || busy) return;
+      Keyboard.dismiss();
       setBusy(true);
       setError(null);
       setInfo(null);
@@ -86,7 +100,7 @@ export default function Verify() {
         setBusy(false);
         setError(friendlyAuthError(apiError));
         setCode('');
-        input.current?.focus();
+        // The keyboard stays closed so the message is in view; tap the boxes to type again.
         return;
       }
       // The account exists now. Sign in with the password typed on the sign-up screen; if
@@ -167,13 +181,13 @@ export default function Verify() {
       </Pressable>
 
       {attempt === null && !error ? (
-        <ErrorMessage>
+        <ErrorMessage revealKey="expired">
           This sign-up has expired.{' '}
           <Link onPress={() => router.replace('/sign-up')}>Start again</Link>
         </ErrorMessage>
       ) : null}
       {error ? (
-        <ErrorMessage>
+        <ErrorMessage revealKey={error.message}>
           {error.message}
           {error.action === 'start-again' ? (
             <>
@@ -191,7 +205,7 @@ export default function Verify() {
           ) : null}
         </ErrorMessage>
       ) : null}
-      {info ? <Text style={styles.info}>{info}</Text> : null}
+      {info ? <FormMessage tone="info">{info}</FormMessage> : null}
 
       <Text style={styles.resend}>
         Didn&apos;t receive a code?{' '}
@@ -240,7 +254,6 @@ const styles = StyleSheet.create({
     opacity: 0.01,
     color: 'transparent',
   },
-  info: { ...text('body'), color: colors.green, marginTop: spacing.md, textAlign: 'center' },
   resend: {
     ...text('body'),
     color: colors.textSecondary,
