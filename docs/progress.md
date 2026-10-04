@@ -17,14 +17,14 @@ Newest entries at the top.
 - ✅ Killing the app mid-onboarding resumes at the same step: owner's test at steps 2, 3 and 5; start-gate tests (`auth-logic.test.ts`).
 - ✅ Reset password end to end and the welcome side-by-side check: M2a gate (`m2a-done`).
 - ✅ Camera and gallery photos with real Blob uploads; Skip payment: owner's review stop B.
-- ⏳ **One uploaded staging photo has no GPS EXIF (read back): not done yet.** Listing the images store needs its read-write token, which I don't want on the laptop; a photo's public URL isn't secret, so the owner sends one (Vercel → Storage → `oda-staging-images` → Browser → a `products/…` file → copy URL). The server already refuses GPS on every save (16 image-check tests), and the phone re-encodes every photo.
+- ✅ **One uploaded staging photo has no GPS EXIF (read back, owner Step 60):** `products/ab93a03c-…/e1ba0ade-….jpg` (227,705 bytes, 1077 × 1600, the phone's re-encoded full photo). Its only metadata: a JFIF header (APP0) and an ICC colour profile (APP2, 472 bytes). No EXIF segment, no XMP, no "GPS" bytes anywhere; the server's `hasLocationData` returns false.
 - ✅ Lint, typecheck, tests locally and in CI (web 191, seller 67, shared 168, db 23, ui-tokens 3).
 - ✅ New logic has unit tests; new endpoints have authorization tests (onboarding 26 incl. seller isolation, uploads 22 incl. another shop's prefix, wrong type/size, GPS). No new buyer web flows in M2b (Playwright 6 from M2a still pass in CI).
 - ✅ Screens compared with the designs: 09–14 on the Redmi at review stop B and the step 6 retest; differences listed in the CP4/CP5 entry, decisions #53, #55, #56.
 - ✅ Web deployed to staging (`652464f`, health OK); the app runs on the Redmi via the EAS preview build + updates.
 - ✅ progress.md updated.
 
-**Not tagged yet:** `m2-done` waits for the GPS read-back.
+**Gate passed:** all items ✅; `main` tagged `m2-done` after this entry is merged.
 
 **Carried forward**
 
@@ -39,7 +39,7 @@ Newest entries at the top.
 - Whether "My status" shows in WhatsApp's list from the Status button: owner to confirm on the phone (decision #55 b).
 - Blob usage: check the Hobby usage page after the first week (estimate in the CP0 entry).
 
-**Next:** owner sends one staging photo URL → GPS read-back → tag `m2-done`; then the M3 plan (proposed in the chat) for approval.
+**Next:** M3 (plan approved, Step 60) on branch `m3-catalogue`: CP1 catalogue API → CP2 app shell → review stop A.
 
 ## 2026-10-04 · Review stop B fixes (owner Step 58; branch `m2b-review-b`)
 
