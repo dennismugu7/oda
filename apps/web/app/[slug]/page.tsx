@@ -4,13 +4,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { formatKes, storeQuery } from '@oda/shared';
-import {
-  CardCartAction,
-  CartBar,
-  FavouriteButton,
-  ShareButton,
-  VisitBeacon,
-} from '@/components/store/interactive';
+import { CartBar, ShareButton, VisitBeacon } from '@/components/store/interactive';
+import { ProductGrid } from '@/components/store/ProductGrid';
 import {
   initials,
   loadShop,
@@ -45,17 +40,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const BADGE_LABEL = { bestseller: 'Bestseller', new: 'New', sold_out: 'Sold out' } as const;
-
 export default async function ShopHome({ params, searchParams }: Props) {
   const { slug } = await params;
   const raw = await searchParams;
-  const query = storeQuery.parse({ c: first(raw.c), q: first(raw.q) });
+  const query = storeQuery.parse({ c: first(raw.c) });
   const shop = await loadShop(slug, query.c ? `?c=${query.c}` : '');
   const data = shopData(shop);
   const [categories, products, areas] = await Promise.all([
     data.categories(),
-    data.catalog({ c: query.c, q: query.q }),
+    data.catalog({ c: query.c }),
     data.deliveryAreas(),
   ]);
   const canOrder = takingOrders(shop);
@@ -130,7 +123,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
 
       <div className="mt-4 flex gap-2 px-4">
         <form
-          action={`/${shop.slug}`}
+          action={`/${shop.slug}/search`}
           className="flex flex-1 items-center gap-2 rounded-pill border border-border px-4"
         >
           <svg
@@ -155,10 +148,25 @@ export default async function ShopHome({ params, searchParams }: Props) {
             id="q"
             name="q"
             type="search"
-            defaultValue={query.q ?? ''}
             placeholder="Search this shop"
             className="h-12 min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-text-muted"
           />
+          <Link
+            href={`/${shop.slug}/search?filters=1`}
+            aria-label="Filters and sort"
+            className="-mr-2 flex size-10 shrink-0 items-center justify-center rounded-pill text-navy"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                d="M4 7h10M18 7h2M4 17h4M12 17h8"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
+              <circle cx="10" cy="17" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </Link>
         </form>
         <a
           href={whatsappLink(shop.whatsappPhone, shop.name)}
@@ -222,89 +230,23 @@ export default async function ShopHome({ params, searchParams }: Props) {
 
       <section className="mt-5 px-4" aria-labelledby="products-title">
         <h2 id="products-title" className="text-title text-navy">
-          {query.q ? `Results for “${query.q}”` : (activeCategory?.name ?? 'All products')}
+          {activeCategory?.name ?? 'All products'}
         </h2>
         {products.length === 0 ? (
           <div className="mt-4 rounded-xl bg-background p-6 text-center">
-            <p className="text-body-strong text-navy">
-              {query.q ? 'Nothing matches that search.' : 'No products here yet.'}
-            </p>
+            <p className="text-body-strong text-navy">No products here yet.</p>
             <p className="mt-1 text-body text-text-secondary">
-              {query.q ? (
-                <Link href={`/${shop.slug}`} className="font-semibold text-primary underline">
-                  See all products
-                </Link>
-              ) : (
-                'Chat with the seller to ask what’s coming.'
-              )}
+              Chat with the seller to ask what’s coming.
             </p>
           </div>
         ) : (
-          <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-5">
-            {products.map((p, i) => (
-              <li key={p.id} className="relative">
-                <Link href={`/${shop.slug}/p/${p.id}`} className="block">
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-beige">
-                    {p.coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                      <img
-                        src={p.coverUrl}
-                        alt=""
-                        width={400}
-                        height={400}
-                        loading={i < 4 ? 'eager' : 'lazy'}
-                        fetchPriority={i < 2 ? 'high' : undefined}
-                        className={`size-full object-cover ${p.status === 'sold_out' ? 'opacity-60' : ''}`}
-                      />
-                    ) : null}
-                    {p.badge ? (
-                      <span
-                        className={`absolute top-2.5 left-2.5 rounded-pill px-3 py-1 text-small font-semibold ${
-                          p.badge === 'sold_out'
-                            ? 'bg-navy text-text-on-navy'
-                            : 'bg-surface text-navy'
-                        }`}
-                      >
-                        {BADGE_LABEL[p.badge]}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-body text-navy">{p.name}</p>
-                  {p.ratingCount > 0 ? (
-                    <p className="text-small text-text-secondary">
-                      <span className="text-star">★</span> {Number(p.ratingAvg).toFixed(1)} (
-                      {p.ratingCount})
-                    </p>
-                  ) : null}
-                  <p className="mt-0.5 flex items-baseline gap-2">
-                    <span className="text-subtitle font-bold text-navy">{formatKes(p.price)}</span>
-                    {p.compareAtPrice ? (
-                      <span className="text-small text-text-muted line-through">
-                        {formatKes(p.compareAtPrice)}
-                      </span>
-                    ) : null}
-                  </p>
-                </Link>
-                {/* Beside the link, over the photo: links and buttons can't sit inside a link. */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 aspect-square [&>*]:pointer-events-auto">
-                  <FavouriteButton shopId={shop.id} productId={p.id} />
-                  <CardCartAction
-                    shopId={shop.id}
-                    slug={shop.slug}
-                    canOrder={canOrder}
-                    product={{
-                      id: p.id,
-                      name: p.name,
-                      price: p.price,
-                      status: p.status,
-                      hasOptions: p.hasOptions,
-                      coverUrl: p.coverUrl,
-                    }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <ProductGrid
+            products={products}
+            shopId={shop.id}
+            slug={shop.slug}
+            canOrder={canOrder}
+            className="mt-3"
+          />
         )}
       </section>
 
