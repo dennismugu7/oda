@@ -2,6 +2,42 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M3 gate passed (owner Step 62)
+
+**Owner's review stop B on the Redmi: items 1–18 passed**, including drag to reorder for photos and categories, no crashes.
+
+**Gate (milestones.md M3 + definition of done)**
+
+- ✅ **All catalogue actions persist and show at once:** owner's phone test 1–18 (create, edit, status by form and long-press, search, filters, photos add/remove/reorder/cover, delete + Undo, categories add/rename/hide/reorder/assign/delete); the Shop tab and categories reload on focus. API: `server/catalogue.test.ts` checks every write by reading it back.
+- ✅ **Presigned upload authorization tests:** `server/uploads.test.ts` — keys always under the seller's own `products/`/`logos/` prefix chosen by the server; other types, empty and oversized (> 5 MB) files and unknown kinds refused; local signed URLs refuse a changed signature, type, size or an expired URL; stored bytes checked (fake image, PNG under `.jpg`, GPS in JPEG/PNG/WebP → rejected and deleted). `server/catalogue.test.ts` — another shop's photo files 403, fake and GPS files 422, 0 or 6 photos 422. Storage drivers: upload URLs locked to key, type and size, 10 minutes (Blob and S3 tests).
+- ✅ **Seller isolation for products, categories and photos:** `server/catalogue.test.ts` "a seller never reaches another shop's products or categories" (get, edit, delete, restore, photos, category edit/delete/assign/reorder → 404/422, nothing changes for the owner), 401 signed out, 404 without a shop; `server/authz.test.ts` (M1) for the repositories.
+- ✅ **Server-owned fields:** create/edit with `unitsSold`, `shopId`, `deletedAt`, `ratingAvg` → 422 and nothing written; category `position` only through the order endpoint.
+- ✅ **`pnpm check:all` green** on `main`'s code (this branch only adds docs): format, lint, typecheck, tests (web 203, seller 76, shared 171, db 23, ui-tokens 3), repo root, Expo deps + native runtime (0.2.0 unchanged), Android bundle.
+- ✅ **CI green:** PRs #16, #17 and `main` (`8797ec9`); `migrate-staging` success.
+- ✅ **Staging health:** `/api/health` → `{"ok":true,"db":"up","commit":"8797ec9"}`.
+- ✅ New logic has unit tests (catalogue API 12 + 1 updated, shared catalogue 3, seller list/form 9); new endpoints have authorization tests; no new buyer web flows (Playwright 6 still pass in CI).
+- ✅ Screens compared with 18-edit-product, 19-shop-tab, 20b-categories, 20b1 (CP3–CP5 entry; differences in decision #58) and checked on the Redmi.
+- ✅ App on a device via the EAS preview build 0.2.0 + EAS Updates; web deployed to staging.
+- ✅ progress.md updated (this entry).
+
+**Tag `m3-done`** on `main` after this entry is merged.
+
+**Carried forward (all milestones so far)**
+
+- M4: Terms / Privacy pages (sign-up links 404 until then); "See what buyers see" on step 6 and "View" / "View in shop" in the app (19b-preview); staging demo seed.
+- M8: `/api/cron/purge` — `signup_attempts` older than 7 days, leftover `storage_deletions`, unreferenced keys under `products/`/`logos/` (photos picked but never saved); decide whether soft-deleted products are ever purged (past orders keep their own snapshot).
+- M10: automated UI tests (jest-expo/Maestro) for screens now checked by hand.
+- M11: Cloudflare R2 with a custom image domain (replacing Vercel Blob, decision #54); `armeabi-v7a`; production keystore and EAS environment; production Neon and Resend; Vercel Hobby is non-commercial (decision #10); `vercel logout` on the laptop.
+- `react-native-draggable-flatlist` 4.0.3 (last release May 2025) works with reanimated 4.5 today; re-check on every Expo SDK / reanimated upgrade (error boundaries fall back to buttons/arrows).
+- Not built: dragging products within a category (20b1; not in the spec, no per-category order in the data).
+- The Shop tab's shop card shows the initial, not the logo (`/api/me` has no logo URL yet).
+- Categories screen: the drag list sits inside a ScrollView (a dev-only "nested VirtualizedList" warning; fine for a handful of categories).
+- TikTok logo only with TikTok's written permission (neutral icon until then); whether "My status" shows from the Status button (owner to confirm).
+- Blob usage: check the Hobby usage page (estimate in the CP0 entry).
+- eas-cli 24.8.0 (24.10.0 available), not upgraded; `.wslconfig` proposed, not applied.
+
+**Next:** M4 plan (proposed in the chat) for approval; M4 not started.
+
 ## 2026-10-04 · M3 CP3–CP5 (Shop tab, Add/Edit product, categories), at review stop B (branch `m3-catalogue-2`, owner Step 61)
 
 - **Review stop A:** owner approved CP1/CP2 on paper; PR #16 merged (`28f21a1`), staging health OK, EAS Update `a33550ba` (tab bar).
