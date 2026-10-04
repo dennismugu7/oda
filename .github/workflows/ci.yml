@@ -53,6 +53,11 @@ jobs:
       - name: Format
         run: pnpm format:check
 
+      # Expo/EAS config belongs in apps/seller; a root app.json means a command ran in the
+      # wrong folder (Step 49).
+      - name: No stray Expo files at the repo root
+        run: pnpm check:root
+
       - name: Lint
         run: pnpm lint
 

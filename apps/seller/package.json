@@ -11,7 +11,7 @@
     "doctor": "npx expo-doctor@1",
     "deps:check": "expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run",
-    "update:preview": "eas update --channel preview --environment preview"
+    "update:preview": "node scripts/eas-update.mjs"
   },
   "dependencies": {
     "@better-auth/expo": "1.7.6",
