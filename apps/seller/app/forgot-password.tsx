@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { emailSchema } from '@oda/shared';
-import { authClient } from '@/auth/client';
+import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError } from '@/auth/errors';
 import {
   AuthScreen,
@@ -34,7 +34,9 @@ export default function ForgotPassword() {
     setError(null);
     if (!emailCheck.success) return;
     setBusy(true);
-    const { error: authError } = await authClient.requestPasswordReset({ email: emailCheck.data });
+    const { error: authError } = await authCall(() =>
+      authClient.requestPasswordReset({ email: emailCheck.data }),
+    );
     setBusy(false);
     if (authError) {
       setError(friendlyAuthError(authError).message);
@@ -47,14 +49,12 @@ export default function ForgotPassword() {
     return (
       <AuthScreen
         footer={
-          <>
-            <InfoNote icon="info">Nothing yet? Check your spam folder.</InfoNote>
-            <Button
-              title="Back to sign in"
-              onPress={() => router.replace({ pathname: '/sign-in', params: { email: sentTo } })}
-            />
-          </>
+          <Button
+            title="Back to sign in"
+            onPress={() => router.replace({ pathname: '/sign-in', params: { email: sentTo } })}
+          />
         }
+        note={<InfoNote icon="info">Nothing yet? Check your spam folder.</InfoNote>}
       >
         <Wordmark />
         <Title>Check your email</Title>

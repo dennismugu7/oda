@@ -16,7 +16,8 @@ export interface FriendlyError {
   action: ErrorAction;
 }
 
-const OFFLINE = 'No connection. Check your internet and try again.';
+export const OFFLINE_MESSAGE = "You're offline. Check your connection and try again.";
+export const UNREACHABLE_MESSAGE = "Couldn't reach oda. Try again.";
 const GENERIC = 'Something went wrong. Please try again.';
 
 /** Codes whose message our server writes for sellers (decisions #43–#45). */
@@ -24,8 +25,12 @@ const SERVER_WORDED = new Set(['RATE_LIMITED', 'WEAK_PASSWORD', 'EMAIL_HAS_ACCOU
 
 export function friendlyAuthError(error: AuthError | null | undefined): FriendlyError {
   if (!error) return { message: GENERIC, action: null };
-  if (!error.status || error.status === 0) return { message: OFFLINE, action: null };
   const code = error.code ?? '';
+  // From authCall (src/auth/call.ts): no network before the call, or no answer in time.
+  if (code === 'OFFLINE') return { message: OFFLINE_MESSAGE, action: null };
+  if (code === 'TIMEOUT' || code === 'UNREACHABLE' || !error.status) {
+    return { message: UNREACHABLE_MESSAGE, action: null };
+  }
 
   if (SERVER_WORDED.has(code) && error.message) {
     return {
@@ -35,7 +40,8 @@ export function friendlyAuthError(error: AuthError | null | undefined): Friendly
   }
   switch (code) {
     case 'INVALID_EMAIL_OR_PASSWORD':
-      return { message: "That email and password don't match. Try again.", action: null };
+      // Same words whether or not the email has an account.
+      return { message: 'Incorrect email or password. Try again.', action: null };
     case 'EMAIL_NOT_VERIFIED':
       return { message: 'Confirm your email first. We sent you a code.', action: 'verify-email' };
     case 'INVALID_OTP':

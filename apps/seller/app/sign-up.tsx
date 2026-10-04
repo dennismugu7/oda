@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View, type TextInput } from 'react-native';
 import { emailSchema, passwordProblem } from '@oda/shared';
-import { authClient } from '@/auth/client';
+import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError, type FriendlyError } from '@/auth/errors';
 import { API_URL } from '@/config';
 import {
@@ -40,11 +40,9 @@ export default function SignUp() {
     setError(null);
     if (!emailCheck.success || passwordProblem(password)) return;
     setBusy(true);
-    const { error: authError } = await authClient.signUp.email({
-      email: emailCheck.data,
-      password,
-      name: '',
-    });
+    const { error: authError } = await authCall(() =>
+      authClient.signUp.email({ email: emailCheck.data, password, name: '' }),
+    );
     setBusy(false);
     if (authError) {
       setError(friendlyAuthError(authError));
@@ -55,10 +53,10 @@ export default function SignUp() {
 
   return (
     <AuthScreen
-      footer={
+      footer={<Button title="Create my account" onPress={submit} loading={busy} />}
+      note={
         <>
           <InfoNote icon="shield">Your money never passes through oda.</InfoNote>
-          <Button title="Create my account" onPress={submit} loading={busy} />
           <Text style={styles.terms}>
             By continuing you agree to oda&apos;s{' '}
             <Link onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}>Terms</Link> and{' '}
@@ -99,8 +97,9 @@ export default function SignUp() {
           returnKeyType="go"
           onSubmitEditing={submit}
           error={passwordError}
-        />
-        <PasswordRules password={password} />
+        >
+          <PasswordRules password={password} />
+        </PasswordField>
       </View>
 
       {error ? (

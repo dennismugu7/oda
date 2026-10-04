@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View, type TextInput } from 'react-native';
 import { emailSchema } from '@oda/shared';
-import { authClient } from '@/auth/client';
+import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError } from '@/auth/errors';
 import {
   AuthScreen,
@@ -38,10 +38,9 @@ export default function SignIn() {
     setError(null);
     if (!emailCheck.success || !password) return;
     setBusy(true);
-    const { error: authError } = await authClient.signIn.email({
-      email: emailCheck.data,
-      password,
-    });
+    const { error: authError } = await authCall(() =>
+      authClient.signIn.email({ email: emailCheck.data, password }),
+    );
     setBusy(false);
     if (!authError) {
       router.replace('/');
@@ -58,13 +57,11 @@ export default function SignIn() {
 
   return (
     <AuthScreen
-      footer={
-        <>
-          <Button title="Continue" onPress={submit} loading={busy} />
-          <Text style={styles.switch}>
-            New here? <Link onPress={() => router.replace('/sign-up')}>Open your free shop</Link>
-          </Text>
-        </>
+      footer={<Button title="Continue" onPress={submit} loading={busy} />}
+      note={
+        <Text style={styles.switch}>
+          New here? <Link onPress={() => router.replace('/sign-up')}>Open your free shop</Link>
+        </Text>
       }
     >
       <Wordmark />

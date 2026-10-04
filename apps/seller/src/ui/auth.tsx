@@ -3,11 +3,21 @@
 // everywhere (docs/design-changes.md).
 import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
-import { forwardRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,32 +29,113 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { passwordChecks } from '@oda/shared';
 import { colors, radii, sizes, spacing, text } from '@/theme';
+import { revealOffset } from './reveal';
 
-/** Scrollable page with the keyboard pushing the footer (main button) up. */
+/** True while the on-screen keyboard is open. */
+export function useKeyboardVisible(): boolean {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return visible;
+}
+
+/** Lets a Field ask its screen to scroll it (and its rules) into view when focused. */
+const RevealContext = createContext<((block: View | null) => void) | null>(null);
+
+/**
+ * Auth page layout (Step 47, fix 1). The main button sits in a footer pinned above the
+ * keyboard; the form scrolls so the focused field, its error and its rules stay visible.
+ * `note` (terms, links) hides while the keyboard is open to leave room for the form.
+ * Android draws edge to edge, so the window no longer shrinks for the keyboard: the
+ * KeyboardAvoidingView pads on both platforms.
+ */
 export function AuthScreen({
   children,
   footer,
+  note,
   back = true,
 }: {
   children: ReactNode;
   footer?: ReactNode;
+  note?: ReactNode;
   back?: boolean;
 }) {
+  const keyboardVisible = useKeyboardVisible();
+  const scroll = useRef<ScrollView>(null);
+  const content = useRef<View>(null);
+  const focused = useRef<View | null>(null);
+  const viewport = useRef(0);
+  const scrollY = useRef(0);
+
+  const reveal = useCallback(() => {
+    const block = focused.current;
+    if (!block || !content.current) return;
+    block.measureLayout(
+      content.current,
+      (_x, y, _w, height) => {
+        const target = revealOffset({
+          fieldTop: y,
+          fieldHeight: height,
+          viewportHeight: viewport.current,
+          scrollY: scrollY.current,
+        });
+        if (target !== null) scroll.current?.scrollTo({ y: target, animated: true });
+      },
+      () => {},
+    );
+  }, []);
+
+  useEffect(() => {
+    // Once the keyboard is up (and the view has shrunk), bring the focused field into view.
+    const sub = Keyboard.addListener('keyboardDidShow', () => setTimeout(reveal, 50));
+    return () => sub.remove();
+  }, [reveal]);
+
+  const onFocusBlock = useMemo(
+    () => (block: View | null) => {
+      focused.current = block;
+      setTimeout(reveal, 50);
+    },
+    [reveal],
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {back ? <BackButton /> : <View style={styles.backSpacer} />}
-          {children}
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
-        </ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+        <RevealContext.Provider value={onFocusBlock}>
+          <ScrollView
+            ref={scroll}
+            style={styles.flex}
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              scrollY.current = e.nativeEvent.contentOffset.y;
+            }}
+            onLayout={(e) => {
+              viewport.current = e.nativeEvent.layout.height;
+              reveal();
+            }}
+          >
+            <View ref={content} collapsable={false}>
+              {back ? <BackButton /> : <View style={styles.backSpacer} />}
+              {children}
+            </View>
+          </ScrollView>
+        </RevealContext.Provider>
+        {footer || (note && !keyboardVisible) ? (
+          <View style={styles.footer}>
+            {footer}
+            {note && !keyboardVisible ? note : null}
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -89,15 +180,19 @@ type FieldProps = TextInputProps & {
   label: string;
   error?: string | null;
   right?: ReactNode;
+  /** Shown under the field (e.g. password rules) and kept in view with it. */
+  children?: ReactNode;
 };
 
 export const Field = forwardRef<TextInput, FieldProps>(function Field(
-  { label, error, right, style, onFocus, onBlur, ...input },
+  { label, error, right, children, style, onFocus, onBlur, ...input },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
+  const block = useRef<View>(null);
+  const reveal = useContext(RevealContext);
   return (
-    <View style={styles.field}>
+    <View ref={block} collapsable={false} style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <View style={[styles.inputBox, focused && styles.inputFocused, !!error && styles.inputError]}>
         <TextInput
@@ -107,6 +202,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           style={[styles.input, style]}
           onFocus={(e) => {
             setFocused(true);
+            reveal?.(block.current);
             onFocus?.(e);
           }}
           onBlur={(e) => {
@@ -122,6 +218,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           {error}
         </Text>
       ) : null}
+      {children}
     </View>
   );
 });
@@ -263,7 +360,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backSpacer: { height: sizes.minTapTarget + spacing.xs },
-  footer: { marginTop: 'auto', paddingTop: spacing.xl, gap: spacing.md },
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+    backgroundColor: colors.background,
+  },
 
   wordmark: {
     fontFamily: text('display').fontFamily,

@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { OTP_LENGTH } from '@oda/shared';
-import { authClient } from '@/auth/client';
+import { authCall, authClient } from '@/auth/client';
 import { cleanCode, formatCountdown, resendAvailableAt, secondsUntil } from '@/auth/countdown';
 import { friendlyAuthError } from '@/auth/errors';
 import { AuthScreen, Button, ErrorMessage, InfoNote, Subtitle, Title } from '@/ui/auth';
@@ -36,10 +36,9 @@ export default function Verify() {
     async (manual: boolean) => {
       setError(null);
       setInfo(null);
-      const { error: authError } = await authClient.emailOtp.sendVerificationOtp({
-        email,
-        type: 'email-verification',
-      });
+      const { error: authError } = await authCall(() =>
+        authClient.emailOtp.sendVerificationOtp({ email, type: 'email-verification' }),
+      );
       if (authError) {
         const retryAfter = (authError as { retryAfter?: number }).retryAfter;
         if (authError.status === 429 && retryAfter !== undefined) {
@@ -71,7 +70,9 @@ export default function Verify() {
       setBusy(true);
       setError(null);
       setInfo(null);
-      const { error: authError } = await authClient.emailOtp.verifyEmail({ email, otp: value });
+      const { error: authError } = await authCall(() =>
+        authClient.emailOtp.verifyEmail({ email, otp: value }),
+      );
       setBusy(false);
       if (authError) {
         setError(friendlyAuthError(authError).message);
@@ -92,7 +93,17 @@ export default function Verify() {
   }
 
   return (
-    <AuthScreen footer={<InfoNote icon="info">Nothing yet? Check your spam folder.</InfoNote>}>
+    <AuthScreen
+      footer={
+        <Button
+          title="Verify"
+          onPress={() => void verify(code)}
+          loading={busy}
+          disabled={code.length !== OTP_LENGTH}
+        />
+      }
+      note={<InfoNote icon="info">Nothing yet? Check your spam folder.</InfoNote>}
+    >
       <Title>Confirm your email</Title>
       <Subtitle>
         We sent a {OTP_LENGTH}-digit code to{'\n'}
@@ -129,15 +140,6 @@ export default function Verify() {
           accessibilityLabel="Verification code"
         />
       </Pressable>
-
-      <View style={styles.verify}>
-        <Button
-          title="Verify"
-          onPress={() => void verify(code)}
-          loading={busy}
-          disabled={code.length !== OTP_LENGTH}
-        />
-      </View>
 
       {error ? <ErrorMessage>{error}</ErrorMessage> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
@@ -193,7 +195,6 @@ const styles = StyleSheet.create({
     opacity: 0.01,
     color: 'transparent',
   },
-  verify: { marginTop: spacing.xl },
   info: { ...text('body'), color: colors.green, marginTop: spacing.md, textAlign: 'center' },
   resend: {
     ...text('body'),
