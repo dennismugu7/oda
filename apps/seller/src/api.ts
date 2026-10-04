@@ -51,7 +51,7 @@ export interface ApiError {
  */
 export async function apiJson<T>(
   path: string,
-  init: { method?: 'GET' | 'POST'; body?: unknown } = {},
+  init: { method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown } = {},
 ): Promise<{ data: T | null; error: ApiError | null }> {
   const result = await guardedCall<T>(
     async () => {
@@ -63,6 +63,8 @@ export async function apiJson<T>(
       const json = (await res.json().catch(() => null)) as
         (T & { error?: Omit<ApiError, 'status'> }) | null;
       if (res.ok && json) return { data: json };
+      // 204 No Content (e.g. a delete): success without a body.
+      if (res.status === 204) return { data: {} as T };
       return { error: { status: res.status, ...(json?.error ?? {}) } };
     },
     { isOnline },

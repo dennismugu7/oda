@@ -105,6 +105,7 @@ export function catalogueRepo(db: Db, ctx: SellerCtx) {
         categoryId: r.categoryId,
         sizes: r.sizes,
         colours: r.colours,
+        unitsSold: r.unitsSold,
         coverUrl: coverOf.get(r.id) ?? null,
         updatedAt: r.updatedAt,
       })),
@@ -138,7 +139,11 @@ export function catalogueRepo(db: Db, ctx: SellerCtx) {
         isVisible: c.isVisible,
         position: c.position,
         productCount: mine.length,
-        thumbUrl: mine.map((p) => coverOf.get(p.id)).find(Boolean) ?? null,
+        // Up to three covers, shown overlapping in 20b-categories.
+        thumbUrls: mine
+          .map((p) => coverOf.get(p.id))
+          .filter((url): url is string => !!url)
+          .slice(0, 3),
       };
     });
   }

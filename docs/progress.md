@@ -2,6 +2,43 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · M3 CP3–CP5 (Shop tab, Add/Edit product, categories), at review stop B (branch `m3-catalogue-2`, owner Step 61)
+
+- **Review stop A:** owner approved CP1/CP2 on paper; PR #16 merged (`28f21a1`), staging health OK, EAS Update `a33550ba` (tab bar).
+- **`pnpm check:all`** added (decision #58 a) and used for every check run since.
+- **CP3 Shop tab, CP4 Add/Edit product, CP5 categories** (decision #58 b–d). New app code: `src/catalogue/` (API client, list/form logic, photo strip, product form, undo store), `src/ui/sheet.tsx`, `src/ui/screenHeader.tsx`, `src/ui/dragBoundary.tsx`, routes `app/products/new`, `app/products/[id]`, `app/categories/index`, `app/categories/[id]`. Server: category list returns up to three `thumbUrls`; `/api/me` returns `businessType`; product list includes `unitsSold`. `apiJson` handles PATCH/PUT/DELETE and 204.
+- **Drag library:** `react-native-draggable-flatlist` 4.0.3 installed (0.5 MB, JS only; `deps:check`: native runtime unchanged for 0.2.0). Used for photos and categories, each inside an error boundary with a non-drag fallback (photo actions / arrows). **Its real test is the phone** (review stop B, items 9 and 15).
+- **Tests:** seller 76 (Shop list chips/filters/search/row text, buyer filter preview, form money/validation/changed fields/photo order/colours), shared 171, web 203 (category thumbnails), db 23, ui-tokens 3. `check:all` passed (one earlier run stopped at lint: setState in an effect, a ref read during render, two unused imports; fixed).
+
+**Design comparison (from the code; the phone check is review stop B)**
+- 19: same header, shop card, chips, list, badges; "View" hidden until M4; chips also include Sold out / Hidden; no Orders badge yet.
+- 18-edit-product: same cards and order; "Was price" added under Price (design-changes); Category is a sheet, not a dropdown; "View in shop" hidden until M4; sizes add "+ Size", colours "+ Colour" (sheet with swatches).
+- 20b-categories: same; arrows replace the drag handle if dragging fails.
+- 20b1: same, without dragging products inside a category (decision #58 d).
+
+**Review stop B: phone test (Redmi, staging, after the EAS Update)**
+
+1. Close and reopen the app twice. → Home tab; tab bar Home · Orders · + · Shop · More.
+2. Shop tab. → Your shop card (initial, name, link, Share), chip "All 1", your onboarding product with its cover, price and sizes line. Share → share sheet with your link.
+3. Tap "+" (Add product) with no photo, tap Add product. → "Add a photo of your product…".
+4. Add 3 photos (camera + gallery) → spinners, then thumbnails, the first marked COVER. Name `Kitenge top`, Price `1500`, Was price `1200`, Add product. → "The was-price must be higher than the price." Was price `1800` → Add product → back on Shop, "All 2", the new product at the top.
+5. Status: Sold out in the form, Save. → Row shows "Sold out", a "Sold out 1" chip appears; tap the chip → only that product.
+6. Long-press a row → "Available" / "Hidden" sheet; Hidden → "Hidden" badge and chip.
+7. Search (magnifier) `kit` → only Kitenge top; × clears.
+8. Open Kitenge top → change price to `1,600`, add sizes (presets + "+ Size" `One size`), colours (Maroon, Gold, custom `Sunset print`), description; Save. → Back on Shop, the row shows the new price and sizes. Back arrow with unsaved changes → "Leave without saving?".
+9. **Drag test:** in the product, hold a photo and drag it to the first place → it becomes COVER; Save; reopen → order kept. If dragging misbehaves (no movement, jumps, crash), note it; tap a photo → Make cover / Move left / Move right / Remove must still work.
+10. Remove one photo (tap → Remove photo), Save. → 2 photos remain.
+11. ⋮ → Delete product. → Shop tab, "Kitenge top deleted · Undo" for ~5 s; tap Undo → it's back. Delete again and wait → gone for good from the list.
+12. Shop → Categories ›. → Empty list text and "Add a category". Add `Dresses`, `Tops`, `Bags`. → Three rows, "No products yet", the note about empty categories.
+13. Open Dresses → "Add products" → pick your onboarding product. → It's listed with ×; preview chips show "All · Dresses".
+14. Turn off "Show in my shop" → preview text says it's hidden; back → "Hidden" badge on Dresses. Turn it on again.
+15. **Drag test:** hold a category and drag it to another place → order kept after leaving and reopening. If dragging misbehaves, note it (arrows appear only if it fails to load).
+16. Rename Tops → `Shirts` (leave the field) → the header and list update. ⋮ → Delete category `Bags` → confirm → gone; its products stay.
+17. Shop tab chips now show the categories with products (e.g. "Dresses 1").
+18. More → Sign out → Welcome. Sign in again → Home.
+
+**Next:** merge to `main` (staging) → EAS Update → owner's review stop B.
+
 ## 2026-10-04 · M2 tagged; M3 CP1 + CP2, at review stop A (branch `m3-catalogue`, owner Step 60)
 
 - **GPS read-back passed** (entry below), PR #15 merged (`348435f`), **`main` tagged `m2-done`**.

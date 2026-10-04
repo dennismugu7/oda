@@ -274,8 +274,9 @@ describe('categories', () => {
       ['Dresses', 1],
       ['Bags', 0],
     ]);
-    expect(list[0]!.thumbUrl).toContain(`products/${s.shopId}/`);
-    expect(list[1]!.thumbUrl).toBeNull();
+    expect(list[0]!.thumbUrls).toHaveLength(1);
+    expect(list[0]!.thumbUrls[0]).toContain(`products/${s.shopId}/`);
+    expect(list[1]!.thumbUrls).toEqual([]);
 
     const renamed = await s.call(updateCategory, {
       method: 'PATCH',

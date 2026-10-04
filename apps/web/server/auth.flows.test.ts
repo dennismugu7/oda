@@ -429,7 +429,12 @@ describe('GET /api/me', () => {
       .returning();
     const body = await (await me(bearer(token))).json();
     expect(body.onboarding).toEqual({ step: 5, done: false });
-    expect(body.shop).toEqual({ id: shop!.id, name: 'Amani Styles', slug: 'amani-styles' });
+    expect(body.shop).toEqual({
+      id: shop!.id,
+      name: 'Amani Styles',
+      slug: 'amani-styles',
+      businessType: 'other',
+    });
 
     await getDb()
       .update(schema.shops)

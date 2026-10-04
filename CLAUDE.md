@@ -58,6 +58,7 @@ Node 24, pnpm 12 (pinned in `package.json`). First run: `pnpm install`, copy eac
 - `pnpm test`: Vitest in every package (the db tests need local Postgres up and migrated).
 - `pnpm test:e2e`: builds the web and runs Playwright (390×844 mobile Chromium) against it.
 - `pnpm lint` / `pnpm typecheck` / `pnpm format` (`format:check` in CI).
+- **`pnpm check:all`**: every local check strictly one after another (format, lint, typecheck, tests, repo root, Expo deps + native runtime, Android bundle; Turbo with `--concurrency=1`), stopping at the first failure and printing each step's result. **Use it instead of running checks by hand** so they never run in parallel; run a single check alone only while fixing it.
 - `pnpm db:up` / `db:down`: local Postgres 18 in Docker (same major as Neon) on **port 5442** (5433 is taken by a native Postgres on this machine).
 - `pnpm db:reset`: drop the volume, start, migrate, seed (the "Amani Styles" demo shop; sign in as `amani@example.test` or `admin@example.test` with `SEED_PASSWORD` from `apps/web/.env.example`). `pnpm db:migrate` / `db:generate` / `db:seed` / `db:studio`.
 - Staging web: **https://oda-eta.vercel.app** (Vercel Production deployment of `main`, public, region `fra1`; health at `/api/health`). Branch previews: `https://oda-git-<branch>-dennismugu7-6048s-projects.vercel.app` (behind Vercel login). Until M11 both use the Neon staging DB (decision #26).

@@ -24,7 +24,8 @@
     "setup:android": "pwsh -NoProfile -File scripts/setup-android-windows.ps1",
     "db:reset": "docker compose down -v && pnpm db:up && pnpm db:migrate && pnpm db:seed",
     "update:preview": "pnpm --filter @oda/seller update:preview",
-    "check:root": "node scripts/check-repo-root.mjs"
+    "check:root": "node scripts/check-repo-root.mjs",
+    "check:all": "node scripts/check-all.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
