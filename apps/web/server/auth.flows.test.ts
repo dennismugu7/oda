@@ -79,6 +79,16 @@ async function fillLimit(key: string, window: number, count: number) {
     values (${key}, to_timestamp(floor(extract(epoch from now()) / ${window}) * ${window}), ${count})`);
 }
 
+/**
+ * Limits use clock-aligned windows (e.g. :00, :15, :30, :45 for 15 minutes), so a test that
+ * makes several real hits must not straddle an edge: if fewer than `needSeconds` are left,
+ * wait for the next window (a few seconds at most).
+ */
+async function awayFromWindowEdge(window: number, needSeconds = 10) {
+  const left = window - ((Date.now() / 1000) % window);
+  if (left < needSeconds) await new Promise((r) => setTimeout(r, (left + 1) * 1000));
+}
+
 const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
 
 beforeEach(async () => {
@@ -112,6 +122,7 @@ describe('sign in', () => {
   });
 
   it('locks an email for the window after 5 wrong passwords, even with the right one', async () => {
+    await awayFromWindowEdge(900);
     await signedUpAndVerified();
     for (let i = 0; i < 5; i++) {
       expect((await signIn(EMAIL, 'wrong-pass1', { ip: `10.0.1.${i}` })).status).toBe(401);
@@ -122,9 +133,10 @@ describe('sign in', () => {
     // Other emails are unaffected.
     await signedUpAndVerified('wanjiku@example.test');
     expect((await signIn('wanjiku@example.test', PASSWORD, { ip: '10.0.2.1' })).status).toBe(200);
-  });
+  }, 30_000);
 
   it('lets a locked seller reset their password, which clears the lock', async () => {
+    await awayFromWindowEdge(900);
     await signedUpAndVerified();
     for (let i = 0; i < 5; i++) await signIn(EMAIL, 'wrong-pass1');
     expect((await signIn()).status).toBe(429);
@@ -134,7 +146,7 @@ describe('sign in', () => {
     const token = lastResetToken();
     expect((await call('/reset-password', { token, newPassword: 'newpass2026' })).status).toBe(200);
     expect((await signIn(EMAIL, 'newpass2026')).status).toBe(200);
-  });
+  }, 30_000);
 
   it('allows 100 sign-in attempts per IP per 15 minutes', async () => {
     await fillLimit('signin-ip:10.0.0.1', 900, 99);

@@ -151,7 +151,7 @@ function Step({ state }: { state: OnboardingState }) {
 
   async function done() {
     const finished = await submit(() => onboardingApi.complete());
-    if (finished) router.replace('/start');
+    if (finished) router.replace('/home');
   }
 
   const buttons = shareButtons(shop.channels);

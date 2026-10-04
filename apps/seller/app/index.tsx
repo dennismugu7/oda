@@ -1,5 +1,5 @@
 // Start gate: where the app opens. No stored session → Welcome; a session → GET /api/me
-// decides (the onboarding step reached, or the placeholder once onboarding is done). Reads the session cookie directly, never Better Auth's session atom, which
+// decides (the onboarding step reached, or the tabs once onboarding is done). Reads the session cookie directly, never Better Auth's session atom, which
 // refreshes ~10 ms after a verified code (src/auth/start.ts). Every path ends: a timeout,
 // an offline message or an error message, never an endless spinner.
 import { router } from 'expo-router';

@@ -46,7 +46,7 @@ export function useOnboarding() {
 
   useEffect(() => {
     // Finished already (e.g. on another phone): writes would be refused, so leave.
-    if (state?.done) router.replace('/start');
+    if (state?.done) router.replace('/home');
   }, [state?.done]);
 
   const retry = useCallback(() => {

@@ -29,10 +29,10 @@ describe('startRoute', () => {
     ).toEqual({ to: '/onboarding/what-you-sell' });
   });
 
-  it('sends a seller who finished onboarding on (placeholder until Home)', () => {
+  it('sends a seller who finished onboarding to the tabs (Home)', () => {
     expect(
       startRoute(true, { kind: 'ok', me: me({ onboarding: { step: null, done: true } }) }),
-    ).toEqual({ to: '/start' });
+    ).toEqual({ to: '/home' });
   });
 
   it('never sends a signed-in seller to the code screen (accounts exist only once verified)', () => {
