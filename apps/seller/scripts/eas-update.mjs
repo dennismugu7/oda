@@ -55,7 +55,9 @@ const result = spawnSync(
     'preview',
     '--non-interactive',
     '--message',
-    message,
+    // With shell: true (Windows) the arguments are joined unquoted, so a message with spaces
+    // would split into many: quote it (double quotes inside become single ones).
+    process.platform === 'win32' ? `"${message.replace(/"/g, "'")}"` : message,
   ],
   { cwd: app, stdio: 'inherit', shell: process.platform === 'win32' },
 );
