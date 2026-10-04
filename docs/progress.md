@@ -18,7 +18,9 @@ Newest entries at the top.
 - **Checks** (one at a time): format, lint, typecheck, tests (web 191, seller 65, shared 168, db 23, ui-tokens 3), `deps:check`, Android bundle. Slip: twice I sent several check commands in one message, so they ran in parallel; each was re-run on its own and passed.
 - **Limits:** no app can post straight to WhatsApp Status; TikTok, Instagram and Facebook don't take prefilled text from other apps (by their design). Whether "My status" appears in WhatsApp's list from the WhatsApp button needs the phone.
 
-**Next:** merge, redeploy staging (so the new env var applies), check a shop link from the API, publish the EAS Update; owner retests step 6 and decides on the icons (download Meta's packs; TikTok permission or keep the neutral icon).
+- **Shipped:** PR #13 merged (`88abeef`); main CI and `migrate-staging` passed; `/api/health` → `{"ok":true,"db":"up","commit":"88abeef"}` (the new guard answers 503 when the shop base URL isn't a public https URL, so this also confirms `PUBLIC_SHOP_BASE_URL` is live). **EAS Update** published to `preview`, runtime 0.2.0: update group `0b671df9-0145-4030-a136-889f827913ce` ("Step 6: https shop links, …"). The first publish attempt failed before uploading anything: the update script passed the message unquoted to the Windows shell, so it split at the spaces; fixed (branch `m2b-icons`).
+
+**Next:** owner retests step 6 (close and reopen the app twice to get the update) and decides on the icons: download Meta's WhatsApp, Instagram and Facebook packs from their brand pages (I add the glyphs as given); TikTok: ask TikTok for written permission or keep the neutral icon.
 
 ## 2026-10-04 · Restore drill passed (owner Step 57)
 

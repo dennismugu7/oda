@@ -34,22 +34,24 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import type { IconName } from '@/onboarding/labels';
 import { shareTo, type ShareDeps } from '@/onboarding/shareActions';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, FormMessage } from '@/ui/auth';
-import { WHATSAPP_GREEN } from '@/ui/brand';
+import { BrandIcon, StatusRing, type Brand } from '@/ui/brandIcons';
 import { StepStatus } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
 
-// Placeholder glyphs until the official brand icons are added (decision #55).
-const SHARE_ICONS: Record<Exclude<ShareTarget, 'whatsapp_status'>, IconName> = {
+// Official brand marks for WhatsApp, Instagram and Facebook; TikTok needs written
+// permission, so a neutral icon with its name (decision #55).
+const BRANDS: Partial<Record<ShareTarget, Brand>> = {
   whatsapp: 'whatsapp',
-  tiktok: 'music-note',
   instagram: 'instagram',
   facebook: 'facebook',
+};
+const NEUTRAL_ICONS: Partial<Record<ShareTarget, IconName>> = {
+  tiktok: 'music-note',
   more: 'dots-horizontal',
 };
 
@@ -74,24 +76,6 @@ export default function ShopLive() {
   if (!state?.shop || !state.checklist)
     return <StepStatus step={6} error={error} onRetry={retry} />;
   return <Step state={state} />;
-}
-
-/** WhatsApp's Status ring, in WhatsApp green (not a logo). */
-function StatusRing({ size = 26 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 26 26" accessibilityElementsHidden>
-      <Circle
-        cx={13}
-        cy={13}
-        r={10.5}
-        stroke={WHATSAPP_GREEN}
-        strokeWidth={2.4}
-        strokeDasharray="5.2 2.6"
-        fill="none"
-      />
-      <Circle cx={13} cy={13} r={5} fill={WHATSAPP_GREEN} />
-    </Svg>
-  );
 }
 
 function Step({ state }: { state: OnboardingState }) {
@@ -243,20 +227,16 @@ function Step({ state }: { state: OnboardingState }) {
               >
                 {({ pressed }) => (
                   <>
-                    <View
-                      style={[
-                        styles.shareCircle,
-                        i === 0 && target === 'whatsapp' && styles.shareCircleMain,
-                        pressed && styles.pressed,
-                      ]}
-                    >
+                    <View style={[styles.shareCircle, pressed && styles.pressed]}>
                       {target === 'whatsapp_status' ? (
                         <StatusRing />
+                      ) : BRANDS[target] ? (
+                        <BrandIcon brand={BRANDS[target]!} size={28} />
                       ) : (
                         <MaterialCommunityIcons
-                          name={SHARE_ICONS[target]}
+                          name={NEUTRAL_ICONS[target] ?? 'dots-horizontal'}
                           size={26}
-                          color={i === 0 && target === 'whatsapp' ? colors.textOnNavy : colors.navy}
+                          color={colors.navy}
                         />
                       )}
                     </View>
@@ -501,7 +481,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shareCircleMain: { backgroundColor: WHATSAPP_GREEN, borderColor: WHATSAPP_GREEN },
   shareLabel: {
     ...text('body'),
     color: colors.textSecondary,
