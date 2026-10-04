@@ -21,10 +21,10 @@ describe('startRoute', () => {
     expect(startRoute(true, { kind: 'ok', me: me() })).toEqual({ to: '/start' });
   });
 
-  it('sends an unverified seller to the code screen', () => {
+  it('never sends a signed-in seller to the code screen (accounts exist only once verified)', () => {
+    // Decision #49: the code screen is reached only from a sign-up attempt on this phone.
     expect(startRoute(true, { kind: 'ok', me: me({ emailVerified: false }) })).toEqual({
-      to: '/verify',
-      email: 'amani@example.test',
+      to: '/start',
     });
   });
 
@@ -66,7 +66,7 @@ describe('friendlyAuthError', () => {
 
   it("rewords Better Auth's own messages", () => {
     expect(friendlyAuthError({ status: 401, code: 'INVALID_EMAIL_OR_PASSWORD' }).message).toBe(
-      "That email and password don't match. Try again.",
+      'Incorrect email or password. Try again.',
     );
     expect(
       friendlyAuthError({ status: 400, code: 'INVALID_OTP', message: 'Invalid OTP' }).message,
@@ -84,9 +84,10 @@ describe('friendlyAuthError', () => {
   });
 
   it('says when the phone is offline, and never shows raw server text', () => {
-    expect(friendlyAuthError({ status: 0 }).message).toBe(
-      'No connection. Check your internet and try again.',
+    expect(friendlyAuthError({ status: 0, code: 'OFFLINE' }).message).toBe(
+      "You're offline. Check your connection and try again.",
     );
+    expect(friendlyAuthError({ status: 0 }).message).toBe("Couldn't reach oda. Try again.");
     expect(friendlyAuthError({ status: 500, message: 'TypeError: x is undefined' }).message).toBe(
       'Something went wrong. Please try again.',
     );

@@ -111,8 +111,8 @@ test('the local email outbox shows the codes (on Vercel it is a 404: unit tests)
   request,
 }) => {
   const email = `outbox-${Date.now()}@example.test`;
-  const res = await request.post('/api/auth/sign-up/email', {
-    data: { email, password: PASSWORD, name: '' },
+  const res = await request.post('/api/signup/start', {
+    data: { email, password: PASSWORD },
     headers: appHeaders(randomIp()),
   });
   expect(res.status()).toBe(200);

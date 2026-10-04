@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchMe } from '@/api';
-import { authClient } from '@/auth/client';
+import { signOutLocal } from '@/auth/client';
 import type { Me } from '@/auth/route';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
@@ -21,7 +21,8 @@ export default function Start() {
 
   async function signOut() {
     setSigningOut(true);
-    await authClient.signOut().catch(() => {});
+    // Works offline too: the stored session is removed either way.
+    await signOutLocal();
     router.replace('/welcome');
   }
 

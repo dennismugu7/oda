@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View, type TextInput } from 'react-native';
 import { emailSchema } from '@oda/shared';
-import { authClient } from '@/auth/client';
+import { authCall, authClient } from '@/auth/client';
 import { friendlyAuthError } from '@/auth/errors';
 import {
   AuthScreen,
@@ -21,7 +21,9 @@ import {
 import { colors, spacing, text } from '@/theme';
 
 export default function SignIn() {
-  const params = useLocalSearchParams<{ email?: string }>();
+  // ready=1: the account was just created from the code, but the app no longer holds the
+  // password (it was restarted), so the seller signs in once.
+  const params = useLocalSearchParams<{ email?: string; ready?: string }>();
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -38,38 +40,33 @@ export default function SignIn() {
     setError(null);
     if (!emailCheck.success || !password) return;
     setBusy(true);
-    const { error: authError } = await authClient.signIn.email({
-      email: emailCheck.data,
-      password,
-    });
+    const { error: authError } = await authCall(() =>
+      authClient.signIn.email({ email: emailCheck.data, password }),
+    );
     setBusy(false);
     if (!authError) {
       router.replace('/');
       return;
     }
-    const friendly = friendlyAuthError(authError);
-    if (friendly.action === 'verify-email') {
-      // Right password, email not confirmed yet: the code screen sends a fresh code.
-      router.push({ pathname: '/verify', params: { email: emailCheck.data, send: '1' } });
-      return;
-    }
-    setError(friendly.message);
+    setError(friendlyAuthError(authError).message);
   }
 
   return (
     <AuthScreen
-      footer={
-        <>
-          <Button title="Continue" onPress={submit} loading={busy} />
-          <Text style={styles.switch}>
-            New here? <Link onPress={() => router.replace('/sign-up')}>Open your free shop</Link>
-          </Text>
-        </>
+      footer={<Button title="Continue" onPress={submit} loading={busy} />}
+      note={
+        <Text style={styles.switch}>
+          New here? <Link onPress={() => router.replace('/sign-up')}>Open your free shop</Link>
+        </Text>
       }
     >
       <Wordmark />
       <Title>Welcome back</Title>
-      <Subtitle>Sign in to your shop.</Subtitle>
+      <Subtitle>
+        {params.ready === '1'
+          ? 'Your shop account is ready. Sign in with the password you chose.'
+          : 'Sign in to your shop.'}
+      </Subtitle>
 
       <View style={styles.form}>
         <Field

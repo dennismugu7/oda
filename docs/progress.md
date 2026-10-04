@@ -2,6 +2,38 @@
 
 Newest entries at the top.
 
+## 2026-10-04 · Phone test fixes 1, 3, 4, 5 shipped as EAS Update; fix 2 proposed (branch `m2a-eas-preview`, PR #8)
+
+Owner's phone test of build `e21b8131` on staging: passed 1, 2, 5, 6, 9–17. Fixes (all app-side JS, `bfe7e90`):
+1. **Keyboard covered the password rules.** `AuthScreen` now pins the main button in a footer above the keyboard (`KeyboardAvoidingView` with `padding` on Android too: Android draws edge to edge, so the window no longer shrinks); the focused field, its error and its rules scroll into view (`revealOffset`, 5 tests); terms and links (`note`) hide while the keyboard is open. All four auth screens.
+3. **Correct code → Welcome.** Cause (confirmed by a test with the real Better Auth Expo client, React Native mocked): the verify call stores the session cookie, but Better Auth's session atom only refreshes ~10 ms later in a timer; the start gate read the atom right away, saw "signed out" and went to Welcome. Signing in afterwards worked because the atom had refreshed by then. Fix: the gate reads the stored cookie and asks `GET /api/me` (`src/auth/start.ts`), never the atom. Tests (`session.test.ts`, 4): cookie stored before `verifyEmail` resolves; gate → placeholder (and the atom is still empty at that moment, which is what broke the old gate); still signed in after a simulated kill/reopen; no session → Welcome; a session the server rejects is removed from SecureStore. Not reproduced end to end on staging from the laptop (needs a real mailbox for the code); the client side was reproduced with staging-shaped responses (`__Secure-` cookie).
+4. **Endless spinner offline.** Every API call goes through `guardedCall`/`authCall`: network check first (`expo-network`) → "You're offline. Check your connection and try again."; 15 s timeout or a thrown network error → "Couldn't reach oda. Try again."; it never throws. The start gate has its own 20 s limit and offline/unreachable/error screens with Try again. `signOutLocal` clears the stored session even without network. Tests (`call.test.ts`, 7).
+5. **"Incorrect email or password. Try again."** replaces the old wording (only in the app; the web's "The passwords don't match." compares the two new-password fields and stays).
+
+**Checks:** format, lint, typecheck, tests (web 118, seller 37, shared 147, db 23, ui-tokens 3), `deps:check` (native runtime unchanged for 0.1.0), Android bundle (4.7 MB) — each run on its own after a parallel run caused the incident below.
+**EAS Update published** to `preview` (runtime 0.1.0, update group `d40eb07a-c312-41c8-bf5d-95bfb1006943`, staging URLs from the EAS `preview` environment, bundle checked): https://expo.dev/accounts/dennisxenonxavier/projects/oda/updates/d40eb07a-c312-41c8-bf5d-95bfb1006943
+
+**Incident (download rule broken again):** checks were run in parallel; `npx expo export` didn't find the local Expo CLI (most likely while `expo install --check` was rewriting packages at the same moment) and installed `expo@57.0.26` from npm into the npx cache (283 packages, 322 MB on disk, est. 80–110 MB downloaded over the hotspot). From now on checks run strictly one after another, and Expo commands use `pnpm exec expo …` (never `npx`, which falls back to downloading). The two earlier unexplained `deps:check` exit 1s were probably the same overlap. The npx cache folder can be deleted (`%LocalAppData%
+pm-cache\_npx9ca9fcd30c476a`).
+
+**Fix 2 (sign-up after going back from the code screen): design proposed, not built** (waiting for the owner's OK; needs a migration).
+
+**Next:** owner retests 3, 4, 7, 8, 10, 18 after the update; decision on fix 2.
+
+## 2026-10-03 · M2a merged to staging; phone testing moves to EAS preview + EAS Update (branch `m2a-eas-preview`, draft PR #8)
+
+- **Local route stopped** (owner): no more local Gradle builds or wireless adb for review stop B. The local debug build never finished; it downloaded ~391 MB (entry below). The phone still has `m2a-preview-1` installed.
+- **PR #7 merged** (`2ae5ad8`, CI green). CI on `main` → `migrate-staging` → Deploy Hook → `/api/health` = `{"ok":true,"db":"up","commit":"2ae5ad8"}`. Staging smoke (no email sent): `/api/auth/get-session` 200, `/dev/outbox` 404, `/reset-password` 200, `/api/me` 401 without a session, blocked Better Auth endpoint 404.
+- **EAS Update** (decision #47): `expo-updates` 57.0.24 via `npx expo install` (pnpm reused its store, nothing downloaded); updates URL; channels `preview`/`development`; preview builds arm64-v8a only; `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SHOP_BASE_URL` = `https://oda-eta.vercel.app` as plain-text EAS variables in the `preview` environment; `pnpm --filter @oda/seller update:preview -m "…"`. `eas whoami`: `dennisxenonxavier` (already logged in).
+- **Runtime version:** fingerprint first; build `849248cb` failed because laptop and EAS fingerprints differ (pnpm folder names on Windows vs Linux, 292 path-only differences). Switched to **appVersion** with a CI guard (decision #48, `check-native-runtime.mjs` in `deps:check`, `native-runtime.json` snapshot; failure path tested). Runtime version `0.1.0`.
+- **CLAUDE.md:** no network downloads (Gradle, npm/pnpm, Docker images, NDK) without asking first with a size estimate.
+- Second EAS preview build `e21b8131` (upload 17.3 MB, commit `3f903f3`, app version / runtime 0.1.0, build 1): **finished**, APK 44.9 MB: https://expo.dev/accounts/dennisxenonxavier/projects/oda/builds/e21b8131-ff13-41a2-8149-f8b63fda883a. Channel `preview` active, branch `preview`, no update published yet.
+- Checks: format, lint, typecheck, seller tests, `deps:check` (incl. the new guard), expo-doctor 21/21.
+- **Phone install note:** the EAS build is signed with EAS's keystore, the installed `m2a-preview-1` with the local debug keystore, so Android refuses to install over it: uninstall oda first.
+- Supabase stacks `bookflow` and `dashboardx-local` still stopped (data kept).
+
+**Next:** owner installs the EAS preview build and runs the phone test against staging (real emails via Resend); fixes go in PR #8.
+
 ## 2026-10-03 · Review stop B: dev build paused after an unexpected ~391 MB download (branch `m2a-auth`)
 
 - Redmi connected over wireless debugging (`172.16.160.1:43691`, paired by the owner): model 25078RA3EA, arm64-v8a, 720×1600 @ 320 dpi. `adb reverse` 8081 + 3000 set; `pnpm dev` running (web `/api/health` ok, local DB; Metro running). App `.env.local` → `http://localhost:3000`.

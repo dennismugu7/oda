@@ -59,15 +59,14 @@ export async function createVerifiedSeller(
   ip: string,
 ) {
   const headers = appHeaders(ip);
-  const signUp = await request.post('/api/auth/sign-up/email', {
-    data: { email, password, name: '' },
-    headers,
-  });
+  // Sign-up is oda's own flow (decision #49): start → emailed code → verify.
+  const signUp = await request.post('/api/signup/start', { data: { email, password }, headers });
   expect(signUp.status()).toBe(200);
+  const { attemptId } = (await signUp.json()) as { attemptId: string };
   const code = /^(\d{6}) is your oda code$/.exec((await lastEmailTo(email)).subject)?.[1];
   expect(code).toBeTruthy();
-  const verify = await request.post('/api/auth/email-otp/verify-email', {
-    data: { email, otp: code },
+  const verify = await request.post('/api/signup/verify', {
+    data: { attemptId, code },
     headers,
   });
   expect(verify.status()).toBe(200);

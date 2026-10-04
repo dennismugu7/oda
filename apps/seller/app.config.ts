@@ -39,6 +39,12 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: { typedRoutes: true },
+  // EAS Update (decisions #47, #48): preview builds fetch JS updates published to their
+  // channel. Runtime version = app version: bump `version` whenever native code changes
+  // (`deps:check` fails otherwise). Fingerprints can't be used: pnpm names its folders
+  // differently on Windows and on EAS's Linux builders, so the two never match.
+  runtimeVersion: { policy: 'appVersion' },
+  updates: { url: `https://u.expo.dev/${easProjectId}` },
   owner: 'dennisxenonxavier',
   extra: { eas: { projectId: easProjectId } },
 };

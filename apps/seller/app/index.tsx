@@ -1,41 +1,51 @@
-// Start gate: where the app opens. Signed out → Welcome; signed in → GET /api/me decides
-// (code screen if the email isn't verified, otherwise the placeholder until onboarding).
+// Start gate: where the app opens. No stored session → Welcome; a session → GET /api/me
+// decides (code screen if the email isn't verified, otherwise the placeholder until
+// onboarding). Reads the session cookie directly, never Better Auth's session atom, which
+// refreshes ~10 ms after a verified code (src/auth/start.ts). Every path ends: a timeout,
+// an offline message or an error message, never an endless spinner.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchMe } from '@/api';
-import { authClient } from '@/auth/client';
-import { startRoute, type StartRoute } from '@/auth/route';
+import { authClient, signOutLocal } from '@/auth/client';
+import { OFFLINE_MESSAGE, UNREACHABLE_MESSAGE } from '@/auth/errors';
+import type { StartRoute } from '@/auth/route';
+import { getPendingSignup } from '@/auth/signup';
+import { resolveStart } from '@/auth/start';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
 
-type Problem = Extract<StartRoute, { to: 'offline' | 'error' }>['to'];
+type Problem = Extract<StartRoute, { to: 'offline' | 'unreachable' | 'error' }>['to'];
 
-async function resolveStart(hasSession: boolean): Promise<StartRoute> {
-  const me = hasSession ? await fetchMe() : null;
-  if (me?.kind === 'signed-out') await authClient.signOut().catch(() => {});
-  return startRoute(hasSession, me);
-}
+const PROBLEMS: Record<Problem, { title: string; body: string }> = {
+  offline: { title: "You're offline", body: OFFLINE_MESSAGE },
+  unreachable: { title: "Couldn't reach oda", body: UNREACHABLE_MESSAGE },
+  error: { title: 'Something went wrong', body: "We couldn't open your shop. Please try again." },
+};
 
 export default function StartGate() {
-  const { data: session, isPending } = authClient.useSession();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const hasSession = !!session;
 
   useEffect(() => {
-    if (isPending) return;
     let cancelled = false;
-    resolveStart(hasSession).then((next) => {
+    resolveStart({
+      getCookie: () => authClient.getCookie(),
+      fetchMe,
+      signOutLocal,
+      getPendingSignup,
+    }).then((next) => {
       if (cancelled) return;
       switch (next.to) {
         case 'offline':
+        case 'unreachable':
         case 'error':
           setProblem(next.to);
           return;
         case '/verify':
-          router.replace({ pathname: '/verify', params: { email: next.email, send: '1' } });
+          // A sign-up in progress on this phone: back to its code screen.
+          router.replace({ pathname: '/verify', params: { email: next.email, resumed: '1' } });
           return;
         default:
           router.replace(next.to);
@@ -44,21 +54,15 @@ export default function StartGate() {
     return () => {
       cancelled = true;
     };
-  }, [isPending, hasSession, attempt]);
+  }, [attempt]);
 
   return (
     <SafeAreaView style={styles.screen}>
       <Wordmark size={56} />
       {problem ? (
         <View style={styles.problem}>
-          <Text style={styles.problemTitle}>
-            {problem === 'offline' ? "You're offline" : 'Something went wrong'}
-          </Text>
-          <Text style={styles.problemBody}>
-            {problem === 'offline'
-              ? 'Check your internet, then try again.'
-              : "We couldn't open your shop. Please try again."}
-          </Text>
+          <Text style={styles.problemTitle}>{PROBLEMS[problem].title}</Text>
+          <Text style={styles.problemBody}>{PROBLEMS[problem].body}</Text>
           <Button
             title="Try again"
             onPress={() => {
