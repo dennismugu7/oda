@@ -2,6 +2,7 @@
 // answers with the fresh order plus the WhatsApp prefill when the action has one.
 import type {
   CancelReason,
+  ManualOrderInput,
   OrderSource,
   OrderStatus,
   OrderTab,
@@ -105,7 +106,22 @@ export const ordersApi = {
   get: (id: string) => apiJson<OrderDetail>(`/api/orders/${id}`),
   act: (id: string, action: SellerActionInput) =>
     apiJson<ActionResult>(`/api/orders/${id}/actions`, { body: action }),
+  quoteManual: (body: Pick<ManualOrderInput, 'lines' | 'deliveryFeeOverride'>) =>
+    apiJson<ManualQuote>('/api/orders/quote', { body }),
+  createManual: (body: ManualOrderInput) => apiJson<OrderDetail>('/api/orders', { body }),
 };
+
+export interface ManualQuote {
+  subtotal: number;
+  options: {
+    kind: 'delivery' | 'pickup';
+    areaId: string | null;
+    name: string;
+    deliveryFee: number;
+    total: number;
+    freeDeliveryApplied: boolean;
+  }[];
+}
 
 // What was last loaded, so a screen opens at once and can show saved data offline (spec §8:
 // read-only, nothing queued).

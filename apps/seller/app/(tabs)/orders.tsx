@@ -1,7 +1,7 @@
 // Orders tab (design 17-orders; spec §5.4): To do (grouped as Needs attention (decision #67),
 // Confirm payment, New · to accept, New · awaiting payment, To send), All and Done, and search
 // by buyer name, phone or order number. Refreshed whenever the tab shows and on pull-down. Offline it shows the last
-// list it loaded, read-only (spec §8). "New order" (manual orders) arrives in M6 CP3.
+// list it loaded, read-only (spec §8). "New order" opens the manual order screen (CP3).
 import Feather from '@expo/vector-icons/Feather';
 import {
   TODO_GROUP_LABELS,
@@ -10,7 +10,7 @@ import {
   type SellerTodoGroup,
 } from '@oda/shared';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -172,6 +172,14 @@ export default function OrdersTab() {
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             >
               <Feather name="search" size={22} color={colors.textOnNavy} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/orders/new')}
+              style={({ pressed }) => [styles.newButton, pressed && styles.pressed]}
+            >
+              <Feather name="plus" size={20} color={colors.textOnPrimary} />
+              <Text style={styles.newText}>New order</Text>
             </Pressable>
           </View>
           <View style={styles.tabs} accessibilityRole="tablist">
@@ -381,8 +389,18 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: radii.sheet + 8,
     gap: spacing.md,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...text('display'), color: colors.textOnNavy },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  newButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    height: 48,
+  },
+  newText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  title: { ...text('display'), color: colors.textOnNavy, flex: 1 },
   iconButton: {
     width: 48,
     height: 48,

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hasWhatsAppStep, waLink, whatsappMessage, type WhatsAppOrder } from './whatsapp';
+import {
+  hasWhatsAppStep,
+  orderLinkMessage,
+  waLink,
+  whatsappMessage,
+  type WhatsAppOrder,
+} from './whatsapp';
 
 const order: WhatsAppOrder = {
   buyerName: 'Wanjiku Mwangi',
@@ -61,5 +67,23 @@ describe('WhatsApp prefills', () => {
     expect(whatsappMessage('markRefundSent', order)).toBeNull();
     expect(hasWhatsAppStep([{ kind: 'whatsapp' }])).toBe(true);
     expect(hasWhatsAppStep([{ kind: 'email', template: 'accepted' }])).toBe(false);
+  });
+});
+
+describe('the manual order link message', () => {
+  it('says pay when unpaid, track otherwise', () => {
+    const base = {
+      buyerName: 'Njeri Kamau',
+      number: 1050,
+      total: 3900,
+      shopName: 'Amani Styles',
+      link: 'https://x/o/abc',
+    };
+    expect(orderLinkMessage({ ...base, awaitingPayment: true })).toBe(
+      'Hi Njeri, here’s your order #1050 from Amani Styles (KSh 3,900). Pay and track it here: https://x/o/abc',
+    );
+    expect(orderLinkMessage({ ...base, awaitingPayment: false })).toBe(
+      'Hi Njeri, here’s your order #1050 from Amani Styles. Track it here: https://x/o/abc',
+    );
   });
 });
