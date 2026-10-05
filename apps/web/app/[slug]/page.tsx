@@ -72,7 +72,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-surface pb-32">
-      <VisitBeacon slug={shop.slug} />
+      <VisitBeacon slug={shop.slug} shopId={shop.id} />
       <header className="flex items-center gap-3 px-4 pt-5">
         {shop.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- plain images, no optimizer (decision #59)

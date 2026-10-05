@@ -83,7 +83,7 @@ export default async function Search({ params, searchParams }: Props) {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-surface pb-32">
-      <VisitBeacon slug={shop.slug} />
+      <VisitBeacon slug={shop.slug} shopId={shop.id} />
       <h1 className="sr-only">Search {shop.name}</h1>
       <div className="flex items-center gap-2 px-4 pt-5">
         <Link

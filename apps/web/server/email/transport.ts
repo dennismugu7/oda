@@ -14,7 +14,7 @@ import { z } from 'zod';
 // kind and the recipient's domain.
 
 /** What the email is, for logs (the subject can contain the code). */
-export type EmailKind = 'verification-code' | 'reset-link';
+export type EmailKind = 'verification-code' | 'reset-link' | 'order-receipt' | 'order-cancelled';
 
 export interface Email {
   kind: EmailKind;

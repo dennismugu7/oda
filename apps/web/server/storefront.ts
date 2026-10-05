@@ -52,9 +52,19 @@ export function whatsappLink(phone: string, shopName: string): string {
   return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
 }
 
-/** Can buyers order at all? Pay now (till/Pochi/Paybill) or pay on delivery (spec §5.2). */
-export function takingOrders(shop: PublicShop): boolean {
-  return !shop.isPaused && (shop.payNowAvailable || shop.acceptsPayOnDelivery);
+/**
+ * Can buyers order at all? A way to pay (pay now or on delivery) and a way to get the order
+ * (a delivery area or pickup), and not paused (spec §5.2, decision #61 c).
+ */
+export function takingOrders(
+  shop: Pick<
+    PublicShop,
+    'isPaused' | 'payNowAvailable' | 'acceptsPayOnDelivery' | 'hasDeliveryOption'
+  >,
+): boolean {
+  return (
+    !shop.isPaused && (shop.payNowAvailable || shop.acceptsPayOnDelivery) && shop.hasDeliveryOption
+  );
 }
 
 /** Preview images: the largest size up to 28 px at which `link` fits on one line in `width` px. */

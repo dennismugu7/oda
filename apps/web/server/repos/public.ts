@@ -62,6 +62,8 @@ declare const visible: unique symbol;
 export type PublicShop = Awaited<ReturnType<typeof selectShop>>[number] & {
   /** Pay-now needs pay-before on and an active payment account (spec §5.2 step 5). */
   payNowAvailable: boolean;
+  /** At least one delivery area, or pickup on: needed to take orders (decision #61 c). */
+  hasDeliveryOption: boolean;
   /** "M-Pesa till checked by oda": the active account was verified by an admin. */
   mpesaChecked: boolean;
   logoUrl: string | null;
@@ -85,13 +87,21 @@ export function publicRepo(db: Db) {
       const normalized = slug.trim().toLowerCase();
       const row = await shopBy(eq(t.shops.slug, normalized));
       if (row) {
-        const [active] = await db
-          .select({ id: t.paymentAccounts.id, status: t.paymentAccounts.verificationStatus })
-          .from(t.paymentAccounts)
-          .where(and(eq(t.paymentAccounts.shopId, row.id), eq(t.paymentAccounts.isActive, true)));
+        const [[active], [area]] = await Promise.all([
+          db
+            .select({ id: t.paymentAccounts.id, status: t.paymentAccounts.verificationStatus })
+            .from(t.paymentAccounts)
+            .where(and(eq(t.paymentAccounts.shopId, row.id), eq(t.paymentAccounts.isActive, true))),
+          db
+            .select({ id: t.deliveryAreas.id })
+            .from(t.deliveryAreas)
+            .where(and(eq(t.deliveryAreas.shopId, row.id), isNull(t.deliveryAreas.deletedAt)))
+            .limit(1),
+        ]);
         const shop = {
           ...row,
           payNowAvailable: row.acceptsPayBefore && !!active,
+          hasDeliveryOption: row.pickupEnabled || !!area,
           mpesaChecked: active?.status === 'verified',
           logoUrl: publicUrl(row.logoPath),
         } as PublicShop;

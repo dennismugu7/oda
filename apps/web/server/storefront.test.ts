@@ -10,7 +10,7 @@ import { createCategory, createProduct, deleteProduct, updateCategory } from './
 import { getDb } from './db';
 import { postAnswer, postShop } from './onboardingRoutes';
 import { publicRepo } from './repos/public';
-import { restOf } from './storefront';
+import { restOf, takingOrders } from './storefront';
 import { postCartLookup, postVisit } from './storefrontRoutes';
 
 // The buyer storefront's data (M4 CP1, decision #59): only listed products of visible shops,
@@ -184,6 +184,43 @@ describe('catalog (shop home and search)', () => {
       mpesaChecked: true,
       payNowAvailable: true,
     });
+  });
+
+  it('takes orders only with a way to pay and a way to deliver (decision #61 c)', async () => {
+    const s = await newSeller();
+    await db()
+      .update(schema.shops)
+      .set({ acceptsPayOnDelivery: true })
+      .where(eq(schema.shops.id, s.shopId));
+    let shop = (await shopRepo(s.slug)).shop;
+    expect(shop.hasDeliveryOption).toBe(false);
+    expect(takingOrders(shop)).toBe(false);
+    await db()
+      .update(schema.shops)
+      .set({ pickupEnabled: true })
+      .where(eq(schema.shops.id, s.shopId));
+    shop = (await shopRepo(s.slug)).shop;
+    expect(shop.hasDeliveryOption).toBe(true);
+    expect(takingOrders(shop)).toBe(true);
+    await db()
+      .update(schema.shops)
+      .set({ pickupEnabled: false })
+      .where(eq(schema.shops.id, s.shopId));
+    const [area] = await db()
+      .insert(schema.deliveryAreas)
+      .values({ shopId: s.shopId, name: 'CBD', fee: 200, method: 'rider' })
+      .returning();
+    expect((await shopRepo(s.slug)).shop.hasDeliveryOption).toBe(true);
+    await db()
+      .update(schema.deliveryAreas)
+      .set({ deletedAt: new Date() })
+      .where(eq(schema.deliveryAreas.id, area!.id));
+    expect((await shopRepo(s.slug)).shop.hasDeliveryOption).toBe(false);
+    await db()
+      .update(schema.shops)
+      .set({ isPaused: true, pickupEnabled: true })
+      .where(eq(schema.shops.id, s.shopId));
+    expect(takingOrders((await shopRepo(s.slug)).shop)).toBe(false);
   });
 });
 

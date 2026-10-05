@@ -1,66 +1,9 @@
-import { expect, test, type APIRequestContext } from '@playwright/test';
-import { jpeg } from '../test/imageFixtures';
-import { appHeaders, createVerifiedSeller, randomIp } from './outbox';
+import { expect, test } from '@playwright/test';
+import { sellerShop } from './shop';
 
 // The buyer storefront end to end (milestones M4): a seller sets up a shop through the real
 // API (sign-up, onboarding, signed photo uploads, products), then a buyer browses → searches
 // → opens a product → adds it to the cart, at 390 × 844.
-
-const PASSWORD = 'kitenge2026';
-
-async function sellerShop(request: APIRequestContext) {
-  const ip = randomIp();
-  const email = `shop-${Date.now()}@example.test`;
-  await createVerifiedSeller(request, email, PASSWORD, ip);
-  const signIn = await request.post('/api/auth/sign-in/email', {
-    data: { email, password: PASSWORD },
-    headers: appHeaders(ip),
-  });
-  expect(signIn.status()).toBe(200);
-  const { token } = (await signIn.json()) as { token: string };
-  const headers = { ...appHeaders(ip), authorization: `Bearer ${token}` };
-  const post = async (path: string, data: unknown, status = 200) => {
-    const res = await request.post(path, { data, headers });
-    expect(res.status(), path).toBe(status);
-    return res.json();
-  };
-  const photo = async () => {
-    const file = jpeg();
-    const pair = [];
-    for (let i = 0; i < 2; i++) {
-      const up = await post('/api/uploads', {
-        kind: 'product',
-        contentType: 'image/jpeg',
-        size: file.length,
-      });
-      const put = await request.fetch(up.url, { method: 'PUT', headers: up.headers, data: file });
-      expect(put.status()).toBeLessThan(300);
-      pair.push(up.key as string);
-    }
-    return { objectKey: pair[0], thumbKey: pair[1], width: 1200, height: 1200 };
-  };
-
-  const slug = `e2e-${Date.now().toString(36)}`;
-  await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });
-  await post('/api/onboarding/answers', { step: 2, skip: true });
-  // Step 3 twice: going back to change the link leaves the first one in the slug history.
-  const shop = { name: 'E2E Boutique', whatsappPhone: '0712345678' };
-  await post('/api/onboarding/shop', { ...shop, slug: `${slug}-old` });
-  await post('/api/onboarding/shop', { ...shop, slug });
-  await post('/api/onboarding/product', {
-    name: 'Kitenge wrap dress',
-    price: 2500,
-    sizes: ['M', 'L'],
-    photos: [await photo()],
-  });
-  await post('/api/onboarding/payment', { skip: true }); // pay on delivery: taking orders
-  await post(
-    '/api/products',
-    { name: 'Woven kiondo bag', price: 1800, photos: [await photo()] },
-    201,
-  );
-  return slug;
-}
 
 test('browse → search → product → cart', async ({ page, request }) => {
   const slug = await sellerShop(request);

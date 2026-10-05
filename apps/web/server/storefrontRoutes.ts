@@ -11,7 +11,7 @@ import { publicRepo, type PublicShop } from './repos/public';
 
 type Params = { params: Promise<{ slug: string }> };
 
-async function findShop(slug: string): Promise<PublicShop> {
+export async function findShop(slug: string): Promise<PublicShop> {
   const pub = publicRepo(getDb());
   const found = await pub.findShop(slug);
   if (found.kind === 'shop') return found.shop;
@@ -22,7 +22,7 @@ async function findShop(slug: string): Promise<PublicShop> {
   throw new NotFoundError('Shop not found.');
 }
 
-const body = (request: Request) => request.json().catch(() => null);
+export const body = (request: Request) => request.json().catch(() => null);
 
 function readCookie(request: Request, name: string): string | undefined {
   const header = request.headers.get('cookie') ?? '';

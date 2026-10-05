@@ -73,7 +73,7 @@ export default async function ProductPage(props: Props) {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-surface px-4 pt-4 pb-32">
-      <VisitBeacon slug={shop.slug} />
+      <VisitBeacon slug={shop.slug} shopId={shop.id} />
       <div className="relative">
         <Gallery photos={product.photos} name={product.name} />
         <Link

@@ -89,3 +89,27 @@ export function parseIds(raw: string | null): string[] {
 
 export const cartKey = (shopId: string) => `oda.cart.${shopId}`;
 export const favouritesKey = (shopId: string) => `oda.fav.${shopId}`;
+
+/** The last ?s= tag a link to this shop carried, kept until the next order (M5). */
+export const sourceKey = (shopId: string) => `oda.src.${shopId}`;
+
+export function readSource(shopId: string): string | null {
+  try {
+    const value = window.localStorage.getItem(sourceKey(shopId));
+    return value && /^[a-z]{1,20}$/.test(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeSource(shopId: string, source: string | null): void {
+  try {
+    if (source && /^[a-z]{1,20}$/i.test(source)) {
+      window.localStorage.setItem(sourceKey(shopId), source.toLowerCase());
+    } else if (source === null) {
+      window.localStorage.removeItem(sourceKey(shopId));
+    }
+  } catch {
+    // Blocked storage: the order counts as direct.
+  }
+}

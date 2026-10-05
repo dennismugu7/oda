@@ -4,12 +4,55 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OutboxPage from '@/app/dev/outbox/page';
 import { devOutboxEnabled, readOutbox } from './outbox';
-import { resetPasswordEmail, verificationCodeEmail } from './templates';
+import {
+  orderCancelledEmail,
+  orderReceiptEmail,
+  resetPasswordEmail,
+  verificationCodeEmail,
+} from './templates';
 import { emailConfig, EmailSendError, redact, RESEND_TIMEOUT_MS, sendEmail } from './transport';
 
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+});
+
+describe('buyer order emails (M5)', () => {
+  const order = {
+    to: 'w@example.test',
+    shopName: 'Amani <b>Styles</b>',
+    number: 1042,
+    buyerName: 'Wanjiku <script>',
+    paymentMethod: 'pay_before' as const,
+    fulfilment: 'delivery' as const,
+    deliveryAreaName: 'CBD',
+    items: [{ name: 'Wrap dress', size: 'M', colour: 'Maroon', qty: 2, unitPrice: 2500 }],
+    subtotal: 5000,
+    deliveryFee: 0,
+    total: 5000,
+    link: 'https://oda-eta.vercel.app/o/AbCdEfGhIjKl',
+  };
+
+  it('the receipt has the items, total, next step and order link, with names escaped', () => {
+    const mail = orderReceiptEmail(order);
+    expect(mail.kind).toBe('order-receipt');
+    expect(mail.subject).toBe('Your order #1042 from Amani <b>Styles</b>');
+    expect(mail.text).toContain('Wrap dress — Maroon · Size M × 2: KES 5,000');
+    expect(mail.text).toContain('Delivery (CBD): Free');
+    expect(mail.text).toContain('Pay KES 5,000 to Amani <b>Styles</b> on M-Pesa');
+    expect(mail.html).toContain('href="https://oda-eta.vercel.app/o/AbCdEfGhIjKl"');
+    expect(mail.html).not.toContain('<script>');
+    expect(mail.html).not.toContain('<b>Styles');
+  });
+
+  it('"you cancelled" mentions a refund only after a claim', () => {
+    expect(orderCancelledEmail({ ...order, claimed: false }).text).toContain(
+      'You haven’t been charged',
+    );
+    expect(orderCancelledEmail({ ...order, claimed: true }).text).toContain(
+      'send it back to your M-Pesa',
+    );
+  });
 });
 
 describe('templates', () => {

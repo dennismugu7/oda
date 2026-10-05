@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { formatKes } from '@oda/shared';
-import { cartCount, cartTotal, inCart } from '@/lib/store/cart';
+import { cartCount, cartTotal, inCart, writeSource } from '@/lib/store/cart';
 import { useCart, useFavourites } from './useShopStore';
 
 export interface CardProduct {
@@ -209,18 +209,23 @@ export function ShareButton({ url, title }: { url: string; title: string }) {
 // and two requests racing before the cookie is set would both count).
 const reported = new Set<string>();
 
-/** Counts the visit once (the server de-duplicates per day); bots without scripts don't. */
-export function VisitBeacon({ slug }: { slug: string }) {
+/**
+ * Counts the visit once (the server de-duplicates per day); bots without scripts don't. A
+ * link's ?s= tag is also kept on this device for the shop until the next order (M5), so
+ * "via TikTok" survives browsing to other pages.
+ */
+export function VisitBeacon({ slug, shopId }: { slug: string; shopId: string }) {
   useEffect(() => {
     if (reported.has(slug)) return;
     reported.add(slug);
     const s = new URLSearchParams(window.location.search).get('s');
+    if (s) writeSource(shopId, s);
     fetch(`/api/shops/${slug}/visit`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ s }),
       keepalive: true,
     }).catch(() => {});
-  }, [slug]);
+  }, [slug, shopId]);
   return null;
 }

@@ -293,17 +293,21 @@ export function CartView({
           <span className="text-body text-text-secondary">Total</span>
           <span className="text-headline text-navy">{formatKes(subtotal)}</span>
         </div>
-        {/* Checkout arrives in M5; until then the button explains itself. */}
-        <p
-          aria-disabled="true"
-          className="mt-3 flex h-14 items-center justify-center rounded-pill bg-surface-muted text-button text-text-secondary"
-        >
-          {!canOrder
-            ? blockedReason
-            : problems.length
-              ? 'Update your cart to continue'
-              : 'Checkout opens soon'}
-        </p>
+        {canOrder && !problems.length ? (
+          <Link
+            href={`/${slug}/checkout`}
+            className="mt-3 flex h-14 items-center justify-center rounded-pill bg-primary text-button text-text-on-primary"
+          >
+            Checkout
+          </Link>
+        ) : (
+          <p
+            aria-disabled="true"
+            className="mt-3 flex h-14 items-center justify-center rounded-pill bg-surface-muted text-button text-text-secondary"
+          >
+            {!canOrder ? blockedReason : 'Update your cart to continue'}
+          </p>
+        )}
         <p className="mt-2 text-center text-small text-text-secondary">
           No account needed · Pay the seller directly on M-Pesa
         </p>

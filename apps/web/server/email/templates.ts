@@ -1,9 +1,10 @@
 import 'server-only';
 import { colors } from '@oda/ui-tokens';
-import { OTP_TTL_SECONDS, RESET_LINK_TTL_SECONDS } from '@oda/shared';
+import { formatKes, OTP_TTL_SECONDS, RESET_LINK_TTL_SECONDS } from '@oda/shared';
 import type { Email } from './transport';
 
 // Seller emails: 04 (verification code) and 06 (reset password), docs/design-changes.md.
+// Buyer emails (M5, decision #61 f): the receipt and "you cancelled", with the order link.
 // Plain HTML tables with inline styles, which every mail app renders. Poppins where the
 // mail app allows web fonts, Arial otherwise. Brand always lowercase "oda". No social icons
 // and no "Contact us" until M8 (decision #43).
@@ -99,4 +100,130 @@ ${ignoreLine}
 Thank you,
 The oda team`;
   return { kind: 'reset-link', to, subject: 'Reset your oda password', html, text };
+}
+
+export interface OrderEmailData {
+  to: string;
+  shopName: string;
+  number: number;
+  buyerName: string;
+  paymentMethod: 'pay_before' | 'pay_on_delivery';
+  fulfilment: 'delivery' | 'pickup';
+  deliveryAreaName: string | null;
+  items: {
+    name: string;
+    size: string | null;
+    colour: string | null;
+    qty: number;
+    unitPrice: number;
+  }[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  /** The buyer's order page, /o/{token}. */
+  link: string;
+}
+
+function itemRows(o: OrderEmailData): { html: string; text: string } {
+  const label = (i: OrderEmailData['items'][number]) =>
+    [i.name, [i.colour, i.size ? `Size ${i.size}` : null].filter(Boolean).join(' · ')]
+      .filter(Boolean)
+      .join(' — ');
+  const row = (left: string, right: string, strong = false) =>
+    `<tr><td style="padding:6px 0;font-size:15px;line-height:22px;${strong ? 'font-weight:700;' : `color:${colors.textSecondary};`}">${left}</td><td align="right" style="padding:6px 0;font-size:15px;line-height:22px;white-space:nowrap;${strong ? 'font-weight:700;' : ''}">${right}</td></tr>`;
+  const delivery =
+    o.fulfilment === 'pickup'
+      ? 'Pickup'
+      : `Delivery${o.deliveryAreaName ? ` · ${escapeHtml(o.deliveryAreaName)}` : ''}`;
+  const html = `<tr><td style="padding-bottom:24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+${o.items.map((i) => row(`${escapeHtml(label(i))} × ${i.qty}`, formatKes(i.unitPrice * i.qty))).join('\n')}
+${row(delivery, o.deliveryFee === 0 ? 'Free' : formatKes(o.deliveryFee))}
+${row('Total', formatKes(o.total), true)}
+</table></td></tr>`;
+  const text = [
+    ...o.items.map((i) => `${label(i)} × ${i.qty}: ${formatKes(i.unitPrice * i.qty)}`),
+    `${o.fulfilment === 'pickup' ? 'Pickup' : `Delivery${o.deliveryAreaName ? ` (${o.deliveryAreaName})` : ''}`}: ${o.deliveryFee === 0 ? 'Free' : formatKes(o.deliveryFee)}`,
+    `Total: ${formatKes(o.total)}`,
+  ].join('\n');
+  return { html, text };
+}
+
+function orderButton(link: string, label: string): string {
+  const safe = escapeHtml(link);
+  return `<tr><td align="center" style="padding-bottom:24px;">
+<a href="${safe}" style="display:inline-block;background:${colors.primary};color:${colors.textOnPrimary};text-decoration:none;font-weight:600;font-size:16px;line-height:24px;padding:14px 32px;border-radius:999px;">${escapeHtml(label)}</a>
+</td></tr>
+<tr><td style="font-size:13px;line-height:20px;color:${colors.textSecondary};padding-bottom:8px;">Or open this link: <a href="${safe}" style="color:${colors.primary};word-break:break-all;">${safe}</a></td></tr>`;
+}
+
+/** The buyer's receipt when the order is placed (order-lifecycle.md: "email receipt"). */
+export function orderReceiptEmail(o: OrderEmailData): Email {
+  const shop = escapeHtml(o.shopName);
+  const nextStep =
+    o.paymentMethod === 'pay_on_delivery'
+      ? `${o.shopName} will accept your order and get it to you. You pay ${formatKes(o.total)} on delivery.`
+      : `Pay ${formatKes(o.total)} to ${o.shopName} on M-Pesa. The exact steps are on your order page.`;
+  const items = itemRows(o);
+  const html = layout(
+    `Your order #${o.number} from ${o.shopName}`,
+    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order placed!</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, thanks for ordering from ${shop}. This is your order <strong style="color:${colors.text};">#${o.number}</strong>.</td></tr>
+${items.html}
+<tr><td style="font-size:15px;line-height:24px;padding-bottom:24px;">${escapeHtml(nextStep)}</td></tr>
+${orderButton(o.link, 'Track your order')}
+<tr><td style="font-size:13px;line-height:20px;color:${colors.textSecondary};">Keep this email: the link is how you track your order. You pay ${shop} directly; oda never holds your money.</td></tr>`,
+  );
+  const text = `Order placed!
+
+Hi ${o.buyerName}, thanks for ordering from ${o.shopName}. This is your order #${o.number}.
+
+${items.text}
+
+${nextStep}
+
+Track your order: ${o.link}
+
+Keep this email: the link is how you track your order. You pay ${o.shopName} directly; oda never holds your money.
+
+Thank you,
+The oda team`;
+  return {
+    kind: 'order-receipt',
+    to: o.to,
+    subject: `Your order #${o.number} from ${o.shopName}`,
+    html,
+    text,
+  };
+}
+
+/** "You cancelled" (buyer cancel). `claimed`: they had said they paid, so a refund may follow. */
+export function orderCancelledEmail(o: OrderEmailData & { claimed: boolean }): Email {
+  const shop = escapeHtml(o.shopName);
+  const money = o.claimed
+    ? `You told ${o.shopName} you had paid. If the money reached them, ${o.shopName} will send it back to your M-Pesa. Message them if you have questions.`
+    : 'You haven’t been charged for this order.';
+  const html = layout(
+    `You cancelled order #${o.number}`,
+    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order cancelled</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, you cancelled your order <strong style="color:${colors.text};">#${o.number}</strong> from ${shop} (${formatKes(o.total)}).</td></tr>
+<tr><td style="font-size:15px;line-height:24px;padding-bottom:24px;">${escapeHtml(money)}</td></tr>
+${orderButton(o.link, 'See your order')}`,
+  );
+  const text = `Order cancelled
+
+Hi ${o.buyerName}, you cancelled your order #${o.number} from ${o.shopName} (${formatKes(o.total)}).
+
+${money}
+
+See your order: ${o.link}
+
+Thank you,
+The oda team`;
+  return {
+    kind: 'order-cancelled',
+    to: o.to,
+    subject: `You cancelled order #${o.number} from ${o.shopName}`,
+    html,
+    text,
+  };
 }
