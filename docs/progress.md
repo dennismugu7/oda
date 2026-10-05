@@ -2,20 +2,44 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 67)
+## Handoff (keep current; updated 2026-10-05, owner Step 68)
 
 **Current state**
-- **Milestones:** M0–M4 closed; latest tag **`m4-done`** (`c3cd7f4`). M5 approved, **not started**.
-- **Staging:** https://oda-eta.vercel.app = `main`. The code is as at `m4-done`; the later merge (PR #24) changed docs only. Check with `/api/health` (`commit`). Demo shop: https://oda-eta.vercel.app/demo-duka.
-- **App:** EAS preview build **0.2.0** (`b22e1133`, runtime 0.2.0) on the Redmi; latest EAS Update **`e7774d37-45e1-4fa7-a0eb-d1a3d4535120`** (preview channel, `14f3aef`).
-- **Git:** everything merged and pushed; no open PRs; no local-only branches.
+- **Milestones:** M0–M4 closed; latest tag **`m4-done`**. **M5 in progress: CP1 + CP2 done, at review stop A** (branch `m5-checkout`, merged to `main`).
+- **Staging:** https://oda-eta.vercel.app = `main` with checkout. Demo Duka has both payment options (fake Till `000000`), three delivery areas, pickup and free delivery over KES 5,000 (demo seed run after the merge). `DEMO_SHOP_SLUGS=demo-duka` is set on Vercel (Production + Preview).
+- **App:** unchanged in M5 (EAS preview build 0.2.0, update `e7774d37`).
 
-**Next step:** start **M5 CP1** per the approved plan in **`docs/m5-plan.md`** and **decision #61**. Stop at review stop A, after CP2.
+**Next step:** owner's **review stop A** phone test (entry below). After the go-ahead: **CP3** (pay page, order page, demo sample orders) per `docs/m5-plan.md`.
 
 **Open items**
-- M6 starts with the Delivery screen (20b-delivery) and the checklist item "Add delivery options" (decision #61); it needs a **Firebase project** from the owner for push.
+- Shops other than Demo Duka show "Not taking orders yet" until the Delivery screen (start of M6, decision #61 c).
+- M6 needs a **Firebase project** from the owner for push.
 - The full carried-forward list is in the M4 gate entry below.
-- Owner rules live in `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M5 CP1 + CP2 (checkout server and page), at review stop A (branch `m5-checkout`, owner Steps 68–69)
+
+- **CP1, server** (decision #62): `POST /api/shops/:slug/orders` and `/quote`; buyer actions `POST /api/o/:token/code`, `/switch-to-pod`, `/cancel`, `/report`. Origin check, honeypot, rate limits (IP 30/h and phone 5/h per shop, codes, lookups, reports, emails), the 20-open-orders cap, the price check (409 `price_changed`, nothing created), idempotency, `takingOrders` with a delivery option, closed-shop rule. Notification rows from the machine's push side effects inside `insertOrder()`/`transitionOrder()`; receipt and "you cancelled" emails after the response (`after()`).
+- **CP2, page:** checkout (4-checkout) with the server's quote, price-change block, field errors that clear as they're fixed, honeypot, one order per double tap; cart → Checkout; `?s=` kept per shop; first `/o/{token}` page (full pay/status pages are CP3); "Demo shop: don't send money" banner (`DEMO_SHOP_SLUGS=demo-duka`, set on Vercel Production + Preview); the demo seed resets Demo Duka's settings, fake Till, areas, pickup and product details each run.
+- **Tests:** shared 186 (checkout 9 new), web 243 (checkout endpoints 23, email templates 2, taking-orders rule 1 new), db 23, seller 76, ui-tokens 3; Playwright 12 (new `e2e/checkout.spec.ts`: pay on delivery, pay now + double tap, price change). Playwright shops get delivery options straight from the database (`test/e2eShop.ts`) until M6.
+- **`check:all`:** the first run was stopped by Claude Code (laptop low on memory). Owner Step 69: stopped the bookflow and dashboardx-local Supabase stacks (data kept) and the bookflow Metro servers, applied `~/.wslconfig` (memory 12 GB, swap 8 GB, `autoMemoryReclaim=gradual`, `sparseVhd=true`), restarted Docker Desktop + WSL; `oda-postgres` came back by itself. Free RAM 10.1 → 12.7 GB of 31.7 GB. Then **`check:all` passed**, all eight steps.
+- **Tried locally:** the demo seed twice (same result), the checkout and order pages, unknown shop / unknown token both 404.
+
+**Design comparison (4-checkout):** same header with Secure, collapsible "2 items · KES x" summary, numbered cards, name and +254 phone fields, WhatsApp tick, "+ Add email for a receipt (optional)", privacy note, primary button and footer. Per design-changes: section 2 is a Delivery radio list (fee, ETA, Pickup) with the address field only for delivery, section 3 Payment radios (no "Change"), button "Place order · KES x", footer "No account needed · You pay the seller directly". Also differs: subtotal/delivery lines above the button; no green tick inside the name field.
+
+**Review stop A — phone test (staging, Demo Duka)**
+
+1. Open **https://oda-eta.vercel.app/demo-duka?s=wa**. Expected: a navy bar "Demo shop: don't send money…" at the top; under the search, "Delivery from KES 200 · Free over KES 5,000 · Pickup in Demo pickup point".
+2. **Pay on delivery.** Tap **Demo wrap dress** → Maroon → M → **Add to cart · KES 2,500** → **View cart →**. Expected: the bottom button now says **Checkout** (orange).
+3. Tap **Checkout**. Expected: "Checkout" with "Secure", "1 item · KES 2,500", cards 1 Your details, 2 Delivery (CBD Same day KES 200, Westlands KES 300, Upcountry KES 450, Pickup · Demo pickup point · Free), 3 Payment (Pay now with M-Pesa, Pay on delivery), nothing chosen.
+4. Tap **Place order** straight away. Expected: red messages under name, phone, delivery and payment; nothing placed. Type your name: its message disappears.
+5. Enter a phone number, choose **CBD**, type an address, choose **Pay on delivery**. Expected: button **Place order · KES 2,700**. Tap it.
+6. Expected: the order page: "Order placed!", "Order #… from Demo Duka · KES 2,700", "Demo Duka will accept your order and get it to you. You pay KES 2,700 on delivery.", steps 1 Order placed (done), 2 Accepted by Demo Duka, 3 Sent out, 4 Delivered; the items; "Bookmark this page…". Go back to the shop: the cart is empty.
+7. **Pay now.** Add **Demo wrap dress** again with quantity 2 (KES 5,000) → View cart → Checkout. Choose **CBD**. Expected: CBD shows **Free**, Upcountry still KES 450; the summary says "Free delivery".
+8. Tap **+ Add email** and enter your own email. Choose **Pickup**: the address field disappears. Choose **CBD** again, type an address, choose **Pay now with M-Pesa**. Expected: **Place order · KES 5,000**. Tap it (a double tap is fine: one order).
+9. Expected: "Pay KES 5,000 to Demo Duka", "Buy Goods Till **000000**", "You'll see **DEMO DUKA · TEST ONLY** before you enter your PIN". Steps: 1 done, 2 Paid & confirmed. **Don't send money.** (Paste-your-code and "I've paid" come in CP3.)
+10. Check your inbox (and spam): **"Your order #… from Demo Duka"** with the items, "Delivery (CBD): Free", Total KES 5,000 and a **Track your order** button that opens the same order page.
+11. On the order page, change one character of the link in the address bar. Expected: the oda "This page isn't here" page.
+12. Optional: your own test shop (if it has one) now says "Not taking orders yet". This is expected until the Delivery screen (M6).
 
 ## 2026-10-05 · M5 plan approved; docs prepared for a fresh session (owner Step 67)
 

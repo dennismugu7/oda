@@ -1,6 +1,7 @@
-// The staging demo shop "Demo Duka" (milestones M4, owner Step 63): obviously fake, safe
-// data. No real people, no real M-Pesa account (buyers would pay on delivery), a test-only
-// WhatsApp number, and an owner account without a password (nobody can sign in as it).
+// The staging demo shop "Demo Duka" (milestones M4, owner Step 63; M5, decision #61 g):
+// obviously fake, safe data. No real people, a fake Till (000000, "DEMO DUKA · TEST ONLY")
+// so pay now can be tried without sending money, a test-only WhatsApp number, and an owner
+// account without a password (nobody can sign in as it).
 
 export const DEMO_OWNER = {
   email: 'demo-duka@example.invalid',
@@ -15,6 +16,48 @@ export const DEMO_SHOP = {
   about: 'A demo shop for testing oda. Nothing here is for sale and orders are not real.',
   locationLabel: 'Demo town',
 };
+
+/** Reset on every run: both ways to pay, pickup, free delivery over KES 5,000. */
+export const DEMO_SETTINGS = {
+  acceptsPayBefore: true,
+  acceptsPayOnDelivery: true,
+  pickupEnabled: true,
+  pickupLocation: 'Demo pickup point',
+  pickupHours: 'Mon–Sat, 9am–6pm',
+  freeDeliveryThreshold: 5000,
+  isPaused: false,
+};
+
+/** The only payment account: a fake Till nobody can pay. */
+export const DEMO_PAYMENT_ACCOUNT = {
+  type: 'till' as const,
+  number: '000000',
+  accountName: 'DEMO DUKA · TEST ONLY',
+};
+
+export const DEMO_DELIVERY_AREAS = [
+  {
+    name: 'CBD',
+    fee: 200,
+    method: 'rider' as const,
+    etaLabel: 'Same day',
+    freeDeliveryEligible: true,
+  },
+  {
+    name: 'Westlands',
+    fee: 300,
+    method: 'rider' as const,
+    etaLabel: '1–2 days',
+    freeDeliveryEligible: true,
+  },
+  {
+    name: 'Upcountry',
+    fee: 450,
+    method: 'parcel' as const,
+    etaLabel: '2–4 days',
+    freeDeliveryEligible: false,
+  },
+];
 
 export const DEMO_CATEGORIES = ['Dresses', 'Tops', 'Shoes', 'Bags', 'Accessories'] as const;
 type CategoryName = (typeof DEMO_CATEGORIES)[number];

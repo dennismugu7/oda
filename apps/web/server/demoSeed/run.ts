@@ -1,17 +1,27 @@
 // Staging demo seed (milestones M4, owner Step 63): creates the "Demo Duka" shop with 12
-// products, categories and generated placeholder photos. Idempotent: what exists is kept,
-// only what's missing is added. Run by the manual workflow demo-seed-staging.yml, or locally:
+// products, categories and generated placeholder photos. Resets on every run (decision #61 g,
+// the repo is public): the shop's settings, payment account, delivery areas and product
+// details go back to their intended values; photos are only added when missing. Run by the
+// manual workflow demo-seed-staging.yml, or locally:
 //   pnpm --filter @oda/web exec tsx --conditions=react-server server/demoSeed/run.ts
 // Staging: DATABASE_URL (Neon staging) + STAGING_IMAGES_BLOB_READ_WRITE_TOKEN (images store).
 // Locally: the local database and the local storage folder (.uploads).
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { put } from '@vercel/blob';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, notInArray } from 'drizzle-orm';
 import { schema } from '@oda/db';
 import { getDb } from '../db';
 import { writeLocalObject } from '../storage';
-import { DEMO_CATEGORIES, DEMO_OWNER, DEMO_PRODUCTS, DEMO_SHOP } from './data';
+import {
+  DEMO_CATEGORIES,
+  DEMO_DELIVERY_AREAS,
+  DEMO_OWNER,
+  DEMO_PAYMENT_ACCOUNT,
+  DEMO_PRODUCTS,
+  DEMO_SETTINGS,
+  DEMO_SHOP,
+} from './data';
 import { placeholderPhoto } from './images';
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
@@ -70,8 +80,7 @@ async function main() {
         ...DEMO_SHOP,
         businessType: 'fashion',
         channels: ['whatsapp', 'tiktok'],
-        acceptsPayBefore: false,
-        acceptsPayOnDelivery: true,
+        ...DEMO_SETTINGS,
         onboardingStep: 6,
         onboardingCompletedAt: new Date(),
       })
@@ -79,6 +88,52 @@ async function main() {
     log.push('shop created');
   }
   const shopId = shop!.id;
+
+  // Settings, payment account and delivery areas: back to the intended state every run.
+  await db
+    .update(t.shops)
+    .set({ ...DEMO_SHOP, ...DEMO_SETTINGS, suspendedAt: null, deletedAt: null })
+    .where(eq(t.shops.id, shopId));
+  // Orders keep their own snapshot of the account, so the rows can be replaced.
+  await db.delete(t.paymentAccounts).where(eq(t.paymentAccounts.shopId, shopId));
+  await db.insert(t.paymentAccounts).values({ shopId, ...DEMO_PAYMENT_ACCOUNT, isActive: true });
+  for (const [position, area] of DEMO_DELIVERY_AREAS.entries()) {
+    const [found] = await db
+      .select({ id: t.deliveryAreas.id })
+      .from(t.deliveryAreas)
+      .where(
+        and(
+          eq(t.deliveryAreas.shopId, shopId),
+          eq(t.deliveryAreas.name, area.name),
+          isNull(t.deliveryAreas.deletedAt),
+        ),
+      );
+    if (found) {
+      await db
+        .update(t.deliveryAreas)
+        .set({ ...area, position })
+        .where(eq(t.deliveryAreas.id, found.id));
+    } else {
+      await db.insert(t.deliveryAreas).values({ shopId, ...area, position });
+    }
+  }
+  // Areas that aren't part of the demo (soft delete: past orders keep their area name).
+  await db
+    .update(t.deliveryAreas)
+    .set({ deletedAt: new Date() })
+    .where(
+      and(
+        eq(t.deliveryAreas.shopId, shopId),
+        isNull(t.deliveryAreas.deletedAt),
+        notInArray(
+          t.deliveryAreas.name,
+          DEMO_DELIVERY_AREAS.map((a) => a.name),
+        ),
+      ),
+    );
+  log.push(
+    `settings reset (pay now + pay on delivery, Till ${DEMO_PAYMENT_ACCOUNT.number}, ${DEMO_DELIVERY_AREAS.length} areas, pickup)`,
+  );
 
   const categoryIds = new Map<string, string>();
   for (const [position, name] of DEMO_CATEGORIES.entries()) {
@@ -109,7 +164,21 @@ async function main() {
           isNull(t.products.deletedAt),
         ),
       );
-    if (found) continue;
+    if (found) {
+      // Reset what a test may have changed; units sold follow the orders.
+      await db
+        .update(t.products)
+        .set({
+          categoryId: categoryIds.get(p.category)!,
+          price: p.price,
+          compareAtPrice: p.compareAtPrice ?? null,
+          status: p.status ?? 'available',
+          sizes: p.sizes ?? [],
+          colours: p.colours ?? [],
+        })
+        .where(eq(t.products.id, found.id));
+      continue;
+    }
     const id = randomUUID();
     const full = `products/${shopId}/${randomUUID()}.png`;
     const thumb = `products/${shopId}/${randomUUID()}.png`;
@@ -144,7 +213,7 @@ async function main() {
     });
     added++;
   }
-  log.push(`${added} products added (${DEMO_PRODUCTS.length - added} already there)`);
+  log.push(`${added} products added (${DEMO_PRODUCTS.length - added} already there, reset)`);
   console.log(`demo seed (${local ? 'local' : 'staging'}): ${log.join(', ')}`);
   console.log(`demo seed: shop /${DEMO_SHOP.slug}`);
 }
