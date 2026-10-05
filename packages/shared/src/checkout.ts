@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { next, type OrderState, type OrderStatus } from './orderMachine';
+import {
+  next,
+  stepperSteps,
+  type CancelReason,
+  type Fulfilment,
+  type OrderState,
+  type OrderStatus,
+  type PaymentMethod,
+} from './orderMachine';
 import { MAX_QTY } from './pricing';
 import { kePhone } from './schemas/fields';
 
@@ -178,4 +186,84 @@ export function buyerActions(
   }
   if (next(order, { type: 'buyerCancel' }, 'buyer').ok) actions.push('cancel');
   return actions;
+}
+
+/**
+ * The cancel reason as the buyer sees it (decision #38 b): a label, never the seller's note.
+ */
+export const BUYER_CANCEL_LABELS: Record<CancelReason, string> = {
+  out_of_stock: 'Out of stock',
+  buyer_asked: 'Cancelled at your request',
+  payment_not_received: 'Payment not received',
+  cant_deliver: 'The seller can’t deliver to you',
+  other: 'Cancelled by the seller',
+  expired: 'Not paid within 48 hours',
+  buyer_cancelled: 'You cancelled it',
+};
+
+export interface TimelineOrder {
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  fulfilment: Fulfilment;
+  placedAt: Date | null;
+  claimedAt: Date | null;
+  confirmedAt: Date | null;
+  sentAt: Date | null;
+  deliveredAt: Date | null;
+}
+
+export interface TimelineStep {
+  key: 'placed' | 'confirmed' | 'sent' | 'delivered' | 'rate';
+  label: string;
+  /** A second line, e.g. "Usually within a few hours". */
+  note: string | null;
+  state: 'done' | 'current' | 'todo';
+  at: Date | null;
+}
+
+/**
+ * The buyer's "Order status" card (web 6, 05c): the shared stepper's four steps
+ * (order-lifecycle.md → Stepper labels), with times, the step being waited on, and "Rate your
+ * order" last (it unlocks at delivered; reviews are M7). Not for cancelled orders.
+ */
+export function buyerTimeline(order: TimelineOrder, shopName: string): TimelineStep[] {
+  const steps = stepperSteps(order, order.fulfilment, shopName);
+  const pod = order.paymentMethod === 'pay_on_delivery';
+  const pickup = order.fulfilment === 'pickup';
+  const at = [order.placedAt, order.confirmedAt, order.sentAt, order.deliveredAt];
+  const keys = ['placed', 'confirmed', 'sent', 'delivered'] as const;
+  const firstTodo = steps.findIndex((s) => s.state !== 'done');
+  const timeline: TimelineStep[] = steps.map((s, i) => {
+    const state = s.state === 'done' ? 'done' : i === firstTodo ? 'current' : 'todo';
+    let label = s.buyerLabel;
+    let note: string | null = null;
+    if (s.step === 1) {
+      note = pod
+        ? 'Pay on delivery'
+        : order.status === 'awaiting_payment'
+          ? 'Waiting for your payment'
+          : null;
+    } else if (s.step === 2 && state === 'current') {
+      label =
+        order.status === 'payment_claimed'
+          ? `Waiting for ${shopName} to confirm your payment`
+          : order.status === 'awaiting_payment'
+            ? `Pay ${shopName}, then ${shopName} confirms`
+            : `Waiting for ${shopName} to accept`;
+      note = 'Usually within a few hours';
+    } else if (s.step === 3 && state !== 'done') {
+      note = pickup
+        ? `${shopName} will tell you when it’s ready`
+        : `${shopName} will WhatsApp you to arrange delivery`;
+    }
+    return { key: keys[i]!, label, note, state, at: state === 'done' ? (at[i] ?? null) : null };
+  });
+  timeline.push({
+    key: 'rate',
+    label: 'Rate your order',
+    note: order.status === 'delivered' ? 'Reviews open soon' : 'Unlocks once it’s delivered',
+    state: 'todo',
+    at: null,
+  });
+  return timeline;
 }

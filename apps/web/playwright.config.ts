@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import { E2E_OUTBOX_DIR } from './e2e/outbox';
 
-const port = 3100;
+// E2E_PORT when 3100 is taken (e.g. by another project's server on this machine).
+const port = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
   testDir: './e2e',
@@ -24,7 +25,9 @@ export default defineConfig({
       OUTBOX_DIR: E2E_OUTBOX_DIR,
       BETTER_AUTH_URL: `http://localhost:${port}`,
     },
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a server we didn't start: one on this port may be another app entirely, and
+    // every test would then fail (or pass) against the wrong thing. A taken port fails loudly.
+    reuseExistingServer: false,
     timeout: 60_000,
   },
 });

@@ -17,6 +17,8 @@ import {
 import { getDb } from './db';
 import { testOutbox } from './email/transport';
 import { insertOrder, transitionOrder } from './orders';
+import { orderTokenRepo } from './repos/order-token';
+import { requireOrderToken } from './authz';
 import { hitLimit } from './rateLimit';
 
 // Checkout and the buyer's order endpoints (M5 CP1) against oda_test: the public routes as
@@ -538,6 +540,45 @@ describe('buyer order actions', () => {
       expect((await report(token, { message: `Problem ${i}` })).status).toBe(201);
     }
     expect((await report(token, { message: 'Problem again' })).status).toBe(429);
+  });
+});
+
+describe('the buyer’s order view', () => {
+  it('flags "payment not found" and never carries the seller’s note or internal ids', async () => {
+    const w = await world();
+    const { body } = await place(w, checkout(w));
+    const token = body.token as string;
+    const view = async () => orderTokenRepo(db, await requireOrderToken(token, db)).view();
+    expect((await view()).paymentNotFound).toBe(false);
+    await act(postOrderCode, token, { message: 'SFK7Q2M9TX' });
+    const order = await orderBy(token);
+    await transitionOrder(
+      db,
+      { kind: 'seller', ctx: w.ctx, orderId: order.id },
+      {
+        type: 'paymentNotFound',
+      },
+    );
+    expect((await view()).paymentNotFound).toBe(true);
+    await transitionOrder(
+      db,
+      { kind: 'seller', ctx: w.ctx, orderId: order.id },
+      {
+        type: 'sellerCancel',
+        reason: 'out_of_stock',
+        note: 'secret seller note',
+      },
+    );
+    const v = await view();
+    expect(v).toMatchObject({
+      status: 'cancelled',
+      cancelReason: 'out_of_stock',
+      paymentNotFound: false,
+    });
+    const text = JSON.stringify(v);
+    expect(text).not.toContain('secret seller note');
+    expect(text).not.toContain(order.id);
+    expect(text).not.toContain(w.shopId);
   });
 });
 

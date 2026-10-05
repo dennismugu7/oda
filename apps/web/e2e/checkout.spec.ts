@@ -1,25 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { setProductPrice } from '../test/e2eShop';
-import { sellerShop } from './shop';
+import { addDressAndBag, fillDetails, sellerShop } from './shop';
 
 // Checkout (M5 CP2, web 4-checkout): cart → checkout → order page at 390 × 844, for pay on
 // delivery and pay now; a price changed after add-to-cart is caught; a double tap places one
 // order; the order link carries only the random token.
-
-async function addDressAndBag(page: Page, slug: string) {
-  await page.goto(`/${slug}?s=tt`);
-  await page.getByRole('button', { name: 'Add Woven kiondo bag to cart' }).click();
-  await page.getByRole('link', { name: /Kitenge wrap dress KES/ }).click();
-  await page.getByRole('button', { name: 'M', exact: true }).click();
-  await page.getByRole('button', { name: 'Add to cart · KES 2,500' }).click();
-  await page.getByRole('link', { name: 'View cart →' }).click();
-  await expect(page.getByText('KES 4,300').first()).toBeVisible();
-}
-
-async function fillDetails(page: Page) {
-  await page.getByLabel('Your name').fill('Wanjiku Kamau');
-  await page.getByLabel('Phone number').fill('712 345 678');
-}
 
 test('pay on delivery: cart → checkout → order placed', async ({ page, request }) => {
   const slug = await sellerShop(request, {
@@ -57,7 +42,7 @@ test('pay on delivery: cart → checkout → order placed', async ({ page, reque
   await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
   await expect(page.getByRole('heading', { name: 'Order placed!' })).toBeVisible();
   await expect(page.getByText('You pay KES 4,500 on delivery')).toBeVisible();
-  await expect(page.getByText('Accepted by E2E Boutique')).toBeVisible();
+  await expect(page.getByText('Waiting for E2E Boutique to accept')).toBeVisible();
   // The cart is empty afterwards.
   await page.goto(`/${slug}/cart`);
   await expect(page.getByText('Your cart is empty')).toBeVisible();
@@ -78,7 +63,7 @@ test('pay now: till instructions, and a double tap places one order', async ({ p
   });
   await page.getByRole('button', { name: 'Place order · KES 4,300' }).dblclick();
   await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
-  await expect(page.getByText('Pay KES 4,300 to E2E Boutique')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pay KES 4,300 to E2E Boutique' })).toBeVisible();
   await expect(page.getByText('5123456')).toBeVisible();
   await expect(page.getByText('E2E BOUTIQUE', { exact: true })).toBeVisible();
   expect(orders.filter((s) => s === 201)).toHaveLength(1);

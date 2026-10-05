@@ -3,7 +3,7 @@ name: demo-seed-staging
 # The staging demo shop "Demo Duka" (milestones M4, owner Step 63): 12 products with
 # generated placeholder photos, obviously fake data, no seller password. Manual only; resets
 # Demo Duka's settings, fake Till, delivery areas and product details on every run
-# (decision #61 g). Writes to Neon staging and the public images
+# (decision #61 g), and makes the sample orders again (links in the job summary). Writes to Neon staging and the public images
 # store (STAGING_IMAGES_BLOB_READ_WRITE_TOKEN). Code: apps/web/server/demoSeed/.
 on:
   workflow_dispatch:
@@ -50,4 +50,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
           STAGING_IMAGES_BLOB_READ_WRITE_TOKEN: ${{ secrets.STAGING_IMAGES_BLOB_READ_WRITE_TOKEN }}
+          # Base for the sample order links in the job summary.
+          PUBLIC_SHOP_BASE_URL: https://oda-eta.vercel.app
         run: pnpm exec tsx --conditions=react-server server/demoSeed/run.ts

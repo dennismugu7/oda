@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext } from '@playwright/test';
+import { expect, type APIRequestContext, type Page } from '@playwright/test';
 import { jpeg } from '../test/imageFixtures';
 import { setDeliveryOptions } from '../test/e2eShop';
 import { appHeaders, createVerifiedSeller, randomIp } from './outbox';
@@ -84,4 +84,31 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
     payOnDelivery: opts.till ? !!opts.payOnDelivery : true,
   });
   return slug;
+}
+
+/** Buyer: the bag (quick add) and the dress in M, then the cart (KES 4,300). */
+export async function addDressAndBag(page: Page, slug: string) {
+  await page.goto(`/${slug}?s=tt`);
+  await page.getByRole('button', { name: 'Add Woven kiondo bag to cart' }).click();
+  await page.getByRole('link', { name: /Kitenge wrap dress KES/ }).click();
+  await page.getByRole('button', { name: 'M', exact: true }).click();
+  await page.getByRole('button', { name: 'Add to cart · KES 2,500' }).click();
+  await page.getByRole('link', { name: 'View cart →' }).click();
+  await expect(page.getByText('KES 4,300').first()).toBeVisible();
+}
+
+export async function fillDetails(page: Page) {
+  await page.getByLabel('Your name').fill('Wanjiku Kamau');
+  await page.getByLabel('Phone number').fill('712 345 678');
+}
+
+/** Buyer: a pay-now order of the dress and bag to CBD (KES 4,500); ends on its order page. */
+export async function placePayNowOrder(page: Page, slug: string) {
+  await addDressAndBag(page, slug);
+  await page.goto(`/${slug}/checkout`);
+  await fillDetails(page);
+  await page.getByLabel('Area, street or building').fill('Moi Avenue, Bazaar Plaza');
+  await page.getByRole('radio', { name: /Pay now with M-Pesa/ }).check();
+  await page.getByRole('button', { name: 'Place order · KES 4,500' }).click();
+  await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
 }
