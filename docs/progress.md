@@ -2,6 +2,27 @@
 
 Newest entries at the top.
 
+## Handoff (keep current; updated 2026-10-05, owner Step 67)
+
+**Current state**
+- **Milestones:** M0–M4 closed; latest tag **`m4-done`** (`c3cd7f4`). M5 approved, **not started**.
+- **Staging:** https://oda-eta.vercel.app = `main`. The code is as at `m4-done`; the later merge (PR #24) changed docs only. Check with `/api/health` (`commit`). Demo shop: https://oda-eta.vercel.app/demo-duka.
+- **App:** EAS preview build **0.2.0** (`b22e1133`, runtime 0.2.0) on the Redmi; latest EAS Update **`e7774d37-45e1-4fa7-a0eb-d1a3d4535120`** (preview channel, `14f3aef`).
+- **Git:** everything merged and pushed; no open PRs; no local-only branches.
+
+**Next step:** start **M5 CP1** per the approved plan in **`docs/m5-plan.md`** and **decision #61**. Stop at review stop A, after CP2.
+
+**Open items**
+- M6 starts with the Delivery screen (20b-delivery) and the checklist item "Add delivery options" (decision #61); it needs a **Firebase project** from the owner for push.
+- The full carried-forward list is in the M4 gate entry below.
+- Owner rules live in `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M5 plan approved; docs prepared for a fresh session (owner Step 67)
+
+- Decision #61: M5 plan approved; orders need a payment method and a delivery option; rate limits and the 20-open cap; notification rows now; receipt + "you cancelled" emails; demo seed resets on every run. Spec §5.2, §5.3, §8 and milestones M5, M6, M8 amended.
+- Full plan saved in `docs/m5-plan.md`.
+- `CLAUDE.md` working rules completed: never hide results, secrets, review stops, phone tests on staging, EAS Update vs native build, decisions append-only, milestone flow.
+
 ## 2026-10-05 · M4 gate passed (owner Step 66; branch `m4-gate`)
 
 **Owner's review stop B on the Redmi: all items passed** (product page, options validation, cart, search filters/sort, empty search, product link preview, branded 404, in-app View / View in shop). **PageSpeed Insights mobile, https://oda-eta.vercel.app/demo-duka: Performance 99** (FCP 0.9 s, LCP 2.3 s, TBT 20 ms, CLS 0). Report: https://pagespeed.web.dev/analysis/https-oda-eta-vercel-app-demo-duka/wozyd2dfk6?form_factor=mobile. PR #22 (review stop B docs) merged as `7fe3cf7`.
