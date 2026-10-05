@@ -75,6 +75,9 @@ test('order links can’t be guessed and never carry ids', async ({ page, reques
   });
   await placePayNowOrder(page, slug);
   const token = page.url().split('/o/')[1]!;
+  // Order pages stay out of search engines and never send their link on as a referrer.
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'no-referrer');
   // The API answers with the token only: no order id (uuid) and no order number.
   expect(orderResponses).toEqual([JSON.stringify({ token })]);
   expect(page.url()).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);

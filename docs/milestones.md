@@ -57,7 +57,7 @@ Web 01, 02, 03, 07 + shop states.
 - **Accept:** pasting a shop link into WhatsApp shows a rich preview; Lighthouse mobile performance ≥ 85 on the shop home; a Playwright test covers browse → search → product → cart.
 
 ## M5 · Checkout & payment claim (buyer)
-**Approved plan: `docs/m5-plan.md`** (decision #61; owner Step 67).
+**Status: closed 2026-10-05** (gate passed, owner Step 71; tag `m5-done`). **Approved plan: `docs/m5-plan.md`** (decision #61; owner Step 67).
 Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 - Server checkout endpoint: validation, re-pricing, idempotency, rate limiting, honeypot, order number + token; pay page with code extraction; order page with the timeline, cancel, "payment not found" banner, report a problem; optional buyer emails.
 - Order page (decision #38): a cancelled order shows the cancel **reason** as a label, never the seller's `cancel_note`. If the shop was deleted, the link keeps working until the 30-day purge with a "This shop has closed" banner and only "Report a problem"; after the purge it 404s.
