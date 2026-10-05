@@ -4,6 +4,8 @@ packages:
 
 # pnpm blocks dependency install scripts unless allowed here.
 allowBuilds:
+  # Sentry stays inactive until M10 (decision #70): no CLI binary download, no source-map upload.
+  '@sentry/cli': false
   esbuild: true
   sharp: true
   unrs-resolver: true

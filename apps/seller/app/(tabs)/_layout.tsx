@@ -5,6 +5,7 @@ import { router, Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePushRegistration, usePushTaps } from '@/push/usePush';
 import { colors, spacing, text } from '@/theme';
 
 type IconName = ComponentProps<typeof Feather>['name'];
@@ -34,6 +35,10 @@ function AddButton() {
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  // Signed in with a shop: ask for notifications once and register this phone (decision #65 a);
+  // a tapped notification opens its order.
+  usePushRegistration();
+  usePushTaps();
   return (
     <Tabs
       screenOptions={{

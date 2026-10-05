@@ -9,14 +9,19 @@ const config: ExpoConfig = {
   slug: 'oda',
   scheme: 'oda',
   // 0.2.0: native modules for onboarding photos and later milestones (decision #53).
+  // 0.3.0: push (expo-notifications + Firebase) and Sentry, inactive until M10 (decision #70).
   // Bump on every native change (decision #48).
-  version: '0.2.0',
+  version: '0.3.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   platforms: ['android'],
   icon: './assets/icon.png',
   android: {
     package: 'com.mugulabs.oda',
+    // Firebase config for push (FCM). Never committed (the repo is public): the laptop keeps
+    // apps/seller/google-services.json; EAS builds get it from the file variable
+    // GOOGLE_SERVICES_JSON (decision #70).
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#D94A27',
@@ -28,6 +33,17 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-web-browser',
     'expo-sharing',
+    [
+      'expo-notifications',
+      {
+        // Android draws the status-bar icon in one colour: a white "o" with the logo's dot.
+        icon: './assets/notification-icon.png',
+        color: '#D94A27',
+        defaultChannel: 'orders',
+      },
+    ],
+    // @sentry/react-native is installed for M10 but stays inactive: no config plugin (so no
+    // source-map upload step), no DSN, Sentry.init is never called, nothing is sent.
     [
       'expo-image-picker',
       {

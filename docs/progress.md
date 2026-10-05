@@ -2,22 +2,30 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 75, after CP4 prep)
+## Handoff (keep current; updated 2026-10-05, owner Step 76)
 
 **Current state**
 - **Milestones:** M0–M5 closed (tag `m5-done`). **M6:** CP1–CP3 done and on staging (review stop A passed, Step 75); **CP4 code done except the app's expo-notifications adapter**; **stopped before the 0.3.0 native build** waiting for the owner's Firebase steps and the native-module approval.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers can now add delivery options, so their shops take orders. Demo Duka unchanged (its owner has no password; the phone test uses the owner's own shop).
 - **App:** EAS preview build **0.2.0** on the Redmi; latest EAS Update **`80063651`** (CP3). CP4 prep's only app change (Sign out removes this phone's push token: a no-op until 0.3.0 stores one) rides with the next update.
-- **Git:** CP1–CP3 and CP4 prep merged to `main` (PRs #30–#33); no open PRs.
+- **Git:** CP1–CP3 and CP4 prep merged to `main` (PRs #30–#33). Branch `m6-cp4-native` (0.3.0) is pushed and waits for the build before merging.
 - **This laptop:** as before (`~/.wslconfig` 12 GB / 8 GB swap). If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`.
 
-**Next step:** owner does Firebase step 1 (m6-plan → "What I need from you"), then the next steps one at a time; owner approves the 0.3.0 native-module list and download size; then install `expo-notifications`, wire the adapter, bump to 0.3.0, local build, review stop B.
+**Next step:** owner does Firebase steps 2–5 one at a time (step 2 sent in Step 76). When `apps/seller/google-services.json` exists and `GOOGLE_SERVICES_JSON` is on EAS: ask for the go-ahead, run the EAS preview build 0.3.0 from `m6-cp4-native`, install it on the Redmi, merge, then review stop B (push + CP3 items).
 
 **Open items**
 - Push needs the owner's Firebase project and keys (m6-plan → "What I need from you"; step 1 sent in Step 75) and `EXPO_ACCESS_TOKEN` in Vercel (step 5). 0.3.0 native-module list sent for approval (Step 75).
 - The hourly expire job is live from this merge: any staging order unpaid for 48 h (incl. a Demo Duka sample if it's that old) gets expired; the demo seed remakes the samples.
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M6 CP4: app 0.3.0 prepared (owner Step 76; branch `m6-cp4-native`)
+
+- Firebase step 1 done by the owner (project `oda`, Analytics off). Step 2 sent.
+- Owner approved both native modules and the ~11 MB npm install; the build runs on EAS. Installed `expo-notifications` 57.0.21 and `@sentry/react-native` 7.11.0 (SDK 57's pin) with `pnpm exec expo install`; `@sentry/cli`'s download script is not allowed to run.
+- `app.config.ts` → **0.3.0**, `expo-notifications` plugin (white status-bar icon, channel `orders`), `googleServicesFile` from `GOOGLE_SERVICES_JSON` or the gitignored local file; Sentry without its plugin (inactive). `native-runtime.json` rewritten; `deps:check` and expo-doctor (21/21) pass.
+- App: `src/push/native.ts` (permission, channel, token), `usePush.ts` (register on reaching the tabs, tap → order); sign-out resets it.
+- Decision #70. **Not built yet**: waits for `google-services.json` (Firebase step 3) and the owner's go-ahead for the EAS build; the branch merges after the build.
 
 ## 2026-10-05 · M6 CP4 prep: push tokens, push sending, auto-expire (owner Step 75; branch `m6-cp4-prep`)
 
