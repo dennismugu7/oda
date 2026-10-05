@@ -1,6 +1,12 @@
-# M6 plan: seller order management (PROPOSED, not approved)
+# M6 plan: seller order management (approved)
 
-Proposed in owner Step 71 (2026-10-05). **Not approved yet: don't start M6.** Once approved, the decisions go into `decisions.md` and this file is marked approved. Acceptance criteria stay in `milestones.md` (M6).
+Proposed in owner Step 71, **approved in owner Step 72 (2026-10-05)** with the additions in `decisions.md` #65 (summarised in "Owner's additions" below). This is the working plan for M6; the acceptance criteria stay in `milestones.md` (M6). Changes to it are recorded as new decisions.
+
+## Owner's additions (decision #65)
+1. **Push:** tapping a notification opens that order's detail. The Expo push token is registered on sign-in and removed on sign-out (that phone gets no more pushes). Enhanced push security: **on**. `EXPO_ACCESS_TOKEN` goes in Vercel; the owner gets the steps when needed.
+2. **`CRON_SECRET`:** Claude generates it and pipes it into Vercel and GitHub Secrets without printing it. If the GitHub secret can't be set cleanly that way, the owner gets the steps instead.
+3. **One native build 0.3.0 at CP4** (expo-notifications + Firebase config). Before building, list every other native module needed through M10 so it's batched into the same build, and ask the owner with the download size.
+4. **Firebase/FCM steps** go to the owner when CP4 starts (not before), **one step at a time**.
 
 ## What M5 left ready
 - `insertOrder()` / `transitionOrder()` with every seller action in the shared machine (confirm, payment not found, mark paid, accept, mark sent, mark delivered with "collected", cancel with the claim question, resolve claim, refund sent) and `autoExpire`; the DB status guard.
@@ -30,10 +36,10 @@ Proposed in owner Step 71 (2026-10-05). **Not approved yet: don't start M6.** On
 - EAS Update.
 
 **CP4 · Push (native build 0.3.0) + auto-expire job**
-- App: `expo-notifications` (installed with `pnpm exec expo install`), Firebase config wired in `app.config.ts`, permission prompt after sign-in (Android 13+), register the Expo push token → `POST /api/me/push-tokens` (add; `DELETE` on sign-out); tapping a notification opens the order.
+- App: `expo-notifications` (installed with `pnpm exec expo install`), Firebase config wired in `app.config.ts`, permission prompt after sign-in (Android 13+), register the Expo push token on sign-in → `POST /api/me/push-tokens`, remove it on sign-out (`DELETE`, so that phone gets no more pushes); tapping a notification opens that order's detail.
 - Server: send through the Expo push API in `after()` for each push side effect (same text as the notification row); tokens Expo reports as `DeviceNotRegistered` are removed; sends logged by type only (no tokens, no buyer data).
 - **Auto-expire:** `POST /api/cron/expire-orders` runs `transitionOrder({kind:'system'}, autoExpire)` for buyer-placed orders in `awaiting_payment` whose `awaiting_payment_since` is ≥ 48 h old (batches of 100; manual orders never), sending push `order_expired` and the "expired" email. Protected by the header `Authorization: Bearer <CRON_SECRET>` (constant-time compare; 404 without it), called hourly by a GitHub Actions schedule (`cron-expire-orders.yml`, also runnable by hand). Tests with backdated orders.
-- **One native build** (version 0.3.0) with everything native M6 needs; everything else stays EAS Update.
+- **One native build** (version 0.3.0) with everything native M6 needs, plus any native module needed through M10 (listed and approved first, #65); everything else stays EAS Update.
 - → 🛑 **Review stop B** (phone, end to end).
 
 **CP5 · Wrap-up:** forbidden transitions rejected by the server (tests per action), Playwright for any new web pages, design comparison (20b-delivery, 15, 16, 17-\*, 17b-\*, mark-delivered, refund banner, notifications), accessibility pass → **M6 gate**.
@@ -44,15 +50,15 @@ Proposed in owner Step 71 (2026-10-05). **Not approved yet: don't start M6.** On
 | Delivery screen, orders list/detail, actions, WhatsApp links (`Linking`), Home, manual orders, notifications list | EAS Update (runtime 0.2.0) |
 | `expo-notifications` + Firebase config (`google-services.json`) | **Native build 0.3.0** (version bump, decision #48) |
 
-All native changes are batched into that one build at CP4. Local build per decision #23 (`pnpm --filter @oda/seller android`), or EAS if local fails. **I'll ask before building, with the download size** (expo-notifications + Firebase messaging Gradle dependencies; I'll check the Gradle cache first). Until 0.3.0 is installed, the phone keeps receiving CP1–CP3 as EAS Updates on 0.2.0.
+All native changes are batched into that one build at CP4. Before it, I list every native module needed through M10 (e.g. for M7 review photos, M8 share images/QR, in-app review, M10 Sentry) so they go into the same build. Local build per decision #23 (`pnpm --filter @oda/seller android`), or EAS if local fails. **I'll ask before building, with the download size** (expo-notifications + Firebase messaging Gradle dependencies; I'll check the Gradle cache first). Until 0.3.0 is installed, the phone keeps receiving CP1–CP3 as EAS Updates on 0.2.0.
 
-## What I need from you for push (step by step; nothing goes in the chat)
+## What I need from you for push (sent when CP4 starts, one step at a time; nothing goes in the chat)
 1. **Firebase project:** https://console.firebase.google.com → Add project → name `oda` → Google Analytics **off** → Create.
 2. **Register the Android app:** in the project, Add app → Android → package name **`com.mugulabs.oda`** (exactly), nickname `oda` → Register. Skip the SHA-1 step.
 3. **Download `google-services.json`** from that screen and save it on the laptop as `C:\Users\denni\projects\oda\apps\seller\google-services.json`. It will be **gitignored** (the repo is public). Then upload the same file to EAS for EAS builds: expo.dev → project `oda` → Environment variables → Add → name `GOOGLE_SERVICES_JSON`, type **File**, environments development + preview, visibility **Secret** → upload. Tell me when both are done (I check by name/path only).
 4. **FCM V1 key for Expo:** Firebase console → ⚙ Project settings → Service accounts → **Generate new private key** (a JSON file). Then expo.dev → project `oda` → Credentials → Android → `com.mugulabs.oda` → **FCM V1 service account key** → Upload that JSON. Afterwards delete the downloaded key file from Downloads. It never goes into the repo, Vercel or the chat.
-5. **Expo access token for sending (recommended):** expo.dev → Account settings → Access tokens → Create (name `oda-push-staging`) → copy it straight into Vercel → oda → Settings → Environment Variables → `EXPO_ACCESS_TOKEN` (Production + Preview, Sensitive). Then in expo.dev → project → Settings, turn on **"Enhanced security for push notifications"** so only our server can send.
-6. **`CRON_SECRET`:** I can generate it on the laptop and pipe it straight into `gh secret set CRON_SECRET` and `vercel env add CRON_SECRET` without printing it (with your OK), or you create a random 32+ character value and set it in GitHub → Settings → Secrets → Actions **and** Vercel → Environment Variables (Production + Preview).
+5. **Expo access token for sending (recommended):** expo.dev → Account settings → Access tokens → Create (name `oda-push-staging`) → copy it straight into Vercel → oda → Settings → Environment Variables → `EXPO_ACCESS_TOKEN` (Production + Preview, Sensitive). Then in expo.dev → project → Settings, turn on **"Enhanced security for push notifications"** so only our server can send (approved: on).
+6. **`CRON_SECRET`** (approved, #65): I generate it on the laptop and pipe it straight into `gh secret set CRON_SECRET` and `vercel env add CRON_SECRET` (Production + Preview) without printing it, and verify by name. If the GitHub secret can't be set cleanly that way, you get the steps instead.
 
 ## Flags (spec / data model)
 - **No data-model change planned.** Existing columns cover push tokens (`profiles.expo_push_tokens`), notifications (`read_at`), manual orders, refunds and delivery areas. If token housekeeping needs more (e.g. per-device last-seen), I'll stop and propose it.

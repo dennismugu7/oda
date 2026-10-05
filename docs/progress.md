@@ -2,22 +2,27 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 71)
+## Handoff (keep current; updated 2026-10-05, owner Step 72)
 
 **Current state**
-- **Milestones:** M0–M5 closed; latest tag **`m5-done`** (on `main` after the gate PR). **M6 plan proposed in `docs/m6-plan.md`, not approved; M6 not started.**
+- **Milestones:** M0–M5 closed; latest tag **`m5-done`** (on `main` after the gate PR). **M6 plan approved** (`docs/m6-plan.md` + decision #65); **M6 not started.**
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Buyers can check out, pay (paste the M-Pesa SMS), switch to pay on delivery, cancel and report on `/o/{token}`. Demo Duka (https://oda-eta.vercel.app/demo-duka) has both payment options (fake Till `000000` "DEMO DUKA · TEST ONLY"), CBD/Westlands/Upcountry, pickup, free delivery over KES 5,000, and nine sample orders remade by every **Actions → demo-seed-staging** run (links: the run's job summary, or `gh run download <run> -n demo-order-links`, kept 1 day). `DEMO_SHOP_SLUGS=demo-duka` on Vercel (Production + Preview).
 - **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; latest EAS Update **`e7774d37`** (M4). M5 had no app changes.
 - **Git:** everything merged and pushed; no open PRs.
 - **This laptop:** `~/.wslconfig` = memory 12 GB, swap 8 GB, gradual reclaim, sparse disk (Step 69). Other projects (bookflow, dashboardx-local) may be running: if port 3100 is taken, run `E2E_PORT=3200 pnpm check:all` (Playwright never reuses a server it didn't start).
 
-**Next step:** owner reviews and approves (or changes) **`docs/m6-plan.md`**. Then M6 CP1 (Delivery screen) on a new branch. The owner's push setup steps (Firebase, `google-services.json`, FCM V1 key, `EXPO_ACCESS_TOKEN`, `CRON_SECRET`) are listed in that plan and are needed by CP4.
+**Next step:** start **M6 CP1** (Delivery screen) per **`docs/m6-plan.md`** and **decision #65**, on a new branch; continue with CP2 and **stop at review stop A after CP2** (phone test). Firebase/FCM steps go to the owner only when CP4 starts, one step at a time; `CRON_SECRET` is generated and piped into Vercel + GitHub Secrets at CP4 without printing it.
 
 **Open items**
 - Until M6 CP1 ships the Delivery screen, every shop except Demo Duka shows "Not taking orders yet" (decision #61 c).
-- Push needs the owner's Firebase project and keys (m6-plan → "What I need from you").
+- Push needs the owner's Firebase project and keys (m6-plan → "What I need from you", sent at CP4). Before the 0.3.0 build: list native modules needed through M10 and ask with the download size (#65 c).
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M6 plan approved; ready for a fresh session (owner Step 72)
+
+- Decision #65: `docs/m6-plan.md` approved with the owner's additions (push tap → order detail; token on sign-in, removed on sign-out; enhanced push security; `CRON_SECRET` piped into Vercel + GitHub without printing; one native build 0.3.0 at CP4 with every native module needed through M10 listed first; Firebase/FCM steps at CP4, one at a time).
+- `docs/m6-plan.md` marked approved; milestones M6 points to it; Handoff: next = M6 CP1, stop at review stop A after CP2.
 
 ## 2026-10-05 · M5 gate passed (owner Step 71; branch `m5-gate`)
 
