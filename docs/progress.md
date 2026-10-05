@@ -2,19 +2,55 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 68)
+## Handoff (keep current; updated 2026-10-05, owner Step 70)
 
 **Current state**
-- **Milestones:** M0–M4 closed; latest tag **`m4-done`**. **M5 in progress: CP1 + CP2 done, at review stop A** (branch `m5-checkout`, merged to `main`).
-- **Staging:** https://oda-eta.vercel.app = `main` with checkout. Demo Duka has both payment options (fake Till `000000`), three delivery areas, pickup and free delivery over KES 5,000 (demo seed run after the merge). `DEMO_SHOP_SLUGS=demo-duka` is set on Vercel (Production + Preview).
+- **Milestones:** M0–M4 closed; latest tag **`m4-done`**. **M5: CP1–CP5 done, at review stop B** (then the M5 gate).
+- **Staging:** https://oda-eta.vercel.app = `main` (PRs #25, #26, #27). Demo Duka: both payment options (fake Till `000000`), three delivery areas, pickup, free delivery over KES 5,000, and **nine sample orders** remade by every `demo-seed-staging` run (links: that run's job summary, or `gh run download <run> -n demo-order-links`). `DEMO_SHOP_SLUGS=demo-duka` on Vercel.
 - **App:** unchanged in M5 (EAS preview build 0.2.0, update `e7774d37`).
+- **This laptop:** `~/.wslconfig` (12 GB, swap 8 GB). bookflow's Supabase stack and its Next server on port 3100 were running again on Step 70, so Playwright runs with `E2E_PORT=3200` (CLAUDE.md).
 
-**Next step:** owner's **review stop A** phone test (entry below). After the go-ahead: **CP3** (pay page, order page, demo sample orders) per `docs/m5-plan.md`.
+**Next step:** owner's **review stop B** phone test (entry below), then the **M5 gate** (✅/❌ against milestones.md + definition of done, tag `m5-done`).
 
 **Open items**
 - Shops other than Demo Duka show "Not taking orders yet" until the Delivery screen (start of M6, decision #61 c).
 - M6 needs a **Firebase project** from the owner for push.
 - The full carried-forward list is in the M4 gate entry below.
+
+## 2026-10-05 · M5 CP3–CP5 (pay page, order page, sample orders, acceptance tests), at review stop B (owner Step 70)
+
+- **Review stop A passed** (owner, all 12 items on the phone).
+- **CP3** (decision #63): `/o/{token}` pay page (04b redesign) and status page (05, 6, 05c); shared `buyerTimeline()` and `BUYER_CANCEL_LABELS`; `view().paymentNotFound`; Nairobi times (`lib/time.ts`); demo seed makes nine sample orders through the machine on every run (links in the job summary and the `demo-order-links` artifact, 1 day).
+- **CP4:** the M5 buyer emails (receipt, "you cancelled") shipped in CP1 (review stop A item 10 passed); nothing more in M5.
+- **CP5:** Playwright `e2e/order.spec.ts` (pay now end to end from the buyer's side, pay on delivery instead, report a problem, unguessable token-only links, the per-phone rate limit) + `e2e/checkout.spec.ts`. Accessibility: headings per section, labelled paste box with a live "Code found" message, step states read out ("Done:/Now:/Next:"), copy buttons named by what they copy, in-page confirms (no browser dialogs), ≥ 44 px targets.
+- **Playwright clash:** on Step 70 bookflow's Supabase stack and a bookflow Next server on **port 3100** were running again; Playwright reused that server and every test failed against the wrong app. Now `E2E_PORT` picks the port (3200 used here) and Playwright never reuses a server it didn't start. bookflow's processes were left alone.
+- **Tests:** shared 190, web 246, db 23, seller 76, ui-tokens 3, Playwright 16. `E2E_PORT=3200 pnpm check:all` passed.
+
+**Design comparison:** 04b → the redesign in design-changes (numbered steps kept; header "Pay KES x to {shop}" with order number and shop; no STK pop-up, timer or "Resend prompt"). 05: same hero, "Thanks, {first name}" line; the order summary card, "What happens next" and "Track order" became the status page itself (one page per order). 6: no countdown (design-changes); "Order status" timeline as designed with "Rate your order" last; the "Need help" card as designed. 05c: Delivered card with date, "How was your order?" with grey stars and an inactive "Reviews open soon" button (reviews are M7; the slider is a plain button); order history = the same timeline with dates; "Message {shop}" is in the help card rather than a bottom button. Also on every status page: the items, total, address and payment line, and the bookmark note.
+
+**Review stop B — phone test (staging, Demo Duka)**
+
+Sample order links are in the message for this step (they change on every seed run).
+
+1. **Pay page:** open the *Awaiting payment* sample. Expected: "Pay KES 2,700 to Demo Duka", steps 1–4 with **Till number 000000** and **Amount KES 2,700** (each with **Copy**), "Check you see **DEMO DUKA · TEST ONLY**", the paste box, **I've paid** greyed out, **Pay on delivery instead**, **Cancel order**.
+2. Tap **Copy** next to the Till number, paste into WhatsApp/notes. Expected: `000000`; the button says "Copied" briefly.
+3. Type `hello` in the paste box. Expected: "We can't see a code yet…". Paste a fake SMS, e.g. `SJK4X7PQ2M Confirmed. Ksh2,700.00 sent to DEMO DUKA`. Expected: "✓ Code SJK4X7PQ2M" and I've paid turns orange.
+4. Tap **I've paid**. Expected: "Order #… · Order placed! Thanks, Achieng. Demo Duka is checking your M-Pesa payment.", the cancel card ending "Demo Duka will send your money back on M-Pesa.", timeline step 2 in orange "Waiting for Demo Duka to confirm your payment", payment line "M-Pesa SJK4X7PQ2M · waiting for Demo Duka to confirm".
+5. Tap **Cancel** → **Yes, cancel it**. Expected: "Order cancelled · You cancelled it · {time}" and "If your payment reached Demo Duka, they'll send it back on M-Pesa."; no cancel card.
+6. **Your own pay-now order:** add something on https://oda-eta.vercel.app/demo-duka, check out with **Pay now**. On the pay page tap **Pay on delivery instead**. Expected: "Thanks, {you}. Demo Duka will accept your order… You pay KES … on delivery." and step 2 "Waiting for Demo Duka to accept".
+7. On that order, open **Report a problem to oda**, type a sentence, **Send to oda**. Expected: "Thanks. oda will look into it…".
+8. Open the samples. Expected:
+   - *Payment claimed*: as item 4 (code SDM0DEMO01).
+   - *Payment not found*: the pay page with the orange banner "Demo Duka couldn't find your payment".
+   - *Confirmed*: "Accepted by Demo Duka · Demo Duka is getting your order ready", steps 1–2 done.
+   - *Sent with a rider*: "Sent out · With a rider." and **Call the rider · 0700 000 002** (opens the dialler).
+   - *Ready for pickup*: "Ready for pickup · Demo pickup point · Mon–Sat, 9am–6pm", step 3 "Ready for pickup".
+   - *Delivered*: "Delivered" with a date, "How was your order?" with grey stars and "Reviews open soon" (not tappable), all four steps done with dates.
+   - *Cancelled*: "Order cancelled · Out of stock"; the words "Private seller note" appear nowhere.
+   - *Expired*: "Order expired · Not paid within 48 hours".
+9. On any sample, tap **Message Demo Duka**. Expected: WhatsApp opens to +254 700 000 000 with "Hi Demo Duka, about my order #… on oda." (don't send).
+10. Change one character of a sample link. Expected: the oda "This page isn't here" page.
+11. Optional: the receipt email from a pay-now order with your email has a **Track your order** button that opens the pay page.
 
 ## 2026-10-05 · M5 CP1 + CP2 (checkout server and page), at review stop A (branch `m5-checkout`, owner Steps 68–69)
 

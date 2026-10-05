@@ -224,6 +224,10 @@ async function main() {
   const lines = samples.map((o) => `- ${o.label}: ${base}/o/${o.token}`);
   // The links go to the job summary (fake orders on a fake shop), not the log.
   const summary = process.env.GITHUB_STEP_SUMMARY;
+  // Also a file the workflow keeps for a day (gh run download), since summaries are browser-only.
+  if (process.env.DEMO_LINKS_FILE) {
+    appendFileSync(process.env.DEMO_LINKS_FILE, `${lines.join('\n')}\n`);
+  }
   if (summary) {
     appendFileSync(
       summary,

@@ -52,4 +52,12 @@ jobs:
           STAGING_IMAGES_BLOB_READ_WRITE_TOKEN: ${{ secrets.STAGING_IMAGES_BLOB_READ_WRITE_TOKEN }}
           # Base for the sample order links in the job summary.
           PUBLIC_SHOP_BASE_URL: https://oda-eta.vercel.app
+          DEMO_LINKS_FILE: ${{ runner.temp }}/demo-order-links.txt
         run: pnpm exec tsx --conditions=react-server server/demoSeed/run.ts
+
+      # The same links as the job summary, for `gh run download` (fake orders; 1 day).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: demo-order-links
+          path: ${{ runner.temp }}/demo-order-links.txt
+          retention-days: 1
