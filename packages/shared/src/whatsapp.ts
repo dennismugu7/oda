@@ -84,3 +84,21 @@ export function whatsappMessage(
 export function hasWhatsAppStep(sideEffects: readonly SideEffect[]): boolean {
   return sideEffects.some((e) => e.kind === 'whatsapp');
 }
+
+/**
+ * The message that sends a manual order's link to the buyer (17-new-order: "Send on WhatsApp").
+ * Not paid yet: the link is where they pay; otherwise it's where they track the order.
+ */
+export function orderLinkMessage(o: {
+  buyerName: string;
+  number: number;
+  total: number;
+  shopName: string;
+  link: string;
+  awaitingPayment: boolean;
+}): string {
+  const hi = `Hi ${firstName(o.buyerName)},`;
+  return o.awaitingPayment
+    ? `${hi} here’s your order #${o.number} from ${o.shopName} (${formatKsh(o.total)}). Pay and track it here: ${o.link}`
+    : `${hi} here’s your order #${o.number} from ${o.shopName}. Track it here: ${o.link}`;
+}

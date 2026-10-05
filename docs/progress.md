@@ -2,7 +2,7 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 74)
+## Handoff (keep current; updated 2026-10-05, owner Step 75)
 
 **Current state**
 - **Milestones:** M0–M5 closed (tag `m5-done`). **M6 CP1–CP2 built** (branch `m6-orders`, merged to `main`): Delivery screen + "Add delivery options"; orders list/search/detail with every seller action, WhatsApp prefills, seller-triggered buyer emails (decision #66). **🛑 At review stop A** (phone test in the CP1–CP2 entry below).
@@ -17,6 +17,16 @@ Newest entries at the top.
 - Push needs the owner's Firebase project and keys (m6-plan → "What I need from you", sent at CP4). Before the 0.3.0 build: list native modules needed through M10 and ask with the download size (#65 c).
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M6 CP3: Home, manual orders, notifications list (owner Step 75; branch `m6-cp3`)
+
+- Review stop A **passed** (owner Step 75: all 22 items).
+- **Home** (15, 16): greeting, bell with unread count, link pill (copy / Share), To-do card (To confirm / To send / New, quick Confirm / Send), sales this week (Nairobi Mon–Sun bars, % vs the same stretch of last week, top source), "Finish your shop" (folded once there are orders), empty state. `GET /api/home` (`repos/sellerHome.ts`).
+- **New order** (17-new-order): `POST /api/orders/quote`, `POST /api/orders` (manual kinds through `insertOrder()`); screen with buyer, product picker (size / colour), qty steppers, pickup or area + address, fee override, Already paid / Not paid yet / Pay on delivery, total from the server's quote; then the order link to send on WhatsApp or copy.
+- **Notifications** list: `GET /api/notifications`, `PATCH /api/notifications/read`; screen with unread dots, tap → order, Mark all read.
+- Tests: `server/sellerHome.test.ts` (8: quote and each manual kind, idempotency, refused client prices/sizes/other shop's products and areas, Nairobi week buckets and last week's same stretch, top source, notifications list/read/authorization), shared `sellerHome.test.ts`, `orderLinkMessage`, app `newOrder.test.ts`. Decision #68.
+- Deviations: quick Accept opens the order (one more tap) instead of accepting from Home; the bell shows a count, not just a dot.
+- Playwright now resets the local `rate_limits` table before each run (`test/e2eGlobalSetup.ts`, localhost only): today's repeated local runs had filled the per-IP daily report limit (10) and failed the report test.
 
 ## 2026-10-05 · "Needs attention" To-do group (owner Step 74; branch `m6-needs-attention`)
 

@@ -52,7 +52,8 @@ const PRIMARY_LABELS: Record<string, string> = {
 };
 
 export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `action`: Home's quick button (Confirm / Send / Accept) opens that action on arrival.
+  const { id, action: quick } = useLocalSearchParams<{ id: string; action?: string }>();
   const insets = useSafeAreaInsets();
   const [order, setOrder] = useState<OrderDetail | null>(() => ordersCache.detail(id));
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +88,16 @@ export default function OrderDetailScreen() {
       load();
     }, [load]),
   );
+
+  // Open Home's quick action once, when the order allows it.
+  const [quickDone, setQuickDone] = useState(false);
+  if (!quickDone && order && quick) {
+    setQuickDone(true);
+    if (order.actions.includes(quick as never) && quick !== 'accept') {
+      setSheetKey((k) => k + 1);
+      setSheet(quick as SheetKind);
+    }
+  }
 
   function open(kind: SheetKind) {
     if (offline) {

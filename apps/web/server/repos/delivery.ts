@@ -105,3 +105,12 @@ export function deliveryRepo(db: Db, ctx: SellerCtx) {
     },
   };
 }
+
+/** Area names by id (including deleted ones, which past quotes may still mention). */
+export async function getDeliveryNames(db: Db, ctx: SellerCtx): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ id: t.deliveryAreas.id, name: t.deliveryAreas.name })
+    .from(t.deliveryAreas)
+    .where(eq(t.deliveryAreas.shopId, ctx.shopId));
+  return Object.fromEntries(rows.map((r) => [r.id, r.name]));
+}

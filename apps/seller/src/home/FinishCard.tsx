@@ -1,6 +1,6 @@
-// "Finish your shop" on Home (design 15; spec §5.3): the 7 checklist items, hidden once
-// complete. Items with a place to go open it (delivery, products, the WhatsApp test). The
-// full Home (To-do, sales) arrives in M6 CP3.
+// "Finish your shop" on Home (designs 15, 16; spec §5.3): the 7 checklist items, hidden once
+// complete. Items with a place to go open it (delivery, products, the WhatsApp test). Once the
+// shop has orders it starts folded (16: title, count and bar); a tap opens the items.
 import Feather from '@expo/vector-icons/Feather';
 import type { FinishItem } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
@@ -9,8 +9,9 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import { colors, radii, spacing, text } from '@/theme';
 
-export function FinishCard() {
+export function FinishCard({ compact = false }: { compact?: boolean }) {
   const [state, setState] = useState<OnboardingState | null>(null);
+  const [open, setOpen] = useState(!compact);
 
   // Fresh whenever Home shows (e.g. back from the Delivery screen). Best effort: the card
   // simply stays hidden when the call fails.
@@ -46,7 +47,13 @@ export function FinishCard() {
 
   return (
     <View style={styles.card}>
-      <View style={styles.head}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`Finish your shop, ${checklist.done} of ${checklist.total} done`}
+        onPress={() => setOpen((o) => !o)}
+        style={styles.head}
+      >
         <Text accessibilityRole="header" style={styles.title}>
           Finish your shop
         </Text>
@@ -55,7 +62,8 @@ export function FinishCard() {
             {checklist.done} of {checklist.total}
           </Text>
         </View>
-      </View>
+        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+      </Pressable>
       <View
         style={styles.track}
         accessibilityRole="progressbar"
@@ -63,7 +71,7 @@ export function FinishCard() {
       >
         <View style={[styles.fill, { width: `${(checklist.done / checklist.total) * 100}%` }]} />
       </View>
-      {checklist.items.map((item, i) => {
+      {(open ? checklist.items : []).map((item, i) => {
         const action = item.done ? undefined : actions[item.id];
         return (
           <Pressable
@@ -99,8 +107,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
   },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...text('title'), color: colors.navy },
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
+  title: { ...text('title'), color: colors.navy, flex: 1 },
   pill: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.pill,

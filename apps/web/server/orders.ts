@@ -314,13 +314,15 @@ export async function quoteOrder(
   db: Db,
   shopId: string,
   input: NewOrderLine[],
+  /** Manual orders (seller): any non-deleted product, pickup always, an optional fee override. */
+  opts: { manual?: boolean; deliveryFeeOverride?: number } = {},
 ): Promise<OrderQuote> {
   checkId(shopId, 'shop');
   try {
     return await db.transaction(async (tx) => {
       const [shop] = await tx.select().from(t.shops).where(eq(t.shops.id, shopId));
       if (!shop) throw new NotFoundError("We couldn't find this shop.");
-      const lines = await resolveLines(tx, shop.id, input, false);
+      const lines = await resolveLines(tx, shop.id, input, opts.manual ?? false);
       const areas = await tx
         .select()
         .from(t.deliveryAreas)
@@ -328,7 +330,14 @@ export async function quoteOrder(
         .orderBy(t.deliveryAreas.position, t.deliveryAreas.createdAt);
       const priced = lines.map((l) => ({ unitPrice: l.product.price, qty: l.qty }));
       const price = (delivery: Parameters<typeof priceOrder>[0]['delivery']) =>
-        priceOrder({ lines: priced, delivery, freeDeliveryThreshold: shop.freeDeliveryThreshold });
+        priceOrder({
+          lines: priced,
+          delivery,
+          freeDeliveryThreshold: shop.freeDeliveryThreshold,
+          ...(opts.manual && opts.deliveryFeeOverride !== undefined
+            ? { deliveryFeeOverride: opts.deliveryFeeOverride }
+            : {}),
+        });
       const options: OrderQuote['options'] = areas.map((a) => {
         const p = price({ kind: 'area', fee: a.fee, freeDeliveryEligible: a.freeDeliveryEligible });
         return {
@@ -340,11 +349,11 @@ export async function quoteOrder(
         };
       });
       const pickup = price({ kind: 'pickup' });
-      if (shop.pickupEnabled) {
+      if (shop.pickupEnabled || opts.manual) {
         options.push({
           kind: 'pickup',
           areaId: null,
-          deliveryFee: 0,
+          deliveryFee: pickup.deliveryFee,
           total: pickup.total,
           freeDeliveryApplied: false,
         });

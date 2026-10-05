@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { signOutLocal } from '@/auth/client';
 import { useMe } from '@/auth/useMe';
 import { deliveryCache } from '@/delivery/api';
+import { homeCache, notificationsCache } from '@/home/api';
 import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import { ordersCache } from '@/orders/api';
 import { Button } from '@/ui/auth';
@@ -35,6 +36,8 @@ export default function MoreTab() {
     // Another account on this phone must never see this shop's orders.
     ordersCache.clear();
     deliveryCache.set(null);
+    homeCache.set(null);
+    notificationsCache.set(null);
     router.replace('/welcome');
   }
 

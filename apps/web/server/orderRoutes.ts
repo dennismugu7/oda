@@ -1,16 +1,20 @@
 import 'server-only';
 import {
   hasWhatsAppStep,
+  MANUAL_KIND,
+  manualOrderInput,
+  manualQuoteInput,
   ordersQuery,
   sellerActionInput,
   waLink,
   whatsappMessage,
 } from '@oda/shared';
 import { requireSeller } from './authz';
+import { getDeliveryNames } from './repos/delivery';
 import { sendOrderEmails, type Defer } from './checkout';
 import { getDb } from './db';
 import { parseInput } from './errors';
-import { transitionOrder } from './orders';
+import { insertOrder, quoteOrder, transitionOrder } from './orders';
 import { sellerOrdersRepo } from './repos/sellerOrders';
 import { body, handle } from './routeHandler';
 
@@ -70,3 +74,52 @@ export function postOrderAction(defer: Defer) {
     return { order: detail, whatsapp: text ? { url: waLink(order.buyerPhone, text), text } : null };
   });
 }
+
+/** POST /api/orders/quote — what a manual order of these lines costs with each option. */
+export const quoteManualOrder = handle(async (request) => {
+  const db = getDb();
+  const ctx = await requireSeller(request, db);
+  const input = parseInput(manualQuoteInput, await body(request));
+  const quote = await quoteOrder(db, ctx.shopId, input.lines, {
+    manual: true,
+    ...(input.deliveryFeeOverride !== undefined
+      ? { deliveryFeeOverride: input.deliveryFeeOverride }
+      : {}),
+  });
+  const names = await getDeliveryNames(db, ctx);
+  return {
+    ...quote,
+    options: quote.options.map((o) => ({
+      ...o,
+      name: o.areaId ? (names[o.areaId] ?? '') : 'Pickup',
+    })),
+  };
+});
+
+/**
+ * POST /api/orders — a manual order (17-new-order): priced from the database like any order
+ * (the seller may only change the delivery fee), created by insertOrder() with the manual kind
+ * for the payment choice. A retry with the same key returns the same order.
+ */
+export const createManualOrder = handle(async (request) => {
+  const db = getDb();
+  const ctx = await requireSeller(request, db);
+  const input = parseInput(manualOrderInput, await body(request));
+  const { order } = await insertOrder(db, {
+    shopId: ctx.shopId,
+    kind: MANUAL_KIND[input.payment],
+    buyer: { name: input.buyer.name, phone: input.buyer.phone, whatsapp: input.buyer.whatsapp },
+    fulfilment: input.fulfilment,
+    lines: input.lines.map((l) => ({
+      productId: l.productId,
+      qty: l.qty,
+      size: l.size,
+      colour: l.colour,
+    })),
+    idempotencyKey: input.idempotencyKey,
+    ...(input.deliveryFeeOverride !== undefined
+      ? { deliveryFeeOverride: input.deliveryFeeOverride }
+      : {}),
+  });
+  return sellerOrdersRepo(db, ctx).detail(order.id);
+}, 201);
