@@ -9,6 +9,8 @@ import {
   primaryAction,
   sellerActionInput,
   sellerActions,
+  sellerTodoGroup,
+  TODO_GROUP_ORDER,
   sourceLabel,
 } from './sellerOrders';
 
@@ -123,5 +125,23 @@ describe('the list', () => {
     expect(orderStatusLabel({ status: 'sent', paymentStatus: 'paid' })).toBe('Sent');
     expect(needsMoneyAction({ status: 'cancelled', paymentStatus: 'unpaid' })).toBe(false);
     expect(needsMoneyAction({ status: 'cancelled', paymentStatus: 'claimed' })).toBe(true);
+  });
+});
+
+describe('To-do groups (decision #67)', () => {
+  it('"Needs attention" comes first: cancelled orders with a claim or a refund due', () => {
+    expect(TODO_GROUP_ORDER[0]).toBe('needs_attention');
+    expect(sellerTodoGroup({ status: 'cancelled', paymentStatus: 'claimed' })).toBe(
+      'needs_attention',
+    );
+    expect(sellerTodoGroup({ status: 'cancelled', paymentStatus: 'refund_due' })).toBe(
+      'needs_attention',
+    );
+    expect(sellerTodoGroup({ status: 'cancelled', paymentStatus: 'refunded' })).toBeNull();
+    expect(sellerTodoGroup({ status: 'cancelled', paymentStatus: 'unpaid' })).toBeNull();
+    expect(sellerTodoGroup({ status: 'payment_claimed', paymentStatus: 'claimed' })).toBe(
+      'confirm_payment',
+    );
+    expect(sellerTodoGroup({ status: 'delivered', paymentStatus: 'paid' })).toBeNull();
   });
 });

@@ -21,9 +21,10 @@ import {
   orderSearch,
   sellerActions,
   TODO_STATUSES,
-  todoGroup,
+  ATTENTION_PAYMENT_STATUSES,
+  sellerTodoGroup,
   type OrdersQuery,
-  type TodoGroup,
+  type SellerTodoGroup,
 } from '@oda/shared';
 import type { SellerCtx } from '../authz';
 import { orderLink } from '../orderLink';
@@ -56,15 +57,30 @@ export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
       .orderBy(asc(t.orderItems.createdAt));
   }
 
+  /** Orders waiting on the seller: open ones, and cancelled ones with money to settle. */
+  const waiting = or(
+    inArray(t.orders.status, [...TODO_STATUSES]),
+    and(
+      eq(t.orders.status, 'cancelled'),
+      inArray(t.orders.paymentStatus, [...ATTENTION_PAYMENT_STATUSES]),
+    ),
+  );
+
   /** How many orders wait in each To-do group (the tab badge and the group headers). */
-  async function todoCounts(): Promise<Record<TodoGroup, number> & { total: number }> {
+  async function todoCounts(): Promise<Record<SellerTodoGroup, number> & { total: number }> {
     const rows = await db
-      .select({ status: t.orders.status, n: count() })
+      .select({ status: t.orders.status, paymentStatus: t.orders.paymentStatus, n: count() })
       .from(t.orders)
-      .where(and(inShop, inArray(t.orders.status, [...TODO_STATUSES])))
-      .groupBy(t.orders.status);
-    const counts = { confirm_payment: 0, new_to_accept: 0, new_awaiting_payment: 0, to_send: 0 };
-    for (const r of rows) counts[todoGroup(r.status)!] += r.n;
+      .where(and(inShop, waiting))
+      .groupBy(t.orders.status, t.orders.paymentStatus);
+    const counts: Record<SellerTodoGroup, number> = {
+      needs_attention: 0,
+      confirm_payment: 0,
+      new_to_accept: 0,
+      new_awaiting_payment: 0,
+      to_send: 0,
+    };
+    for (const r of rows) counts[sellerTodoGroup(r)!] += r.n;
     return { ...counts, total: rows.reduce((sum, r) => sum + r.n, 0) };
   }
 
@@ -74,7 +90,7 @@ export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
     /** The Orders tab. To do comes whole (it's what's waiting); All and Done come in pages. */
     async list(query: OrdersQuery) {
       const conditions: (SQL | undefined)[] = [inShop];
-      if (query.tab === 'todo') conditions.push(inArray(t.orders.status, [...TODO_STATUSES]));
+      if (query.tab === 'todo') conditions.push(waiting);
       if (query.tab === 'done') conditions.push(inArray(t.orders.status, [...DONE_STATUSES]));
       if (query.q) {
         const s = orderSearch(query.q);
@@ -117,7 +133,7 @@ export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
             paymentMethod: o.paymentMethod,
             source: o.source,
             placedAt: o.placedAt,
-            todoGroup: todoGroup(o.status),
+            todoGroup: sellerTodoGroup(o),
             itemNames: mine.map((i) => i.nameSnapshot),
             thumbUrl: publicUrl(mine[0]?.coverPathSnapshot),
           };

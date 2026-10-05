@@ -10,7 +10,7 @@ import type {
   SellerActionInput,
   SellerActionType,
   SentMethod,
-  TodoGroup,
+  SellerTodoGroup,
 } from '@oda/shared';
 import { apiJson } from '@/api';
 
@@ -24,12 +24,12 @@ export interface OrderRow {
   paymentMethod: PaymentMethod;
   source: OrderSource;
   placedAt: string;
-  todoGroup: TodoGroup | null;
+  todoGroup: SellerTodoGroup | null;
   itemNames: string[];
   thumbUrl: string | null;
 }
 
-export type TodoCounts = Record<TodoGroup, number> & { total: number };
+export type TodoCounts = Record<SellerTodoGroup, number> & { total: number };
 
 export interface OrderList {
   orders: OrderRow[];

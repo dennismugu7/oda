@@ -33,20 +33,44 @@ export const TODO_STATUSES = [
   'confirmed',
 ] as const satisfies readonly OrderStatus[];
 
-/** To-do groups in the order the list shows them (spec §5.4). */
-export const TODO_GROUP_ORDER: readonly TodoGroup[] = [
+/**
+ * The seller's To-do groups: the four from the spec (order-lifecycle.md), plus "Needs
+ * attention" on top (decision #67): cancelled orders the seller still has to settle — a claimed
+ * payment to answer ("Check payment") or a refund to send ("Refund due").
+ */
+export type SellerTodoGroup = 'needs_attention' | TodoGroup;
+
+/** To-do groups in the order the list shows them. */
+export const TODO_GROUP_ORDER: readonly SellerTodoGroup[] = [
+  'needs_attention',
   'confirm_payment',
   'new_to_accept',
   'new_awaiting_payment',
   'to_send',
 ];
 
-export const TODO_GROUP_LABELS: Record<TodoGroup, string> = {
+export const TODO_GROUP_LABELS: Record<SellerTodoGroup, string> = {
+  needs_attention: 'Needs attention',
   confirm_payment: 'Confirm payment',
   new_to_accept: 'New, to accept',
   new_awaiting_payment: 'New, awaiting payment',
   to_send: 'To send',
 };
+
+/** Payment states that keep a cancelled order in "Needs attention". */
+export const ATTENTION_PAYMENT_STATUSES = [
+  'claimed',
+  'refund_due',
+] as const satisfies readonly PaymentStatus[];
+
+/** The order's To-do group, or null when nothing waits on the seller. */
+export function sellerTodoGroup(o: {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+}): SellerTodoGroup | null {
+  if (needsMoneyAction(o)) return 'needs_attention';
+  return todoGroup(o.status);
+}
 
 export const ORDER_PAGE_SIZE = 30;
 

@@ -2,22 +2,27 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 73)
+## Handoff (keep current; updated 2026-10-05, owner Step 74)
 
 **Current state**
 - **Milestones:** M0–M5 closed (tag `m5-done`). **M6 CP1–CP2 built** (branch `m6-orders`, merged to `main`): Delivery screen + "Add delivery options"; orders list/search/detail with every seller action, WhatsApp prefills, seller-triggered buyer emails (decision #66). **🛑 At review stop A** (phone test in the CP1–CP2 entry below).
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers can now add delivery options, so their shops take orders. Demo Duka unchanged (its owner has no password; the phone test uses the owner's own shop).
-- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; CP1–CP2 shipped as an EAS Update (id in the entry below).
+- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; CP1–CP2 shipped as EAS Update `a432ccde` (Step 73); the "Needs attention" change (Step 74) as the next update (id recorded with CP3).
 - **Git:** `m6-orders` merged; no open PRs.
 - **This laptop:** as before (`~/.wslconfig` 12 GB / 8 GB swap). If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`.
 
 **Next step:** wait for the owner's review stop A results. After the go-ahead: **CP3** (Home 15/16, manual orders, notifications list) per `docs/m6-plan.md`, then CP4 (push, native build 0.3.0, auto-expire) → review stop B.
 
 **Open items**
-- Owner question: should cancelled orders needing the seller (claim to answer, refund to send) get a fifth To-do group? (decision #66 h)
 - Push needs the owner's Firebase project and keys (m6-plan → "What I need from you", sent at CP4). Before the 0.3.0 build: list native modules needed through M10 and ask with the download size (#65 c).
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · "Needs attention" To-do group (owner Step 74; branch `m6-needs-attention`)
+
+- Owner answered the open question from Step 73: yes. To do now starts with **"Needs attention"**: cancelled orders with a payment claim to answer ("Check payment") or a refund to send ("Refund due"), with that chip; they also stay in All/Done; the badge and counts include them (decision #67). Tests: shared `sellerTodoGroup`, server "Needs attention holds cancelled orders with money to settle, until settled".
+- Answered: onboarding step 5 accepts a Till of 5–7 digits (e.g. `123456`); a new account is active and `pending`, and pay-now works with an active account whatever its verification status (only the "M-Pesa till checked by oda" badge waits for verification).
+- EAS Update `a432ccde` = CP1–CP2 (Step 73).
 
 ## 2026-10-05 · M6 CP1–CP2: Delivery screen, orders list/detail, every seller action (owner Step 73; branch `m6-orders`)
 
