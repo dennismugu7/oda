@@ -57,13 +57,16 @@ Web 01, 02, 03, 07 + shop states.
 - **Accept:** pasting a shop link into WhatsApp shows a rich preview; Lighthouse mobile performance ≥ 85 on the shop home; a Playwright test covers browse → search → product → cart.
 
 ## M5 · Checkout & payment claim (buyer)
+**Approved plan: `docs/m5-plan.md`** (decision #61; owner Step 67).
 Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 - Server checkout endpoint: validation, re-pricing, idempotency, rate limiting, honeypot, order number + token; pay page with code extraction; order page with the timeline, cancel, "payment not found" banner, report a problem; optional buyer emails.
 - Order page (decision #38): a cancelled order shows the cancel **reason** as a label, never the seller's `cancel_note`. If the shop was deleted, the link keeps working until the 30-day purge with a "This shop has closed" banner and only "Report a problem"; after the purge it 404s.
 - **Accept:** Playwright: full pay-now and pay-on-delivery orders; changing a price after add-to-cart is caught; order IDs cannot be guessed; the rate limit triggers.
 
 ## M6 · Order management (seller)
-Screens 15, 16, 17-*, 17b-*, new mark-delivered, refund banner, notifications list.
+Screens **20b-delivery first** (moved from M8, decision #61), 15, 16, 17-*, 17b-*, new mark-delivered, refund banner, notifications list.
+- **Start with Delivery (20b-delivery):** areas (name, fee, method, ETA, free-delivery eligible), pickup toggle + location/hours, free delivery over an amount; the checklist item "Add delivery options" (done with ≥ 1 area or pickup on). Until a shop has a delivery option it shows "Not taking orders yet".
+- Push sending and the seller-triggered buyer emails plug into what M5 already records (notification rows, email templates).
 - Home To-do + sales card, orders list/search, order detail with every action via server RPCs, WhatsApp prefill links, manual order creation, push notifications (Expo), in-app notifications, hourly auto-expire job.
 - **Needs from you:** a **Firebase project** (free) with the Android app `com.mugulabs.oda` registered, for Expo push via FCM (its `google-services.json` and the FCM credentials uploaded to EAS/Expo).
 - **Accept:** the lifecycle can be driven end to end by a buyer on web + a seller on the phone; push arrives on a real device within 10s of a web order; forbidden transitions are rejected by the server.
@@ -74,8 +77,8 @@ Web 05c, 5d; app 20b-reviews.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
 
 ## M8 · Grow & manage
-Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-delivery, 20b-settings, 20b-your-details, 20b-help, 21-*.
-- Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, delivery areas/pickup/free delivery, settings (pause shop, delete account), help guides, feedback, in-app review.
+Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-settings, 20b-your-details, 20b-help, 21-*.
+- Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
 - Account deletion: in-app flow, the web `/delete-account` request form, and the daily `/api/cron/purge` job with its scheduler.
 - **Accept:** insights numbers match a SQL check on the seed data; pausing blocks new orders on the web; slug change keeps the old link working; a deleted shop 404s immediately and the purge job removes its data, photos and auth user after 30 days (tested with a backdated record).
 

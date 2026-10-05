@@ -58,13 +58,14 @@ Six steps, resumable if the app is closed. The progress bar has 6 segments; the 
 4. **Add your first product:** cover photo (camera or gallery) plus up to 4 more, name, price, sizes (optional).
 5. **Where buyers pay you:** Buy Goods Till / Pochi la Biashara / Paybill. Number, the name on the account, and for Paybill the account reference: either a fixed account number (e.g. a bank paybill) or "use the order number". Saving sets verification to `pending` (admin queue). "Skip for now" is allowed: the screen tells the seller that buyers will pay on delivery until they add M-Pesa, and skipping turns on `accepts_pay_on_delivery`.
    - **Pay-now is available only if** `accepts_pay_before` is on **and** an active payment account exists. If neither pay-now nor pay-on-delivery is available, the shop shows "Not taking orders yet" (browse only).
+   - **A shop also needs a delivery option** (at least one delivery area, or pickup on) to take orders; without one it shows "Not taking orders yet" too (decision #61).
 6. **Your shop is live:** the link with Copy, share buttons, a ready-made post (EN/SW, "Try another"), and the "Finish your shop" checklist.
 
 ### 5.3 Home (screens 15, 16)
 - Greeting, shop link (copy, preview, share).
 - **To do** card: tabs *To confirm* (payment claimed) / *To send* (confirmed) / *New* (awaiting payment or acceptance), with counts and a quick "Confirm" action.
 - Sales this week (bar chart Mon–Sun, % vs last week) and a top-source insight line.
-- **Finish your shop** checklist: shop + first product + payment set · share link · add logo · add 4 more products · add more ways buyers reach you (TikTok/Instagram handle) · set delivery areas · test your WhatsApp link. Items without their own data (share link, test WhatsApp) are stored in `shops.checklist`. Hidden when complete.
+- **Finish your shop** checklist: shop + first product + payment set · share link · add logo · add 4 more products · add more ways buyers reach you (TikTok/Instagram handle) · add delivery options (a delivery area or pickup; decision #61) · test your WhatsApp link. Items without their own data (share link, test WhatsApp) are stored in `shops.checklist`. Hidden when complete.
 - Empty state (screen 15) when there are no orders yet.
 - Bell → Notifications list (new screen, see `design-changes.md`).
 
@@ -171,7 +172,7 @@ Exactly the "email" side effects listed in `order-lifecycle.md`. Every email inc
 
 ## 8. Non-functional requirements
 - **Security:** the database is reachable only from the server. Every request goes through the authorization layer described in `data-model.md` (seller scoping, order tokens, admin checks), with automated tests. Buyer actions go through server endpoints with zod validation and rate limits. Order links use a random 12-character token (unguessable). The order number (#1042) is only a display label, sequential **per shop**.
-- **Abuse:** rate-limit order creation (per IP and per phone), honeypot field, max 20 open unpaid orders per phone per shop. Flag an M-Pesa code already used on another order in the same shop ("This code was used on order #1031").
+- **Abuse:** rate-limit order creation (per IP and per phone), honeypot field, max 20 open unpaid orders per phone per shop (open = `awaiting_payment`, `awaiting_acceptance` or `payment_claimed`, pay on delivery included; limits in decision #61). Flag an M-Pesa code already used on another order in the same shop ("This code was used on order #1031").
 - **Performance:** shop home < 2.5s LCP on mid-range Android over 4G. Grids use the ~400px thumbnails; detail pages use the full image. No paid image-transformation service.
 - **Reliability:** order creation is idempotent (client-generated idempotency key). All money maths is in one shared function and unit-tested.
 - **Observability:** Sentry in the web and the app. Structured server logs.
