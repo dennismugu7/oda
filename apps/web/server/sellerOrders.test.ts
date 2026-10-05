@@ -124,6 +124,7 @@ describe('the list', () => {
       [toSend.id]: 'to_send',
     });
     expect(todo.json.todoCounts).toEqual({
+      needs_attention: 0,
       confirm_payment: 1,
       new_to_accept: 1,
       new_awaiting_payment: 1,
@@ -149,6 +150,43 @@ describe('the list', () => {
     // Newest first.
     expect(all.json.orders[0].id).toBe(cancelled.id);
     expect((await w.call(listOrders, { query: '?tab=later' })).status).toBe(422);
+  });
+
+  it('"Needs attention" holds cancelled orders with money to settle, until settled', async () => {
+    const w = await shopWorld();
+    const refund = await w.order();
+    await claim(refund.publicToken);
+    await act(w, refund.id, {
+      type: 'sellerCancel',
+      reason: 'out_of_stock',
+      receivedClaimed: true,
+    });
+    const check = await w.order();
+    await claim(check.publicToken);
+    await transitionOrder(
+      db,
+      { kind: 'buyer', ctx: await requireOrderToken(check.publicToken) },
+      { type: 'buyerCancel' },
+    );
+    const plain = await w.order();
+    await act(w, plain.id, { type: 'sellerCancel', reason: 'buyer_asked' });
+
+    const todo = async () => (await w.call(listOrders, { query: '?tab=todo' })).json;
+    let list = await todo();
+    const groups = Object.fromEntries(list.orders.map((o: Json) => [o.id, o.todoGroup]));
+    expect(groups).toEqual({ [refund.id]: 'needs_attention', [check.id]: 'needs_attention' });
+    expect(list.todoCounts).toMatchObject({ needs_attention: 2, total: 2 });
+    // They also stay in Done (and All).
+    const done = (await w.call(listOrders, { query: '?tab=done' })).json.orders.map(
+      (o: Json) => o.id,
+    );
+    expect(done).toEqual(expect.arrayContaining([refund.id, check.id, plain.id]));
+
+    await act(w, refund.id, { type: 'markRefundSent' });
+    await act(w, check.id, { type: 'resolveClaim', received: false });
+    list = await todo();
+    expect(list.orders).toHaveLength(0);
+    expect(list.todoCounts).toMatchObject({ needs_attention: 0, total: 0 });
   });
 
   it('searches by buyer name, phone or order number', async () => {

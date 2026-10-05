@@ -1,9 +1,14 @@
-// Orders tab (design 17-orders; spec §5.4): To do (grouped as Confirm payment, New · to
-// accept, New · awaiting payment, To send), All and Done, and search by buyer name, phone or
-// order number. Refreshed whenever the tab shows and on pull-down. Offline it shows the last
+// Orders tab (design 17-orders; spec §5.4): To do (grouped as Needs attention (decision #67),
+// Confirm payment, New · to accept, New · awaiting payment, To send), All and Done, and search
+// by buyer name, phone or order number. Refreshed whenever the tab shows and on pull-down. Offline it shows the last
 // list it loaded, read-only (spec §8). "New order" (manual orders) arrives in M6 CP3.
 import Feather from '@expo/vector-icons/Feather';
-import { TODO_GROUP_LABELS, TODO_GROUP_ORDER, type OrderTab, type TodoGroup } from '@oda/shared';
+import {
+  TODO_GROUP_LABELS,
+  TODO_GROUP_ORDER,
+  type OrderTab,
+  type SellerTodoGroup,
+} from '@oda/shared';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -54,7 +59,7 @@ export default function OrdersTab() {
   const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [expanded, setExpanded] = useState<Set<TodoGroup>>(new Set());
+  const [expanded, setExpanded] = useState<Set<SellerTodoGroup>>(new Set());
   const [searching, setSearching] = useState(false);
   const [q, setQ] = useState('');
   const [results, setResults] = useState<OrderList | null>(null);
@@ -276,7 +281,13 @@ export default function OrdersTab() {
                 </View>
                 <View style={styles.card}>
                   {shown.map((o: Row, i) => (
-                    <OrderRow key={o.id} order={o} divider={i > 0} showStatus={false} now={now} />
+                    <OrderRow
+                      key={o.id}
+                      order={o}
+                      divider={i > 0}
+                      showStatus={group === 'needs_attention'}
+                      now={now}
+                    />
                   ))}
                   {hidden > 0 ? (
                     <Pressable
