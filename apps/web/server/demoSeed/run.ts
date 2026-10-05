@@ -1,13 +1,14 @@
 // Staging demo seed (milestones M4, owner Step 63): creates the "Demo Duka" shop with 12
 // products, categories and generated placeholder photos. Resets on every run (decision #61 g,
 // the repo is public): the shop's settings, payment account, delivery areas and product
-// details go back to their intended values; photos are only added when missing. Run by the
+// details go back to their intended values; photos are only added when missing; the sample
+// orders (one per order state) are deleted and made again, links in the job summary. Run by the
 // manual workflow demo-seed-staging.yml, or locally:
 //   pnpm --filter @oda/web exec tsx --conditions=react-server server/demoSeed/run.ts
 // Staging: DATABASE_URL (Neon staging) + STAGING_IMAGES_BLOB_READ_WRITE_TOKEN (images store).
 // Locally: the local database and the local storage folder (.uploads).
 import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { appendFileSync, existsSync } from 'node:fs';
 import { put } from '@vercel/blob';
 import { and, eq, isNull, notInArray } from 'drizzle-orm';
 import { schema } from '@oda/db';
@@ -23,6 +24,7 @@ import {
   DEMO_SHOP,
 } from './data';
 import { placeholderPhoto } from './images';
+import { resetSampleOrders } from './orders';
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
 
@@ -214,6 +216,22 @@ async function main() {
     added++;
   }
   log.push(`${added} products added (${DEMO_PRODUCTS.length - added} already there, reset)`);
+
+  // Sample orders, one per state the buyer pages show (M5), made again on every run.
+  const samples = await resetSampleOrders(db, shopId, owner!.id);
+  log.push(`${samples.length} sample orders`);
+  const base = (process.env.PUBLIC_SHOP_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
+  const lines = samples.map((o) => `- ${o.label}: ${base}/o/${o.token}`);
+  // The links go to the job summary (fake orders on a fake shop), not the log.
+  const summary = process.env.GITHUB_STEP_SUMMARY;
+  if (summary) {
+    appendFileSync(
+      summary,
+      `## Demo Duka sample orders\n\nFake orders; links change on every run.\n\n${lines.join('\n')}\n`,
+    );
+  } else {
+    console.log(lines.join('\n'));
+  }
   console.log(`demo seed (${local ? 'local' : 'staging'}): ${log.join(', ')}`);
   console.log(`demo seed: shop /${DEMO_SHOP.slug}`);
 }
