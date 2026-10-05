@@ -24,3 +24,6 @@ apps/seller/ios
 
 # Local photo storage (apps/web, decision #52)
 .uploads
+
+# Firebase config for the seller app (decision #70): never committed (public repo).
+apps/seller/google-services.json

@@ -12,6 +12,7 @@ import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import { ordersCache } from '@/orders/api';
 import { pushServer, tokenStore } from '@/push/server';
 import { unregisterThisPhone } from '@/push/session';
+import { resetPushRegistration } from '@/push/usePush';
 import { Button } from '@/ui/auth';
 import { TabScreen } from '@/ui/tabs';
 import { colors, radii, spacing, text } from '@/theme';
@@ -34,6 +35,7 @@ export default function MoreTab() {
     setSigningOut(true);
     // This phone stops getting pushes (decision #65 a); asked while the session still works.
     await unregisterThisPhone(tokenStore, pushServer);
+    resetPushRegistration();
     // Works offline too: the stored session is removed either way.
     await signOutLocal();
     clearOnboardingState();

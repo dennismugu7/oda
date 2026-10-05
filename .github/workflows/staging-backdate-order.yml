@@ -1,0 +1,57 @@
+name: staging-backdate-order
+
+# Test tool for the auto-expire job (M6 review stop B, decision #71): makes one staging test
+# order look 49 hours old, so the next cron-expire-orders run cancels it. Only a buyer-placed
+# order still awaiting payment; manual orders and every other state are left alone. Inputs are
+# checked before they reach SQL, and passed as psql variables, never pasted into the query.
+on:
+  workflow_dispatch:
+    inputs:
+      shop_slug:
+        description: 'Shop link name, e.g. amani-styles'
+        required: true
+      order_number:
+        description: 'Order number, e.g. 1003'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  backdate:
+    name: Backdate one awaiting-payment order
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the inputs and the secret
+        env:
+          SLUG: ${{ inputs.shop_slug }}
+          NUMBER: ${{ inputs.order_number }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          [[ "$SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "::error::Not a shop link name."; exit 1; }
+          [[ "$NUMBER" =~ ^[0-9]{4,7}$ ]] || { echo "::error::Not an order number."; exit 1; }
+          [ -n "$DATABASE_URL_UNPOOLED" ] || { echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is not set."; exit 1; }
+
+      - name: Backdate it
+        env:
+          SLUG: ${{ inputs.shop_slug }}
+          NUMBER: ${{ inputs.order_number }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          rows=$(psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -At \
+            -v slug="$SLUG" -v num="$NUMBER" <<'SQL'
+          with o as (
+            update orders set awaiting_payment_since = now() - interval '49 hours'
+            where number = :'num'::int
+              and shop_id = (select id from shops where slug = :'slug')
+              and status = 'awaiting_payment' and payment_status = 'unpaid' and source <> 'manual'
+            returning 1
+          ) select count(*) from o;
+          SQL
+          )
+          if [ "$rows" = "1" ]; then
+            echo "Order #$NUMBER of $SLUG now looks 49 h old. Run cron-expire-orders next." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::No buyer-placed order #$NUMBER awaiting payment in shop $SLUG."; exit 1
+          fi
