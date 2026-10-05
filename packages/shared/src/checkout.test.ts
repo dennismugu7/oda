@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buyerActions, checkoutInput, codeInput, reportInput, stripLinks } from './checkout';
+import {
+  BUYER_CANCEL_LABELS,
+  buyerActions,
+  buyerTimeline,
+  checkoutInput,
+  codeInput,
+  reportInput,
+  stripLinks,
+} from './checkout';
 import type { OrderState } from './orderMachine';
 
 const valid = {
@@ -119,5 +127,71 @@ describe('buyerActions', () => {
 
   it('a closed shop allows nothing but a report', () => {
     expect(buyerActions(order({}), { ...open, closed: true })).toEqual([]);
+  });
+});
+
+describe('buyerTimeline', () => {
+  const t0 = new Date('2026-10-01T07:00:00Z');
+  const base = {
+    status: 'awaiting_acceptance' as const,
+    paymentMethod: 'pay_on_delivery' as const,
+    fulfilment: 'delivery' as const,
+    placedAt: t0,
+    claimedAt: null,
+    confirmedAt: null,
+    sentAt: null,
+    deliveredAt: null,
+  };
+
+  it('pay on delivery waiting for the seller', () => {
+    const steps = buyerTimeline(base, 'Demo Duka');
+    expect(steps.map((s) => [s.label, s.state])).toEqual([
+      ['Order placed', 'done'],
+      ['Waiting for Demo Duka to accept', 'current'],
+      ['Sent out', 'todo'],
+      ['Delivered', 'todo'],
+      ['Rate your order', 'todo'],
+    ]);
+    expect(steps[0]!.at).toBe(t0);
+    expect(steps[0]!.note).toBe('Pay on delivery');
+  });
+
+  it('a claimed payment waits for the seller to confirm it', () => {
+    const steps = buyerTimeline(
+      { ...base, status: 'payment_claimed', paymentMethod: 'pay_before', claimedAt: t0 },
+      'Demo Duka',
+    );
+    expect(steps[1]).toMatchObject({
+      label: 'Waiting for Demo Duka to confirm your payment',
+      state: 'current',
+    });
+  });
+
+  it('pickup reads "Ready for pickup", delivered has every time', () => {
+    const steps = buyerTimeline(
+      {
+        ...base,
+        status: 'delivered',
+        fulfilment: 'pickup',
+        confirmedAt: t0,
+        sentAt: t0,
+        deliveredAt: t0,
+      },
+      'Demo Duka',
+    );
+    expect(steps.map((s) => s.label)).toEqual([
+      'Order placed',
+      'Accepted by Demo Duka',
+      'Ready for pickup',
+      'Delivered',
+      'Rate your order',
+    ]);
+    expect(steps.slice(0, 4).every((s) => s.state === 'done' && s.at === t0)).toBe(true);
+    expect(steps[4]!.note).toBe('Reviews open soon');
+  });
+
+  it('labels every cancel reason without the seller’s note', () => {
+    expect(BUYER_CANCEL_LABELS.expired).toBe('Not paid within 48 hours');
+    expect(Object.keys(BUYER_CANCEL_LABELS)).toHaveLength(7);
   });
 });

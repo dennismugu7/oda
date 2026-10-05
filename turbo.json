@@ -19,7 +19,7 @@
     },
     "test:e2e": {
       "dependsOn": ["build"],
-      "env": ["DATABASE_URL", "PUBLIC_SHOP_BASE_URL"],
+      "env": ["DATABASE_URL", "PUBLIC_SHOP_BASE_URL", "E2E_PORT"],
       "cache": false
     }
   }
