@@ -64,6 +64,7 @@ Web 4-checkout (changed), Pay page (redesigned 04b), 05, 6.
 - **Accept:** Playwright: full pay-now and pay-on-delivery orders; changing a price after add-to-cart is caught; order IDs cannot be guessed; the rate limit triggers.
 
 ## M6 · Order management (seller)
+**Approved plan: `docs/m6-plan.md`** (decision #65; owner Step 72).
 Screens **20b-delivery first** (moved from M8, decision #61), 15, 16, 17-*, 17b-*, new mark-delivered, refund banner, notifications list.
 - **Start with Delivery (20b-delivery):** areas (name, fee, method, ETA, free-delivery eligible), pickup toggle + location/hours, free delivery over an amount; the checklist item "Add delivery options" (done with ≥ 1 area or pickup on). Until a shop has a delivery option it shows "Not taking orders yet".
 - Push sending and the seller-triggered buyer emails plug into what M5 already records (notification rows, email templates).
