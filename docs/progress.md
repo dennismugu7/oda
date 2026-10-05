@@ -2,21 +2,30 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 75)
+## Handoff (keep current; updated 2026-10-05, owner Step 75, after CP4 prep)
 
 **Current state**
-- **Milestones:** M0–M5 closed (tag `m5-done`). **M6 CP1–CP2 built** (branch `m6-orders`, merged to `main`): Delivery screen + "Add delivery options"; orders list/search/detail with every seller action, WhatsApp prefills, seller-triggered buyer emails (decision #66). **🛑 At review stop A** (phone test in the CP1–CP2 entry below).
+- **Milestones:** M0–M5 closed (tag `m5-done`). **M6:** CP1–CP3 done and on staging (review stop A passed, Step 75); **CP4 code done except the app's expo-notifications adapter**; **stopped before the 0.3.0 native build** waiting for the owner's Firebase steps and the native-module approval.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers can now add delivery options, so their shops take orders. Demo Duka unchanged (its owner has no password; the phone test uses the owner's own shop).
-- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; CP1–CP2 shipped as EAS Update `a432ccde` (Step 73); the "Needs attention" change (Step 74) as the next update (id recorded with CP3).
-- **Git:** `m6-orders` merged; no open PRs.
+- **App:** EAS preview build **0.2.0** on the Redmi; latest EAS Update **`80063651`** (CP3). CP4 prep's only app change (Sign out removes this phone's push token: a no-op until 0.3.0 stores one) rides with the next update.
+- **Git:** CP1–CP3 and CP4 prep merged to `main` (PRs #30–#33); no open PRs.
 - **This laptop:** as before (`~/.wslconfig` 12 GB / 8 GB swap). If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`.
 
-**Next step:** wait for the owner's review stop A results. After the go-ahead: **CP3** (Home 15/16, manual orders, notifications list) per `docs/m6-plan.md`, then CP4 (push, native build 0.3.0, auto-expire) → review stop B.
+**Next step:** owner does Firebase step 1 (m6-plan → "What I need from you"), then the next steps one at a time; owner approves the 0.3.0 native-module list and download size; then install `expo-notifications`, wire the adapter, bump to 0.3.0, local build, review stop B.
 
 **Open items**
-- Push needs the owner's Firebase project and keys (m6-plan → "What I need from you", sent at CP4). Before the 0.3.0 build: list native modules needed through M10 and ask with the download size (#65 c).
+- Push needs the owner's Firebase project and keys (m6-plan → "What I need from you"; step 1 sent in Step 75) and `EXPO_ACCESS_TOKEN` in Vercel (step 5). 0.3.0 native-module list sent for approval (Step 75).
+- The hourly expire job is live from this merge: any staging order unpaid for 48 h (incl. a Demo Duka sample if it's that old) gets expired; the demo seed remakes the samples.
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M6 CP4 prep: push tokens, push sending, auto-expire (owner Step 75; branch `m6-cp4-prep`)
+
+- CP3 merged (PR #32, staging `5d61170`) and published as **EAS Update `80063651`**.
+- **Server:** `POST/DELETE /api/me/push-tokens` (one account per phone, 5 phones max), `sendOrderPushes()` in `afterOrderChange()` (with the emails, after the response; DeviceNotRegistered tokens removed), `POST /api/cron/expire-orders` (Bearer `CRON_SECRET`, constant time, 404 otherwise; batches of 100) + hourly workflow `cron-expire-orders.yml`. Tests: `server/push.test.ts` (10).
+- **`CRON_SECRET`** set in GitHub Secrets and Vercel (Production + Preview, Sensitive) without printing it; verified by name.
+- **App:** `src/push/session.ts` (register on sign-in / remove on sign-out, tested with fakes); Sign out now removes this phone's token first. The `expo-notifications` adapter waits for the native build.
+- Decision #69. **Stopped before the native build** (owner Step 75): native module list and Firebase step 1 sent to the owner.
 
 ## 2026-10-05 · M6 CP3: Home, manual orders, notifications list (owner Step 75; branch `m6-cp3`)
 

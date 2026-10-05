@@ -11,7 +11,8 @@ import {
 } from '@oda/shared';
 import { requireSeller } from './authz';
 import { getDeliveryNames } from './repos/delivery';
-import { sendOrderEmails, type Defer } from './checkout';
+import { afterOrderChange } from './afterOrder';
+import type { Defer } from './checkout';
 import { getDb } from './db';
 import { parseInput } from './errors';
 import { insertOrder, quoteOrder, transitionOrder } from './orders';
@@ -51,7 +52,7 @@ export function postOrderAction(defer: Defer) {
       { kind: 'seller', ctx, orderId: id! },
       action,
     );
-    defer(() => sendOrderEmails(db, order, sideEffects));
+    defer(() => afterOrderChange(db, order, sideEffects));
     const detail = await sellerOrdersRepo(db, ctx).detail(order.id);
     const text = hasWhatsAppStep(sideEffects)
       ? whatsappMessage(

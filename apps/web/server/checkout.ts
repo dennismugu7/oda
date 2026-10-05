@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import {
   BUYER_LIMITS,
@@ -10,18 +10,10 @@ import {
   quoteInput,
   reportInput,
   visitSource,
-  type SideEffect,
 } from '@oda/shared';
 import { requireOrderToken, type OrderTokenCtx } from './authz';
 import { getDb } from './db';
-import {
-  orderCancelledEmail,
-  orderReceiptEmail,
-  orderUpdateEmail,
-  type OrderEmailData,
-  type OrderUpdateFacts,
-} from './email/templates';
-import { sendEmail } from './email/transport';
+import { afterOrderChange } from './afterOrder';
 import { serverEnv } from './env';
 import {
   ConflictError,
@@ -40,10 +32,9 @@ import { body, findShop } from './storefrontRoutes';
 // Buyer checkout and order actions (M5, docs/m5-plan.md, decision #61). Orders are created only
 // by insertOrder() and change only through transitionOrder(); this file adds what the public
 // endpoints need around them: the Origin check, the honeypot, rate limits, the open-orders cap,
-// and the buyer emails after the response.
+// and the buyer emails and seller pushes after the response (afterOrder.ts).
 
 const t = schema;
-type OrderRow = typeof t.orders.$inferSelect;
 type Params<P> = { params: Promise<P> };
 
 /** Runs work after the response is sent (Next's `after` in routes; tests run it directly). */
@@ -75,86 +66,6 @@ export function assertSameOrigin(request: Request): void {
 async function limit(db: Db, key: string, l: Limit, message: string) {
   if (!(await hitLimit(db, key, l))) {
     throw new TooManyRequestsError(message, secondsLeftInWindow(l));
-  }
-}
-
-// Emails --------------------------------------------------------------------------------------
-
-/**
- * Sends the buyer emails among these side effects: the receipt and "you cancelled" (M5) and
- * the seller-triggered updates (M6). Never throws: an email problem must not undo an order or
- * an action. A few emails per address a day, so nobody can bomb someone else's inbox.
- */
-export async function sendOrderEmails(
-  db: Db,
-  order: OrderRow,
-  sideEffects: readonly SideEffect[],
-): Promise<void> {
-  const templates = sideEffects.flatMap((e) => (e.kind === 'email' ? [e.template] : []));
-  if (!order.buyerEmail || templates.length === 0) return;
-  try {
-    const [shop] = await db
-      .select({
-        name: t.shops.name,
-        pickupLocation: t.shops.pickupLocation,
-        pickupHours: t.shops.pickupHours,
-      })
-      .from(t.shops)
-      .where(eq(t.shops.id, order.shopId));
-    const items = await db
-      .select({
-        name: t.orderItems.nameSnapshot,
-        size: t.orderItems.size,
-        colour: t.orderItems.colour,
-        qty: t.orderItems.qty,
-        unitPrice: t.orderItems.unitPrice,
-      })
-      .from(t.orderItems)
-      .where(eq(t.orderItems.orderId, order.id))
-      .orderBy(asc(t.orderItems.createdAt));
-    const data: OrderEmailData = {
-      to: order.buyerEmail,
-      shopName: shop?.name ?? 'the shop',
-      number: order.number,
-      buyerName: order.buyerName,
-      paymentMethod: order.paymentMethod,
-      fulfilment: order.fulfilment,
-      deliveryAreaName: order.deliveryAreaName,
-      items,
-      subtotal: order.subtotal,
-      deliveryFee: order.deliveryFee,
-      total: order.total,
-      link: orderLink(order.publicToken),
-    };
-    const facts: OrderUpdateFacts = {
-      paymentStatus: order.paymentStatus,
-      sentMethod: order.sentMethod,
-      riderPhone: order.riderPhone,
-      pickupLocation: shop?.pickupLocation ?? null,
-      pickupHours: shop?.pickupHours ?? null,
-      cancelReason: order.cancelReason,
-    };
-    const build = (template: (typeof templates)[number]) => {
-      if (template === 'receipt') return orderReceiptEmail(data);
-      if (template === 'cancelled') {
-        return order.cancelledBy === 'buyer'
-          ? orderCancelledEmail({ ...data, claimed: order.paymentStatus === 'claimed' })
-          : orderUpdateEmail('seller_cancelled', data, facts);
-      }
-      return orderUpdateEmail(template, data, facts);
-    };
-    for (const template of templates) {
-      if (!(await hitLimit(db, `order-email:${order.buyerEmail}`, BUYER_LIMITS.emailsPerAddress))) {
-        console.warn(`[email] order emails to @${order.buyerEmail.split('@')[1]} limited today`);
-        return;
-      }
-      await sendEmail(build(template));
-    }
-  } catch (error) {
-    // sendEmail already logged the failure without secrets; anything else, by name only.
-    if (!(error instanceof Error && error.name === 'EmailSendError')) {
-      console.error('[email] order email failed', error instanceof Error ? error.name : 'unknown');
-    }
   }
 }
 
@@ -228,7 +139,7 @@ export async function postOrder(
       idempotencyKey: input.idempotencyKey,
       expectedTotal: input.expectedTotal,
     });
-    if (!result.replayed) defer(() => sendOrderEmails(db, result.order, result.sideEffects));
+    if (!result.replayed) defer(() => afterOrderChange(db, result.order, result.sideEffects));
     return Response.json(
       { token: result.order.publicToken },
       { status: result.replayed ? 200 : 201, headers: { 'cache-control': 'no-store' } },
@@ -324,7 +235,7 @@ async function buyerAction(
       outcome = await transitionOrder(db, scope, { type: 'buyerCancel' });
     }
     const { order, sideEffects } = outcome;
-    defer(() => sendOrderEmails(db, order, sideEffects));
+    defer(() => afterOrderChange(db, order, sideEffects));
     return Response.json({ status: order.status }, { headers: { 'cache-control': 'no-store' } });
   } catch (error) {
     return toResponse(error);
