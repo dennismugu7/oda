@@ -11,3 +11,4 @@ export * from './schemas';
 export * from './catalogue';
 export * from './storefront';
 export * from './checkout';
+export * from './delivery';

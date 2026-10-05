@@ -109,7 +109,7 @@ const FINISH_LABELS: Record<FinishItem, string> = {
   logo: 'Add your shop logo',
   more_products: 'Add 4 more products',
   reach: 'Add more ways buyers reach you',
-  delivery: 'Set delivery areas',
+  delivery: 'Add delivery options',
   tested_whatsapp: 'Test your WhatsApp link',
 };
 
@@ -120,6 +120,7 @@ export interface ChecklistFacts {
   /** A TikTok or Instagram handle. */
   hasSocialHandle: boolean;
   deliveryAreaCount: number;
+  pickupEnabled: boolean;
   /** shops.checklist: items without their own data, ticked with a timestamp. */
   ticks: Partial<Record<'shared_link' | 'tested_whatsapp', string>>;
 }
@@ -138,7 +139,7 @@ export function finishYourShop(facts: ChecklistFacts): FinishYourShop {
     logo: facts.hasLogo,
     more_products: facts.productCount >= 5,
     reach: facts.hasSocialHandle,
-    delivery: facts.deliveryAreaCount >= 1,
+    delivery: facts.deliveryAreaCount >= 1 || facts.pickupEnabled,
     tested_whatsapp: !!facts.ticks.tested_whatsapp,
   };
   const items = FINISH_ITEMS.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));

@@ -96,6 +96,17 @@ export const shopUpdate = z
   });
 export type ShopUpdate = z.infer<typeof shopUpdate>;
 
+/** 20b-delivery: pickup and free delivery (the areas have their own endpoints). */
+export const deliverySettingsUpdate = z
+  .strictObject({
+    pickupEnabled: shopFields.pickupEnabled,
+    pickupLocation: shopFields.pickupLocation,
+    pickupHours: shopFields.pickupHours,
+    freeDeliveryThreshold: shopFields.freeDeliveryThreshold,
+  })
+  .partial();
+export type DeliverySettingsUpdate = z.infer<typeof deliverySettingsUpdate>;
+
 // Payment accounts ----------------------------------------------------------------------
 
 /** Full replace on create and edit (the paybill rules need every field together). */
@@ -254,6 +265,7 @@ export const WRITE_SCHEMAS = {
   profileUpdate,
   shopCreate,
   shopUpdate,
+  deliverySettingsUpdate,
   paymentAccountInput,
   deliveryAreaInput,
   deliveryAreaUpdate,
