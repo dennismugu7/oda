@@ -12,6 +12,8 @@ export class HttpError extends Error {
     readonly fields?: Record<string, string>,
     /** Seconds until the action can be tried again (rate limits, cooldowns). */
     readonly retryAfter?: number,
+    /** Extra data the client needs to recover (e.g. the current prices after a change). */
+    readonly details?: unknown,
   ) {
     super(message);
     this.name = new.target.name;
@@ -40,6 +42,31 @@ export class NotFoundError extends HttpError {
 export class ConflictError extends HttpError {
   constructor(message = 'This changed. Refresh and try again.', code = 'conflict') {
     super(409, message, code);
+  }
+}
+
+/** 409: the buyer's total is out of date; `details` carries the current lines and totals. */
+export class PriceChangedError extends HttpError {
+  constructor(details: unknown) {
+    super(
+      409,
+      'Some prices changed since you added them. Check the new total before you order.',
+      'price_changed',
+      undefined,
+      undefined,
+      details,
+    );
+  }
+}
+
+/** 403: a write from another website (no or a foreign Origin). */
+export class CrossSiteError extends HttpError {
+  constructor() {
+    super(
+      403,
+      'This request came from another website. Open the shop and try again.',
+      'cross_site',
+    );
   }
 }
 
@@ -144,6 +171,7 @@ export function toResponse(error: unknown): Response {
           message: http.message,
           fields: http.fields,
           retryAfter: http.retryAfter,
+          details: http.details,
         },
       },
       { status: http.status },

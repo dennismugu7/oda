@@ -17,7 +17,8 @@ import {
   type SideEffect,
 } from '@oda/shared';
 import type { OrderTokenCtx, SellerCtx } from './authz';
-import { ConflictError, NotFoundError, ValidationError } from './errors';
+import { ConflictError, NotFoundError, PriceChangedError, ValidationError } from './errors';
+import { insertNotifications } from './notifications';
 import { checkId } from './repos/util';
 
 // Orders are created by insertOrder() and change status only through transitionOrder()
@@ -80,6 +81,8 @@ export interface NewOrder {
   deliveryFeeOverride?: number;
   /** Checkout retries with the same key get the same order back. */
   idempotencyKey?: string;
+  /** Checkout: the total the buyer saw. A different total refuses the order (409 price_changed). */
+  expectedTotal?: number;
 }
 
 export interface InsertOrderResult {
@@ -188,6 +191,22 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
           : {}),
       });
 
+      if (input.expectedTotal !== undefined && input.expectedTotal !== price.total) {
+        throw new PriceChangedError({
+          lines: lines.map((l) => ({
+            productId: l.product.id,
+            size: l.size,
+            colour: l.colour,
+            name: l.product.name,
+            unitPrice: l.product.price,
+            qty: l.qty,
+          })),
+          subtotal: price.subtotal,
+          deliveryFee: price.deliveryFee,
+          total: price.total,
+        });
+      }
+
       const number = await nextOrderNumber(tx, shop.id);
       const paysBefore = state.paymentMethod === 'pay_before';
       const [order] = await tx
@@ -251,6 +270,7 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
         actor: manual ? 'seller' : 'buyer',
         meta: { action: 'create', kind: input.kind },
       });
+      await insertNotifications(tx, order!, state.sideEffects);
 
       return { order: order!, sideEffects: state.sideEffects, replayed: false };
     });
@@ -265,7 +285,90 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
   }
 }
 
-async function findByIdempotencyKey(db: Db, shopId: string, key: string) {
+export interface OrderQuote {
+  /** The current name and unit price of each line, in the order sent. */
+  lines: {
+    productId: string;
+    size: string | null;
+    colour: string | null;
+    name: string;
+    unitPrice: number;
+    qty: number;
+  }[];
+  subtotal: number;
+  /** One per delivery area (in the seller's order), then pickup when it's on. */
+  options: {
+    kind: 'delivery' | 'pickup';
+    areaId: string | null;
+    deliveryFee: number;
+    total: number;
+    freeDeliveryApplied: boolean;
+  }[];
+}
+
+/**
+ * What an order of these lines would cost with each delivery option, priced by pricing.ts
+ * from the database (checkout shows it; placing the order prices it again).
+ */
+export async function quoteOrder(
+  db: Db,
+  shopId: string,
+  input: NewOrderLine[],
+): Promise<OrderQuote> {
+  checkId(shopId, 'shop');
+  try {
+    return await db.transaction(async (tx) => {
+      const [shop] = await tx.select().from(t.shops).where(eq(t.shops.id, shopId));
+      if (!shop) throw new NotFoundError("We couldn't find this shop.");
+      const lines = await resolveLines(tx, shop.id, input, false);
+      const areas = await tx
+        .select()
+        .from(t.deliveryAreas)
+        .where(and(eq(t.deliveryAreas.shopId, shop.id), isNull(t.deliveryAreas.deletedAt)))
+        .orderBy(t.deliveryAreas.position, t.deliveryAreas.createdAt);
+      const priced = lines.map((l) => ({ unitPrice: l.product.price, qty: l.qty }));
+      const price = (delivery: Parameters<typeof priceOrder>[0]['delivery']) =>
+        priceOrder({ lines: priced, delivery, freeDeliveryThreshold: shop.freeDeliveryThreshold });
+      const options: OrderQuote['options'] = areas.map((a) => {
+        const p = price({ kind: 'area', fee: a.fee, freeDeliveryEligible: a.freeDeliveryEligible });
+        return {
+          kind: 'delivery',
+          areaId: a.id,
+          deliveryFee: p.deliveryFee,
+          total: p.total,
+          freeDeliveryApplied: p.freeDeliveryApplied,
+        };
+      });
+      const pickup = price({ kind: 'pickup' });
+      if (shop.pickupEnabled) {
+        options.push({
+          kind: 'pickup',
+          areaId: null,
+          deliveryFee: 0,
+          total: pickup.total,
+          freeDeliveryApplied: false,
+        });
+      }
+      return {
+        lines: lines.map((l) => ({
+          productId: l.product.id,
+          size: l.size,
+          colour: l.colour,
+          name: l.product.name,
+          unitPrice: l.product.price,
+          qty: l.qty,
+        })),
+        subtotal: pickup.subtotal,
+        options,
+      };
+    });
+  } catch (error) {
+    if (error instanceof PricingError) throw new ValidationError(error.message);
+    throw error;
+  }
+}
+
+export async function findByIdempotencyKey(db: Db, shopId: string, key: string) {
   const [row] = await db
     .select()
     .from(t.orders)
@@ -509,7 +612,8 @@ export async function transitionOrder(
       }
     }
 
-    // 7. Push, email and in-app notifications are sent by the caller (M5/M6).
+    // 7. In-app notification rows now; push (M6) and emails are sent by the caller.
+    await insertNotifications(tx, updated, result.sideEffects);
     return {
       order: updated,
       sideEffects: result.sideEffects,
