@@ -2,20 +2,58 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 70)
+## Handoff (keep current; updated 2026-10-05, owner Step 71)
 
 **Current state**
-- **Milestones:** M0–M4 closed; latest tag **`m4-done`**. **M5: CP1–CP5 done, at review stop B** (then the M5 gate).
-- **Staging:** https://oda-eta.vercel.app = `main` (PRs #25, #26, #27). Demo Duka: both payment options (fake Till `000000`), three delivery areas, pickup, free delivery over KES 5,000, and **nine sample orders** remade by every `demo-seed-staging` run (links: that run's job summary, or `gh run download <run> -n demo-order-links`). `DEMO_SHOP_SLUGS=demo-duka` on Vercel.
-- **App:** unchanged in M5 (EAS preview build 0.2.0, update `e7774d37`).
-- **This laptop:** `~/.wslconfig` (12 GB, swap 8 GB). bookflow's Supabase stack and its Next server on port 3100 were running again on Step 70, so Playwright runs with `E2E_PORT=3200` (CLAUDE.md).
+- **Milestones:** M0–M5 closed; latest tag **`m5-done`** (on `main` after the gate PR). **M6 plan proposed in `docs/m6-plan.md`, not approved; M6 not started.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Buyers can check out, pay (paste the M-Pesa SMS), switch to pay on delivery, cancel and report on `/o/{token}`. Demo Duka (https://oda-eta.vercel.app/demo-duka) has both payment options (fake Till `000000` "DEMO DUKA · TEST ONLY"), CBD/Westlands/Upcountry, pickup, free delivery over KES 5,000, and nine sample orders remade by every **Actions → demo-seed-staging** run (links: the run's job summary, or `gh run download <run> -n demo-order-links`, kept 1 day). `DEMO_SHOP_SLUGS=demo-duka` on Vercel (Production + Preview).
+- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; latest EAS Update **`e7774d37`** (M4). M5 had no app changes.
+- **Git:** everything merged and pushed; no open PRs.
+- **This laptop:** `~/.wslconfig` = memory 12 GB, swap 8 GB, gradual reclaim, sparse disk (Step 69). Other projects (bookflow, dashboardx-local) may be running: if port 3100 is taken, run `E2E_PORT=3200 pnpm check:all` (Playwright never reuses a server it didn't start).
 
-**Next step:** owner's **review stop B** phone test (entry below), then the **M5 gate** (✅/❌ against milestones.md + definition of done, tag `m5-done`).
+**Next step:** owner reviews and approves (or changes) **`docs/m6-plan.md`**. Then M6 CP1 (Delivery screen) on a new branch. The owner's push setup steps (Firebase, `google-services.json`, FCM V1 key, `EXPO_ACCESS_TOKEN`, `CRON_SECRET`) are listed in that plan and are needed by CP4.
 
 **Open items**
-- Shops other than Demo Duka show "Not taking orders yet" until the Delivery screen (start of M6, decision #61 c).
-- M6 needs a **Firebase project** from the owner for push.
-- The full carried-forward list is in the M4 gate entry below.
+- Until M6 CP1 ships the Delivery screen, every shop except Demo Duka shows "Not taking orders yet" (decision #61 c).
+- Push needs the owner's Firebase project and keys (m6-plan → "What I need from you").
+- Carried-forward list: in the M5 gate entry below.
+- Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M5 gate passed (owner Step 71; branch `m5-gate`)
+
+**Owner's review stop B on the Redmi: all items passed** (pay page, copy, live code extraction, I've paid, cancel after claiming, pay on delivery instead, report a problem, sample states A–I, rider call, Message shop, tampered link → 404). Review stop A passed in Step 70.
+
+**Added at the gate:** Playwright checks that `/o/*` is `noindex` and sends `no-referrer`; a unit test for the per-IP report limit (10 a day across orders). M6 plan proposed in `docs/m6-plan.md`.
+
+**Gate (milestones.md M5 + definition of done)**
+
+- ✅ **Checkout endpoint:** validation and field whitelist (`packages/shared/src/checkout.test.ts`, `server/checkout.test.ts` "whitelists fields"), re-pricing from the DB ("places a pay-now order priced on the server…", the free-delivery test), idempotency ("a repeat with the same idempotency key…", Playwright double tap = one 201), rate limiting (per phone 5/h, per IP 30/h, 20 open orders), honeypot, order number from `order_counter` + 12-character token, the API answers with the token only.
+- ✅ **Pay page with code extraction:** `e2e/order.spec.ts` (Till steps, copy buttons, account name, "We can't see a code yet", "✓ Code SJK4X7PQ2M", I've paid); `mpesa.test.ts`; review stop B items 1–4.
+- ✅ **Order page:** timeline (`buyerTimeline` tests, Nairobi times `lib/time.test.ts`), cancel (Playwright; server tests incl. the refund copy after a claim), "payment not found" banner (`view().paymentNotFound` test, sample C), report a problem (Playwright, server limits), buyer emails (email tests; review stop A item 10).
+- ✅ **Decision #38:** cancelled orders show the reason label, never `cancel_note` (server test "never carries the seller's note or internal ids", sample H); a deleted shop keeps the link with "This shop has closed" and only reports (server test "a closed (deleted) shop allows only Report a problem"); after the purge (M8) the rows are gone and the token is the same 404 as any unknown token (tested).
+- ✅ **Accept, Playwright:** full pay-on-delivery order (`checkout.spec.ts` "pay on delivery: cart → checkout → order placed"); full pay-now order from the buyer's side (`order.spec.ts` pay page → I've paid → waiting → cancel; `checkout.spec.ts` pay now + double tap); a price change after add-to-cart is caught (`checkout.spec.ts`; server 409 `price_changed` test); order links can't be guessed (`order.spec.ts`: one changed character, `/o/1001`, a sequential-looking token → 404; token-only response; no uuid in URLs); the rate limit triggers (`order.spec.ts`: 5 × 201 then 429).
+- ✅ **Lifecycle only through the machine:** orders are created only by `insertOrder()` and change status only in `transitionOrder()` (the only other `update(t.orders)` calls are the two seeds backdating timestamps); the DB status guard refuses any other status UPDATE (`packages/db/src/triggers.test.ts` "order status guard"); buyer actions = `buyerActions()` = what `next()` allows.
+- ✅ **Threats table (m5-plan):** fake or spam orders (honeypot, IP/phone limits, 20-open cap, Kenyan phone: tests; the 48 h auto-expire is M6); guessed links (same 404 for malformed and unknown, lookups 60/min per IP, noindex + no-referrer: tests); replayed M-Pesa codes (a second code refused, a code used on another order of the same shop flagged via `duplicateOfOrderNumber` in `orders.test.ts`, codes 10/h per order: tests); price tampering (whitelist, another shop's area → 404, pay-now availability `pay_now_off`: tests); changed prices (409 + Playwright); double taps (idempotency: tests + Playwright); email bombing (5 a day per address, links stripped from names: tests); report spam (3 a day per order, 10 a day per IP, length cap: tests); cross-site requests (Origin / Sec-Fetch-Site → 403: tests); token in logs (by review: our logs print kinds and email domains only, never the token).
+- ✅ **Definition of done:** `pnpm check:all` green (counts in the gate PR) and CI green on PRs #25–#27; new logic unit-tested; new endpoints have authorization tests (unknown/malformed tokens 404, other shops' areas and products, closed shop, cross-site); new buyer flows in Playwright (checkout, pay page, order page); screens compared with 4-checkout, 04b, 05, 6, 05c (CP2 and CP3–CP5 entries) and checked on the Redmi; staging deployed and seeded; app unchanged (still build 0.2.0); progress.md updated.
+
+**Tag `m5-done`** on `main` after this branch is merged.
+
+**Carried forward (all milestones so far)**
+
+- **M6** (`docs/m6-plan.md`, proposed): the Delivery screen first (until then only Demo Duka takes orders); seller order actions, WhatsApp prefill, manual orders, Home To-do and sales, notifications list; push (needs the owner's Firebase project and keys; native build 0.3.0); the hourly auto-expire job (`CRON_SECRET`); seller-triggered buyer emails (the delivered email links to the order page until reviews exist).
+- M7: ratings and reviews (shop and product pages; `/o/{token}/review`; the order page's "Reviews open soon" becomes "Rate your order").
+- M8: `/api/cron/purge` — `signup_attempts` older than 7 days, leftover `storage_deletions`, unreferenced `products/`/`logos/` keys; whether soft-deleted products are ever purged; deleted shops' orders after 30 days (their links then 404).
+- M10: automated UI tests for the app (jest-expo/Maestro); the checkout page bundles zod through `@oda/shared` (check the web bundle in the performance pass).
+- M11: Cloudflare R2 with a custom image domain (replacing Vercel Blob, decision #54); `armeabi-v7a`; production keystore and EAS environment; production Neon and Resend; Vercel Hobby is non-commercial (decision #10); `vercel logout` on the laptop; real privacy/terms text.
+- `react-native-draggable-flatlist` 4.0.3 works with reanimated 4.5; re-check on every Expo SDK / reanimated upgrade.
+- Not built: dragging products within a category (20b1).
+- The Shop tab's shop card shows the initial, not the logo (`/api/me` has no logo URL yet).
+- Categories screen: the drag list sits inside a ScrollView (dev-only warning).
+- Search filters are a panel of selects (accepted at M4 review stop B).
+- TikTok logo only with TikTok's written permission; whether "My status" shows from the Status button (owner to confirm).
+- Blob usage: check the Hobby usage page.
+- eas-cli 24.8.0, not upgraded.
+- Demo sample order links change on every seed run; the artifact is kept 1 day.
 
 ## 2026-10-05 · M5 CP3–CP5 (pay page, order page, sample orders, acceptance tests), at review stop B (owner Step 70)
 

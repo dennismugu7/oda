@@ -543,6 +543,29 @@ describe('buyer order actions', () => {
   });
 });
 
+describe('report limits per IP', () => {
+  it('10 reports a day from one connection, across orders', async () => {
+    const w = await world();
+    const ip = { 'x-real-ip': '41.90.7.7' };
+    const tokens: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      const phone = `07220001${String(i).padStart(2, '0')}`;
+      tokens.push(
+        (await place(w, checkout(w, { buyer: { name: 'Achieng', phone, whatsapp: true } }))).body
+          .token,
+      );
+    }
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) {
+      statuses.push(
+        (await report(tokens[Math.floor(i / 3)]!, { message: `Problem ${i}` }, ip)).status,
+      );
+    }
+    expect(statuses.slice(0, 10).every((s) => s === 201)).toBe(true);
+    expect(statuses[10]).toBe(429);
+  });
+});
+
 describe('the buyer’s order view', () => {
   it('flags "payment not found" and never carries the seller’s note or internal ids', async () => {
     const w = await world();
