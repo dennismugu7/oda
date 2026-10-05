@@ -9,6 +9,7 @@ import { ProductGrid } from '@/components/store/ProductGrid';
 import {
   initials,
   loadShop,
+  restOf,
   shopData,
   shopLink,
   takingOrders,
@@ -24,9 +25,9 @@ type Props = {
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const shop = await loadShop(slug);
+  const shop = await loadShop(slug, restOf('', await searchParams));
   const title = `${shop.name} · Order on oda`;
   const description =
     shop.about ??
@@ -44,7 +45,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
   const { slug } = await params;
   const raw = await searchParams;
   const query = storeQuery.parse({ c: first(raw.c) });
-  const shop = await loadShop(slug, query.c ? `?c=${query.c}` : '');
+  const shop = await loadShop(slug, restOf('', raw));
   const data = shopData(shop);
   const [categories, products, areas] = await Promise.all([
     data.categories(),

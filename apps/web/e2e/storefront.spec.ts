@@ -43,7 +43,10 @@ async function sellerShop(request: APIRequestContext) {
   const slug = `e2e-${Date.now().toString(36)}`;
   await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });
   await post('/api/onboarding/answers', { step: 2, skip: true });
-  await post('/api/onboarding/shop', { name: 'E2E Boutique', slug, whatsappPhone: '0712345678' });
+  // Step 3 twice: going back to change the link leaves the first one in the slug history.
+  const shop = { name: 'E2E Boutique', whatsappPhone: '0712345678' };
+  await post('/api/onboarding/shop', { ...shop, slug: `${slug}-old` });
+  await post('/api/onboarding/shop', { ...shop, slug });
   await post('/api/onboarding/product', {
     name: 'Kitenge wrap dress',
     price: 2500,
@@ -105,6 +108,20 @@ test('browse → search → product → cart', async ({ page, request }) => {
   // The bag (added first) is line 1; the dress (2 × KES 2,500) is line 2.
   await page.getByRole('button', { name: 'One less' }).nth(1).click();
   await expect(page.getByText('KES 4,300').first()).toBeVisible();
+});
+
+test('an old shop link redirects permanently to the current one', async ({ page, request }) => {
+  const slug = await sellerShop(request);
+  // The page, the search and the ?s= source tag survive the redirect.
+  for (const rest of ['?s=wa', '/search?q=wrap&size=M', '/cart']) {
+    const res = await request.get(`/${slug}-old${rest}`, { maxRedirects: 0 });
+    expect(res.status(), rest).toBe(308);
+    expect(res.headers()['location'], rest).toBe(`/${slug}${rest}`);
+  }
+
+  await page.goto(`/${slug}-old`);
+  await expect(page).toHaveURL(new RegExp(`/${slug}$`));
+  await expect(page.getByRole('heading', { name: 'E2E Boutique' })).toBeVisible();
 });
 
 test('an unknown shop is the branded 404', async ({ page }) => {

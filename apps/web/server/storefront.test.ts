@@ -10,6 +10,7 @@ import { createCategory, createProduct, deleteProduct, updateCategory } from './
 import { getDb } from './db';
 import { postAnswer, postShop } from './onboardingRoutes';
 import { publicRepo } from './repos/public';
+import { restOf } from './storefront';
 import { postCartLookup, postVisit } from './storefrontRoutes';
 
 // The buyer storefront's data (M4 CP1, decision #59): only listed products of visible shops,
@@ -249,5 +250,15 @@ describe('visit counting (oda_v)', () => {
       .set({ suspendedAt: new Date() })
       .where(eq(schema.shops.id, s.shopId));
     expect((await visit('new-name')).status).toBe(404);
+  });
+});
+
+describe('old-link redirects', () => {
+  it('keep the rest of the path and the whole query', () => {
+    expect(restOf('')).toBe('');
+    expect(restOf('', { s: 'wa' })).toBe('?s=wa');
+    expect(restOf('/search', { q: 'wrap dress', size: ['M', 'L'], max: undefined })).toBe(
+      '/search?q=wrap+dress&size=M&size=L',
+    );
   });
 });

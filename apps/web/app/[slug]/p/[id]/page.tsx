@@ -9,14 +9,18 @@ import { FavouriteButton, VisitBeacon } from '@/components/store/interactive';
 import { CartIcon, Gallery, ProductBuy } from '@/components/store/product';
 import Link from 'next/link';
 import { HttpError } from '@/server/errors';
-import { loadShop, shopData, shopLink, takingOrders } from '@/server/storefront';
+import { loadShop, restOf, shopData, shopLink, takingOrders } from '@/server/storefront';
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ slug: string; id: string }> };
+type Props = {
+  params: Promise<{ slug: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-async function loadProduct(slug: string, id: string) {
-  const shop = await loadShop(slug, `/p/${id}`);
+async function loadProduct({ params, searchParams }: Props) {
+  const { slug, id } = await params;
+  const shop = await loadShop(slug, restOf(`/p/${id}`, await searchParams));
   const data = shopData(shop);
   try {
     const product = await data.product(id);
@@ -27,9 +31,8 @@ async function loadProduct(slug: string, id: string) {
   }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, id } = await params;
-  const { shop, product } = await loadProduct(slug, id);
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const { shop, product } = await loadProduct(props);
   const title = `${product.name} · ${formatKes(product.price)} · ${shop.name}`;
   const description =
     product.description ?? `Order ${product.name} from ${shop.name} and pay the seller on M-Pesa.`;
@@ -43,9 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ProductPage({ params }: Props) {
-  const { slug, id } = await params;
-  const { shop, data, product } = await loadProduct(slug, id);
+export default async function ProductPage(props: Props) {
+  const { shop, data, product } = await loadProduct(props);
   const [cards, areas] = await Promise.all([data.catalog(), data.deliveryAreas()]);
   const badge = cards.find((c) => c.id === product.id)?.badge ?? null;
   const canOrder = takingOrders(shop);

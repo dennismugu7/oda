@@ -4,20 +4,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CartView } from '@/components/store/CartView';
-import { loadShop, shopData, takingOrders } from '@/server/storefront';
+import { loadShop, restOf, shopData, takingOrders } from '@/server/storefront';
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const shop = await loadShop((await params).slug);
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const shop = await loadShop((await params).slug, restOf('/cart', await searchParams));
   return { title: `Your cart · ${shop.name}`, robots: { index: false } };
 }
 
-export default async function Cart({ params }: Props) {
+export default async function Cart({ params, searchParams }: Props) {
   const { slug } = await params;
-  const shop = await loadShop(slug, '/cart');
+  const shop = await loadShop(slug, restOf('/cart', await searchParams));
   const popular = (await shopData(shop).catalog({ sort: 'popular' }))
     .filter((p) => p.status === 'available')
     .slice(0, 12);

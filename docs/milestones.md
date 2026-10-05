@@ -48,6 +48,7 @@ Screens 18-*, 19-shop-tab, 19b-categories, 20b-categories, 20b1-category-detail.
 - **Accept:** all catalogue actions persist and reflect instantly; presigned upload authorization tests pass (can't upload into another shop's prefix, wrong type/size rejected).
 
 ## M4 · Buyer storefront
+**Status: closed 2026-10-05** (gate passed; PRs #19–#23, tag `m4-done`; EAS Update `e7774d37` on build 0.2.0; owner's Redmi review stops A and B passed; PageSpeed Insights mobile 99 on the demo shop). Decisions #59, #60.
 Web 01, 02, 03, 07 + shop states.
 - Server-rendered shop/product pages, OG tags + OG images, search/filters/sort, cart (localStorage), favourites (localStorage), badges, visit counting with `?s=` source capture, slug redirects, paused/not-found/not-taking-orders states.
 - Landing page `/`, `/privacy`, `/terms` (placeholder legal text clearly marked for later replacement).
