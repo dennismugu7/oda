@@ -9,12 +9,28 @@ import { publicRepo, type PublicShop } from './repos/public';
 // one (Next's permanentRedirect, a 308: same meaning as the spec's 301 for browsers and
 // crawlers, decision #59); a missing, suspended or deleted shop is the branded 404.
 
+// `rest` is the rest of the path plus the query, so an old link keeps its page, search and
+// ?s= tag. generateMetadata runs first and redirects too, so it must pass the same `rest`.
 export const loadShop = cache(async (slug: string, rest = ''): Promise<PublicShop> => {
   const found = await publicRepo(getDb()).findShop(slug);
   if (found.kind === 'redirect') permanentRedirect(`/${found.slug}${rest}`);
   if (found.kind === 'not_found') notFound();
   return found.shop;
 });
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+/** The path after the slug with the request's query, for loadShop's redirect. */
+export function restOf(path: string, searchParams: SearchParams = {}): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+      query.append(key, v);
+    }
+  }
+  const qs = query.toString();
+  return `${path}${qs ? `?${qs}` : ''}`;
+}
 
 export const shopData = (shop: PublicShop) => publicRepo(getDb()).shop(shop);
 

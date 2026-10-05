@@ -2,6 +2,50 @@
 
 Newest entries at the top.
 
+## 2026-10-05 · M4 gate passed (owner Step 66; branch `m4-gate`)
+
+**Owner's review stop B on the Redmi: all items passed** (product page, options validation, cart, search filters/sort, empty search, product link preview, branded 404, in-app View / View in shop). **PageSpeed Insights mobile, https://oda-eta.vercel.app/demo-duka: Performance 99** (FCP 0.9 s, LCP 2.3 s, TBT 20 ms, CLS 0). Report: https://pagespeed.web.dev/analysis/https-oda-eta-vercel-app-demo-duka/wozyd2dfk6?form_factor=mobile. PR #22 (review stop B docs) merged as `7fe3cf7`.
+
+**Fixed during the gate: old shop links lost their page and query.** Each page's `generateMetadata` loaded the shop without the rest of the path, and it runs first, so `/{old}/search?q=…`, `/{old}/cart`, `/{old}/p/{id}?s=wa` and `/{old}?s=wa` all redirected to the bare shop home, dropping the `?s=` source tag. Now every shop page passes the same `restOf(path, searchParams)` to `loadShop`, so an old link redirects (308) to the same page with the whole query. Tests: `restOf` unit test; new Playwright test "an old shop link redirects permanently to the current one" (shop built through the API with its link changed at onboarding step 3; `?s=wa`, `/search?q=wrap&size=M` and `/cart` keep their path and query; the browser lands on the new link).
+
+**Gate (milestones.md M4 + definition of done)**
+
+- ✅ **WhatsApp rich preview:** shop link (review stop A) and product link (review stop B item 9) show photo, name, price and shop on the Redmi; `app/[slug]/opengraph-image.tsx`, `app/[slug]/p/[id]/opengraph-image.tsx`, OG/Twitter tags in `generateMetadata`.
+- ✅ **Lighthouse mobile performance ≥ 85 on the shop home:** PageSpeed Insights 99 (report above).
+- ✅ **Playwright browse → search → product → cart:** `e2e/storefront.spec.ts` at 390 × 844 (quick add, search, required size, quantity, cart re-checked with the server, quantity change); passes in `check:all` and CI.
+- ✅ **States:** paused / not taking orders banners, unknown, suspended and deleted shops are the branded 404 with status 404 (`server/authz.test.ts` "paused shops stay browsable; suspended and deleted shops don't exist", `server/storefront.test.ts`, Playwright 404 test), product not found (review stop B item 10), empty cart (item 6), empty search (item 8), error page with "Try again".
+- ✅ **Slug redirects:** `server/authz.test.ts` (old link resolves to the new shop), `server/storefront.test.ts` (old links count visits for the new shop), and the new Playwright test (308 keeping path and query).
+- ✅ **Visit counting with `?s=`:** `server/storefront.test.ts` "counts once per shop per day per browser, by source; unknown tags are direct" (`oda_v` cookie, Nairobi day), shared storefront tests.
+- ✅ **Landing, `/privacy`, `/terms`** (placeholder text marked for replacement): `e2e/landing.spec.ts`; wording approved at review stop A.
+- ✅ **Seller app 19b-preview:** the real shop in the in-app browser from "View", "View in shop" and step 6 (review stop B items 11–12, EAS Update `e7774d37`).
+- ✅ **Staging demo seed:** `demo-seed-staging.yml` (manual, idempotent, obviously fake data, no password); Demo Duka live.
+- ✅ **`pnpm check:all` green** on this branch: format, lint, typecheck, tests (web 217, shared 177, seller 76, db 23, ui-tokens 3), repo root, Expo deps + native runtime, Android bundle, web build + Playwright 9.
+- ✅ **CI and staging:** PRs #19–#22 green and deployed through `migrate-staging`; `/api/health` showed each merge commit.
+- ✅ New logic has unit tests; new public endpoints (visit, cart lookup) have tests (unknown/suspended shops 404, other shops' and hidden products left out); new buyer flows have Playwright tests.
+- ✅ Screens compared with 01, 02, 03, 07 (CP1–CP2 and CP3–CP6 entries; differences in decision #60 and the entries) and checked on the Redmi.
+- ✅ progress.md updated (this entry).
+
+**Tag `m4-done`** on `main` after this branch is merged.
+
+**Carried forward (all milestones so far)**
+
+- **M5 (flagged in the M5 plan):** a shop needs a way to deliver before checkout works: sellers can't add delivery areas or turn on pickup until the Delivery screen (M8).
+- M6: a **Firebase project** from the owner for push (milestones M6); in-app notifications rows can start in M5.
+- M7: ratings and reviews on shop and product pages (hidden until then, decision #59 c).
+- M8: `/api/cron/purge` — `signup_attempts` older than 7 days, leftover `storage_deletions`, unreferenced keys under `products/`/`logos/` (photos picked but never saved); decide whether soft-deleted products are ever purged (past orders keep their own snapshot).
+- M10: automated UI tests (jest-expo/Maestro) for screens now checked by hand.
+- M11: Cloudflare R2 with a custom image domain (replacing Vercel Blob, decision #54); `armeabi-v7a`; production keystore and EAS environment; production Neon and Resend; Vercel Hobby is non-commercial (decision #10); `vercel logout` on the laptop; real privacy/terms text.
+- `react-native-draggable-flatlist` 4.0.3 (last release May 2025) works with reanimated 4.5 today; re-check on every Expo SDK / reanimated upgrade (error boundaries fall back to buttons/arrows).
+- Not built: dragging products within a category (20b1; not in the spec, no per-category order in the data).
+- The Shop tab's shop card shows the initial, not the logo (`/api/me` has no logo URL yet).
+- Categories screen: the drag list sits inside a ScrollView (a dev-only "nested VirtualizedList" warning; fine for a handful of categories).
+- Search filters are a panel of selects rather than the design's sheet (accepted at review stop B).
+- TikTok logo only with TikTok's written permission (neutral icon until then); whether "My status" shows from the Status button (owner to confirm).
+- Blob usage: check the Hobby usage page (estimate in the CP0 entry).
+- eas-cli 24.8.0 (24.10.0 available), not upgraded; `.wslconfig` proposed, not applied.
+
+**Next:** M5 plan (proposed in the chat) for approval; M5 not started.
+
 ## 2026-10-04 · M4 CP3–CP6 (product, cart, search, app buyer view, tests), at review stop B (owner Steps 64–65)
 
 - **Review stop A passed** (owner): Demo Duka on the phone (header, Chat, Share, photos, badges, Sold out, chips, search, hearts, "+" → tick + cart bar, WhatsApp preview), landing wording approved, /privacy, /terms. Demo seed ran on staging first time (run 37215797135: 12 products, photos on Blob). `check:all` with web build + Playwright approved.

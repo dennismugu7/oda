@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { formatKes, STORE_SORTS, storeQuery, type StoreQuery } from '@oda/shared';
 import { CartBar, VisitBeacon } from '@/components/store/interactive';
 import { ProductGrid } from '@/components/store/ProductGrid';
-import { loadShop, shopData, takingOrders } from '@/server/storefront';
+import { loadShop, restOf, shopData, takingOrders } from '@/server/storefront';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +25,8 @@ const SORT_LABEL: Record<(typeof STORE_SORTS)[number], string> = {
 };
 const MAX_PRICES = [1000, 2000, 3000, 5000, 10000];
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const shop = await loadShop((await params).slug);
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const shop = await loadShop((await params).slug, restOf('/search', await searchParams));
   return { title: `Search · ${shop.name}`, robots: { index: false } };
 }
 
@@ -56,7 +56,7 @@ export default async function Search({ params, searchParams }: Props) {
     max: first(raw.max),
     sort: first(raw.sort),
   });
-  const shop = await loadShop(slug, '/search');
+  const shop = await loadShop(slug, restOf('/search', raw));
   const data = shopData(shop);
   const [categories, all, products] = await Promise.all([
     data.categories(),
