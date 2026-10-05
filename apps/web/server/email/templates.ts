@@ -1,10 +1,22 @@
 import 'server-only';
 import { colors } from '@oda/ui-tokens';
-import { formatKes, OTP_TTL_SECONDS, RESET_LINK_TTL_SECONDS } from '@oda/shared';
+import {
+  BUYER_CANCEL_LABELS,
+  formatKePhone,
+  formatKes,
+  OTP_TTL_SECONDS,
+  RESET_LINK_TTL_SECONDS,
+  type CancelReason,
+  type EmailTemplate,
+  type PaymentStatus,
+  type SentMethod,
+} from '@oda/shared';
 import type { Email } from './transport';
 
 // Seller emails: 04 (verification code) and 06 (reset password), docs/design-changes.md.
-// Buyer emails (M5, decision #61 f): the receipt and "you cancelled", with the order link.
+// Buyer emails (M5, decision #61 f): the receipt and "you cancelled", with the order link; M6
+// adds the seller-triggered updates (confirmed, accepted, sent, delivered, cancelled by the
+// seller, expired, refunded).
 // Plain HTML tables with inline styles, which every mail app renders. Poppins where the
 // mail app allows web fonts, Arial otherwise. Brand always lowercase "oda". No social icons
 // and no "Contact us" until M8 (decision #43).
@@ -226,4 +238,138 @@ The oda team`;
     html,
     text,
   };
+}
+
+/** What an order update says beyond the order itself. */
+export interface OrderUpdateFacts {
+  paymentStatus: PaymentStatus;
+  sentMethod: SentMethod | null;
+  riderPhone: string | null;
+  pickupLocation: string | null;
+  pickupHours: string | null;
+  cancelReason: CancelReason | null;
+}
+
+type UpdateTemplate = Exclude<EmailTemplate, 'receipt' | 'cancelled'> | 'seller_cancelled';
+
+const UPDATE_KINDS: Record<UpdateTemplate, Email['kind']> = {
+  payment_confirmed: 'order-confirmed',
+  accepted: 'order-accepted',
+  sent: 'order-sent',
+  delivered: 'order-delivered',
+  seller_cancelled: 'order-cancelled',
+  expired: 'order-expired',
+  refunded: 'order-refunded',
+};
+
+/**
+ * The seller-triggered updates (order-lifecycle.md "email" side effects). Each says what
+ * happened, what's next, and links to the order page. The delivered email's review link is
+ * the order page until reviews open (M7).
+ */
+export function orderUpdateEmail(
+  template: UpdateTemplate,
+  o: OrderEmailData,
+  f: OrderUpdateFacts,
+): Email {
+  const total = formatKes(o.total);
+  const n = `#${o.number}`;
+  let heading: string;
+  let subject: string;
+  let lines: string[];
+  let button = 'See your order';
+  switch (template) {
+    case 'payment_confirmed':
+      heading = 'Payment confirmed';
+      subject = `${o.shopName} confirmed your payment for order ${n}`;
+      lines = [
+        `${o.shopName} confirmed your payment of ${total} for order ${n}.`,
+        `They'll get your order ready and let you know when it's on the way.`,
+      ];
+      button = 'Track your order';
+      break;
+    case 'accepted':
+      heading = 'Order accepted';
+      subject = `${o.shopName} accepted your order ${n}`;
+      lines = [`${o.shopName} accepted your order ${n}.`, `You pay ${total} when it reaches you.`];
+      button = 'Track your order';
+      break;
+    case 'sent':
+      if (f.sentMethod === 'pickup') {
+        heading = 'Ready for pickup';
+        subject = `Your order ${n} from ${o.shopName} is ready for pickup`;
+        const where = [f.pickupLocation, f.pickupHours].filter(Boolean).join(', ');
+        lines = [`Your order ${n} is ready for pickup${where ? ` at ${where}` : ''}.`];
+      } else {
+        heading = 'Your order is on its way';
+        subject = `Your order ${n} from ${o.shopName} is on its way`;
+        lines = [
+          f.sentMethod === 'parcel'
+            ? `${o.shopName} sent your order ${n} by parcel service.`
+            : `${o.shopName} sent your order ${n} with a rider.`,
+          ...(f.riderPhone ? [`Rider's number: ${formatKePhone(f.riderPhone)}.`] : []),
+        ];
+      }
+      if (o.paymentMethod === 'pay_on_delivery' && f.paymentStatus !== 'paid') {
+        lines.push(`Have ${total} ready to pay on delivery.`);
+      }
+      button = 'Track your order';
+      break;
+    case 'delivered':
+      heading = 'Delivered';
+      subject = `Your order ${n} from ${o.shopName} was delivered`;
+      lines = [
+        `Your order ${n} from ${o.shopName} was delivered. We hope you love it!`,
+        'You can rate your order on your order page soon.',
+      ];
+      break;
+    case 'seller_cancelled': {
+      heading = 'Order cancelled';
+      subject = `${o.shopName} cancelled your order ${n}`;
+      const reason = f.cancelReason ? BUYER_CANCEL_LABELS[f.cancelReason] : null;
+      lines = [
+        `${o.shopName} cancelled your order ${n} (${total}).${reason ? ` Reason: ${reason}.` : ''}`,
+      ];
+      lines.push(
+        f.paymentStatus === 'refund_due'
+          ? `${o.shopName} will send your ${total} back to your M-Pesa. Message them if you have questions.`
+          : 'You haven’t been charged for this order.',
+      );
+      break;
+    }
+    case 'expired':
+      heading = 'Order expired';
+      subject = `Your order ${n} from ${o.shopName} expired`;
+      lines = [
+        `Your order ${n} from ${o.shopName} was cancelled because it wasn't paid within 48 hours.`,
+        'You can order again from the shop any time.',
+      ];
+      break;
+    case 'refunded':
+      heading = 'Refund sent';
+      subject = `${o.shopName} sent your refund for order ${n}`;
+      lines = [
+        `${o.shopName} says they sent ${total} back to your M-Pesa for order ${n}.`,
+        'Check your M-Pesa messages. If it hasn’t arrived, message the shop.',
+      ];
+      break;
+  }
+  const html = layout(
+    subject,
+    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">${escapeHtml(heading)}</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:16px;">Hi ${escapeHtml(o.buyerName)},</td></tr>
+${lines.map((l) => `<tr><td style="font-size:15px;line-height:24px;padding-bottom:16px;">${escapeHtml(l)}</td></tr>`).join('\n')}
+${orderButton(o.link, button)}`,
+  );
+  const text = `${heading}
+
+Hi ${o.buyerName},
+
+${lines.join('\n\n')}
+
+${button}: ${o.link}
+
+Thank you,
+The oda team`;
+  return { kind: UPDATE_KINDS[template], to: o.to, subject, html, text };
 }

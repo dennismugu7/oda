@@ -14,7 +14,13 @@ import {
 } from '@oda/shared';
 import { requireOrderToken, type OrderTokenCtx } from './authz';
 import { getDb } from './db';
-import { orderCancelledEmail, orderReceiptEmail, type OrderEmailData } from './email/templates';
+import {
+  orderCancelledEmail,
+  orderReceiptEmail,
+  orderUpdateEmail,
+  type OrderEmailData,
+  type OrderUpdateFacts,
+} from './email/templates';
 import { sendEmail } from './email/transport';
 import { serverEnv } from './env';
 import {
@@ -26,6 +32,7 @@ import {
   ValidationError,
 } from './errors';
 import { findByIdempotencyKey, insertOrder, quoteOrder, transitionOrder } from './orders';
+import { orderLink } from './orderLink';
 import { clientIp, hitLimit, secondsLeftInWindow, type Limit } from './rateLimit';
 import { takingOrders } from './storefront';
 import { body, findShop } from './storefrontRoutes';
@@ -42,10 +49,7 @@ type Params<P> = { params: Promise<P> };
 /** Runs work after the response is sent (Next's `after` in routes; tests run it directly). */
 export type Defer = (work: () => Promise<void>) => void;
 
-/** The buyer's order page. The token is in the path (decision #61); our logs never print it. */
-export function orderLink(token: string): string {
-  return `${serverEnv().PUBLIC_SHOP_BASE_URL}/o/${token}`;
-}
+export { orderLink };
 
 /**
  * Buyer writes must come from our own pages (m5-plan threats: cross-site form spam). Browsers
@@ -77,24 +81,24 @@ async function limit(db: Db, key: string, l: Limit, message: string) {
 // Emails --------------------------------------------------------------------------------------
 
 /**
- * Sends the buyer emails among these side effects (M5: receipt and "you cancelled"; the
- * seller-triggered ones are wired in M6). Never throws: an email problem must not undo an
- * order. A few emails per address a day, so nobody can bomb someone else's inbox.
+ * Sends the buyer emails among these side effects: the receipt and "you cancelled" (M5) and
+ * the seller-triggered updates (M6). Never throws: an email problem must not undo an order or
+ * an action. A few emails per address a day, so nobody can bomb someone else's inbox.
  */
 export async function sendOrderEmails(
   db: Db,
   order: OrderRow,
   sideEffects: readonly SideEffect[],
 ): Promise<void> {
-  const templates = sideEffects.flatMap((e) =>
-    e.kind === 'email' && (e.template === 'receipt' || e.template === 'cancelled')
-      ? [e.template]
-      : [],
-  );
+  const templates = sideEffects.flatMap((e) => (e.kind === 'email' ? [e.template] : []));
   if (!order.buyerEmail || templates.length === 0) return;
   try {
     const [shop] = await db
-      .select({ name: t.shops.name })
+      .select({
+        name: t.shops.name,
+        pickupLocation: t.shops.pickupLocation,
+        pickupHours: t.shops.pickupHours,
+      })
       .from(t.shops)
       .where(eq(t.shops.id, order.shopId));
     const items = await db
@@ -122,16 +126,29 @@ export async function sendOrderEmails(
       total: order.total,
       link: orderLink(order.publicToken),
     };
+    const facts: OrderUpdateFacts = {
+      paymentStatus: order.paymentStatus,
+      sentMethod: order.sentMethod,
+      riderPhone: order.riderPhone,
+      pickupLocation: shop?.pickupLocation ?? null,
+      pickupHours: shop?.pickupHours ?? null,
+      cancelReason: order.cancelReason,
+    };
+    const build = (template: (typeof templates)[number]) => {
+      if (template === 'receipt') return orderReceiptEmail(data);
+      if (template === 'cancelled') {
+        return order.cancelledBy === 'buyer'
+          ? orderCancelledEmail({ ...data, claimed: order.paymentStatus === 'claimed' })
+          : orderUpdateEmail('seller_cancelled', data, facts);
+      }
+      return orderUpdateEmail(template, data, facts);
+    };
     for (const template of templates) {
       if (!(await hitLimit(db, `order-email:${order.buyerEmail}`, BUYER_LIMITS.emailsPerAddress))) {
         console.warn(`[email] order emails to @${order.buyerEmail.split('@')[1]} limited today`);
         return;
       }
-      await sendEmail(
-        template === 'receipt'
-          ? orderReceiptEmail(data)
-          : orderCancelledEmail({ ...data, claimed: order.paymentStatus === 'claimed' }),
-      );
+      await sendEmail(build(template));
     }
   } catch (error) {
     // sendEmail already logged the failure without secrets; anything else, by name only.

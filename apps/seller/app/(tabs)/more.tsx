@@ -6,7 +6,9 @@ import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { signOutLocal } from '@/auth/client';
 import { useMe } from '@/auth/useMe';
+import { deliveryCache } from '@/delivery/api';
 import { clearOnboardingState } from '@/onboarding/useOnboarding';
+import { ordersCache } from '@/orders/api';
 import { Button } from '@/ui/auth';
 import { TabScreen } from '@/ui/tabs';
 import { colors, radii, spacing, text } from '@/theme';
@@ -30,6 +32,9 @@ export default function MoreTab() {
     // Works offline too: the stored session is removed either way.
     await signOutLocal();
     clearOnboardingState();
+    // Another account on this phone must never see this shop's orders.
+    ordersCache.clear();
+    deliveryCache.set(null);
     router.replace('/welcome');
   }
 
