@@ -317,9 +317,10 @@ export function Button({
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary';
+  /** danger: a destructive action (e.g. "Cancel order"). */
+  variant?: 'primary' | 'secondary' | 'danger';
 }) {
-  const primary = variant === 'primary';
+  const primary = variant !== 'secondary';
   return (
     <Pressable
       accessibilityRole="button"
@@ -328,7 +329,11 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        primary ? styles.buttonPrimary : styles.buttonSecondary,
+        variant === 'danger'
+          ? styles.buttonDanger
+          : primary
+            ? styles.buttonPrimary
+            : styles.buttonSecondary,
         (disabled || loading) && styles.buttonDisabled,
         pressed && styles.pressed,
       ]}
@@ -512,6 +517,7 @@ const styles = StyleSheet.create({
   },
   buttonPrimary: { backgroundColor: colors.primary },
   buttonSecondary: { backgroundColor: colors.primaryTint },
+  buttonDanger: { backgroundColor: colors.danger },
   buttonDisabled: { opacity: 0.6 },
   pressed: { opacity: 0.85 },
   buttonText: text('button'),

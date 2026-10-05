@@ -19,9 +19,9 @@ import {
   type ShareTarget,
 } from '@oda/shared';
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Image,
@@ -39,7 +39,7 @@ import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import type { IconName } from '@/onboarding/labels';
 import { openBuyerView } from '@/catalogue/preview';
 import { shareTo, type ShareDeps } from '@/onboarding/shareActions';
-import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
+import { setOnboardingState, useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, FormMessage } from '@/ui/auth';
 import { BrandIcon, StatusRing, type Brand } from '@/ui/brandIcons';
 import { StepStatus } from '@/ui/onboarding';
@@ -91,6 +91,15 @@ function Step({ state }: { state: OnboardingState }) {
   const [edited, setEdited] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Back from the Delivery screen: refresh the checklist (best effort).
+  useFocusEffect(
+    useCallback(() => {
+      onboardingApi.get().then(({ data }) => {
+        if (data) setOnboardingState(data);
+      });
+    }, []),
+  );
 
   const base = shop.url.slice(0, shop.url.length - shop.slug.length - 1);
   const cover = product?.photos[0];
@@ -327,6 +336,20 @@ function Step({ state }: { state: OnboardingState }) {
                     ) : null}
                     {item.id === 'shared_link' && !item.done ? (
                       <Text style={styles.itemHelp}>Use the share buttons above.</Text>
+                    ) : null}
+                    {item.id === 'delivery' && !item.done ? (
+                      <>
+                        <Text style={styles.itemHelp}>
+                          Buyers can order once you add a delivery area or pickup.
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => router.push('/delivery')}
+                          style={({ pressed }) => [styles.itemButton, pressed && styles.pressed]}
+                        >
+                          <Text style={styles.itemButtonText}>Add delivery options</Text>
+                        </Pressable>
+                      </>
                     ) : null}
                   </View>
                 </View>

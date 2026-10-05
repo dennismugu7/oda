@@ -150,6 +150,7 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
           hasLogo: !!shop.logoPath,
           hasSocialHandle: !!(shop.tiktokHandle || shop.instagramHandle),
           deliveryAreaCount: counts?.areas ?? 0,
+          pickupEnabled: shop.pickupEnabled,
           ticks: (shop.checklist ?? {}) as Record<string, string>,
         }),
         sizePresets: SIZE_PRESETS[shop.businessType as BusinessType],

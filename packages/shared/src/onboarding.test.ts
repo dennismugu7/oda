@@ -172,6 +172,7 @@ describe('Finish your shop (7 items)', () => {
     hasLogo: false,
     hasSocialHandle: false,
     deliveryAreaCount: 0,
+    pickupEnabled: false,
     ticks: {},
   };
 
@@ -183,7 +184,7 @@ describe('Finish your shop (7 items)', () => {
       'Add your shop logo',
       'Add 4 more products',
       'Add more ways buyers reach you',
-      'Set delivery areas',
+      'Add delivery options',
       'Test your WhatsApp link',
     ]);
     expect(result).toMatchObject({ done: 0, total: 7, complete: false });
@@ -205,9 +206,18 @@ describe('Finish your shop (7 items)', () => {
       hasLogo: true,
       hasSocialHandle: true,
       deliveryAreaCount: 2,
+      pickupEnabled: false,
       ticks: { shared_link: '2026-10-04T10:00:00Z', tested_whatsapp: '2026-10-04T10:01:00Z' },
     });
     expect(all).toMatchObject({ done: 7, complete: true });
     expect(finishYourShop({ ...none, productCount: 4 }).items[3]!.done).toBe(false);
+  });
+
+  it('"Add delivery options" is done with a delivery area or pickup on (decision #61)', () => {
+    const delivery = (facts: Partial<ChecklistFacts>) =>
+      finishYourShop({ ...none, ...facts }).items.find((i) => i.id === 'delivery')!.done;
+    expect(delivery({})).toBe(false);
+    expect(delivery({ deliveryAreaCount: 1 })).toBe(true);
+    expect(delivery({ pickupEnabled: true })).toBe(true);
   });
 });

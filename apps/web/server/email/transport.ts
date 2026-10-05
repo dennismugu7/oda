@@ -14,7 +14,18 @@ import { z } from 'zod';
 // kind and the recipient's domain.
 
 /** What the email is, for logs (the subject can contain the code). */
-export type EmailKind = 'verification-code' | 'reset-link' | 'order-receipt' | 'order-cancelled';
+export type EmailKind =
+  | 'verification-code'
+  | 'reset-link'
+  | 'order-receipt'
+  | 'order-cancelled'
+  // Seller-triggered order updates (M6, decision #61 f).
+  | 'order-confirmed'
+  | 'order-accepted'
+  | 'order-sent'
+  | 'order-delivered'
+  | 'order-expired'
+  | 'order-refunded';
 
 export interface Email {
   kind: EmailKind;

@@ -2,22 +2,39 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 72)
+## Handoff (keep current; updated 2026-10-05, owner Step 73)
 
 **Current state**
-- **Milestones:** M0–M5 closed; latest tag **`m5-done`** (on `main` after the gate PR). **M6 plan approved** (`docs/m6-plan.md` + decision #65); **M6 not started.**
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Buyers can check out, pay (paste the M-Pesa SMS), switch to pay on delivery, cancel and report on `/o/{token}`. Demo Duka (https://oda-eta.vercel.app/demo-duka) has both payment options (fake Till `000000` "DEMO DUKA · TEST ONLY"), CBD/Westlands/Upcountry, pickup, free delivery over KES 5,000, and nine sample orders remade by every **Actions → demo-seed-staging** run (links: the run's job summary, or `gh run download <run> -n demo-order-links`, kept 1 day). `DEMO_SHOP_SLUGS=demo-duka` on Vercel (Production + Preview).
-- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; latest EAS Update **`e7774d37`** (M4). M5 had no app changes.
-- **Git:** everything merged and pushed; no open PRs.
-- **This laptop:** `~/.wslconfig` = memory 12 GB, swap 8 GB, gradual reclaim, sparse disk (Step 69). Other projects (bookflow, dashboardx-local) may be running: if port 3100 is taken, run `E2E_PORT=3200 pnpm check:all` (Playwright never reuses a server it didn't start).
+- **Milestones:** M0–M5 closed (tag `m5-done`). **M6 CP1–CP2 built** (branch `m6-orders`, merged to `main`): Delivery screen + "Add delivery options"; orders list/search/detail with every seller action, WhatsApp prefills, seller-triggered buyer emails (decision #66). **🛑 At review stop A** (phone test in the CP1–CP2 entry below).
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers can now add delivery options, so their shops take orders. Demo Duka unchanged (its owner has no password; the phone test uses the owner's own shop).
+- **App:** EAS preview build **0.2.0** (runtime 0.2.0) on the Redmi; CP1–CP2 shipped as an EAS Update (id in the entry below).
+- **Git:** `m6-orders` merged; no open PRs.
+- **This laptop:** as before (`~/.wslconfig` 12 GB / 8 GB swap). If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`.
 
-**Next step:** start **M6 CP1** (Delivery screen) per **`docs/m6-plan.md`** and **decision #65**, on a new branch; continue with CP2 and **stop at review stop A after CP2** (phone test). Firebase/FCM steps go to the owner only when CP4 starts, one step at a time; `CRON_SECRET` is generated and piped into Vercel + GitHub Secrets at CP4 without printing it.
+**Next step:** wait for the owner's review stop A results. After the go-ahead: **CP3** (Home 15/16, manual orders, notifications list) per `docs/m6-plan.md`, then CP4 (push, native build 0.3.0, auto-expire) → review stop B.
 
 **Open items**
-- Until M6 CP1 ships the Delivery screen, every shop except Demo Duka shows "Not taking orders yet" (decision #61 c).
+- Owner question: should cancelled orders needing the seller (claim to answer, refund to send) get a fifth To-do group? (decision #66 h)
 - Push needs the owner's Firebase project and keys (m6-plan → "What I need from you", sent at CP4). Before the 0.3.0 build: list native modules needed through M10 and ask with the download size (#65 c).
 - Carried-forward list: in the M5 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-05 · M6 CP1–CP2: Delivery screen, orders list/detail, every seller action (owner Step 73; branch `m6-orders`)
+
+**Done**
+- **CP1 · Delivery (20b-delivery):** `GET/PUT /api/delivery`, `POST/PATCH/DELETE /api/delivery/areas[/:id]`, `PUT /api/delivery/areas/order` (`server/deliveryRoutes.ts`, `repos/delivery.ts`); pickup needs a location; the checklist item is now "Add delivery options" (area or pickup). App: Delivery screen + add/edit area screen; More tab has "Your shop" rows (Delivery, Categories); the live screen's checklist and a new "Finish your shop" card on Home open it. Tests: `server/delivery.test.ts` (7, incl. authorization), `packages/shared/src/delivery.test.ts`, checklist test.
+- **CP2 · Orders:** `GET /api/orders` (tabs, To-do groups and counts, search, pages), `GET /api/orders/:id`, `POST /api/orders/:id/actions` (only through `transitionOrder()`), `server/orderRoutes.ts` + `repos/sellerOrders.ts`. Shared: `sellerOrders.ts` (query, action whitelist, `sellerActions()` asked of the machine, labels), `whatsapp.ts` (prefill templates + `waLink`), `nairobiTime.ts`. Buyer emails for every seller action + expired (`orderUpdateEmail`). App: Orders tab (To do groups with "See n more", All, Done, search, paging, offline bar) and order detail with stepper, status card per state, buyer card (call / WhatsApp), items and money, delivery, and sheets for confirm payment (checkbox), payment not found, mark paid, mark sent (rider / parcel / pickup, rider phone), mark delivered ("I've collected KSh x" on pay on delivery), cancel (reasons, private note, "Did you receive KSh x?" after a claim, refund box), mark refund sent, resolve a claim; WhatsApp toggle opens the seller's WhatsApp with the server's message after saving. Tests: `server/sellerOrders.test.ts` (15: list, search, pages, detail, duplicate code, every action path, forbidden actions, the race → 409, emails, authorization), shared tests for actions/labels/templates/times.
+- Decision #66 records the details.
+
+**Deviations / notes**
+- No drag for delivery areas: hold an area → Move up / Move down / Delete.
+- Accept is one tap (no sheet).
+- The buyer card shows the phone only; area and address are in the Delivery card.
+- "New order" (manual) waits for CP3, as planned.
+- `apps/seller/.expo/types/router.d.ts` was stale locally (typed routes); deleted (generated, gitignored).
+
+**Open question (owner)**
+- Cancelled orders that still need you (a payment claim to answer, a refund to send) show in All/Done with an orange "Check payment" / "Refund due" chip, not in To do (the spec lists four To-do groups). Should they get a fifth To-do group?
 
 ## 2026-10-05 · M6 plan approved; ready for a fresh session (owner Step 72)
 
