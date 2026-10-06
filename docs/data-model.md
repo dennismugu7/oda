@@ -59,7 +59,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **order_events**: audit log: `order_id`, `from_status`, `to_status`, `actor` (buyer, seller, system, admin), `meta jsonb`, `created_at`
 
 ## Reviews
-**reviews**: `id`, `order_id unique`, `shop_id`, `buyer_display_name` ("Wanjiku K."), `rating 1-5`, `tags text[]`, `seller_reply`, `replied_at`, `created_at`, `editable_until`
+**reviews**: `id`, `order_id unique`, `shop_id`, `buyer_display_name` ("Wanjiku K."), `rating 1-5`, `tags text[]`, `seller_reply`, `replied_at`, `created_at`, `editable_until`, `reported_at` + `report_reason` (the seller reported it: photos hidden publicly, decision #73 a). Only buyer-placed, delivered orders (#73 i)
 **review_items**: `review_id`, `order_item_id` (together the primary key), `product_id`, `rating` (null = item not rated), `text`, `photo_path`
 
 ## Engagement & ops
@@ -67,8 +67,8 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 **notifications**: `id`, `shop_id`, `type` (enum: new_order, payment_claimed, switched_to_pod, buyer_cancelled, order_expired, new_review), `order_id null`, `review_id null`, `title`, `body`, `read_at`, `created_at`
 **feedback**: from sellers (emailed in the daily support digest; M8 adds a nullable `notified_at`, decision #72 b): `shop_id`, `kind` (idea, broken, confusing, love, problem), `message`, `screenshot_path`, `reply_on_whatsapp bool`, `status` (enum ticket_status: new, in_progress, closed), `admin_note`
 **reports**: from buyers (daily support digest; M8 adds `notified_at`, decision #72 b): `order_id`, `message`, `contact_phone`, `status` (ticket_status), `admin_note`
+**ops_events** (decision #73 c–d; audit of manual ops workflows): `id`, `action` (`review_removed`; M10 adds suspend/unsuspend), `shop_id` (no foreign key: outlives a purged shop), `target_id`, `reason`, `actor` (GitHub user), `details jsonb` (snapshot), `created_at`
 **deletion_requests**: `email`, `shop_slug null`, `reason`, `status` (ticket_status), `processed_at`; self-serve from M8 (decision #72 c): adds `token_hash`, `expires_at`, `confirmed_at` (the emailed confirm link)
-**ops_events** (planned, M10, decision #72 d): `id`, `action` (suspend, unsuspend), `shop_id`, `reason`, `actor` (the GitHub user who ran the workflow), `created_at`
 **rate_limits** (Postgres table, fixed-window counter via an upsert function): `key`, `window_start`, `count`
 **storage_deletions**: `object_key` (pk), `created_at`: stored files to delete (replaced or rejected photos/logos), queued in the same transaction that drops the reference; retried by `/api/cron/purge` (decision #52)
 

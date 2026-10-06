@@ -73,7 +73,7 @@ Screens **20b-delivery first** (moved from M8, decision #61), 15, 16, 17-*, 17b-
 - **Accept:** the lifecycle can be driven end to end by a buyer on web + a seller on the phone; push arrives on a real device within 10s of a web order; forbidden transitions are rejected by the server.
 
 ## M7 · Reviews
-**Proposed plan: `docs/m7-plan.md`** (owner Step 77; awaiting approval).
+**Plan: `docs/m7-plan.md`** (approved, owner Step 79; decision #73).
 Web 05c, 5d; app 20b-reviews.
 - Review submission (delivered only, one per order, 7-day edit), photos, rating aggregates (shop + product), seller replies, reviews on the product page.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
