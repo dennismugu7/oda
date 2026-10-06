@@ -2,21 +2,48 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 81)
+## Handoff (keep current; updated 2026-10-06, owner Step 82)
 
 **Current state**
-- **Milestones:** M0–M7 closed; latest tag **`m7-done`** (on `main` after the gate PR). **M9 removed** (decision #72). **M8 plan proposed in `docs/m8-plan.md` (split into M8a and M8b): awaiting the owner's approval and answers to its five questions. M8 not started.**
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers manage delivery, orders (every action, WhatsApp prefills, buyer emails), manual orders, Home, notifications and **reviews** (reply, report); buyers review delivered orders with photos (`/o/{token}/review`), reviews show on product pages; pushes go to the seller's phone (Expo, `EXPO_ACCESS_TOKEN`); unpaid buyer orders expire after 48 h (hourly `cron-expire-orders`, `CRON_SECRET`). Removing a review: **Actions → review-remove** (`OPS_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging** (phone tests use the owner's own shop).
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `2d1fe8f7` (M7 Reviews screen). Sentry installed but inactive until M10 (decision #70). JS changes: `pnpm update:preview "…"`.
-- **Git:** everything merged and pushed; no open PRs.
-- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i). When the laptop is slow, a Vitest test can hit its 5 s timeout: rerun before chasing it.
+- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. M8a CP1 + CP2 built and merged to `main` (staging); at 🛑 review stop A.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration **0006** (digest marks + web deletion link columns, expand only). New: settings APIs (`/api/me/details`, `/api/shop/profile`, `/api/payments` + accounts, `/api/shop/pause`, `/api/feedback`), Better Auth `/change-password`; the till badge is gone. Removing a review: **Actions → review-remove**. Demo Duka: **Actions → demo-seed-staging**.
+- **App:** EAS preview build **0.3.0** + the M8a EAS Update (Settings, Your details, Change password, Share feedback, Shop profile, Payments; More rows). JS changes: `pnpm update:preview "…"`.
+- **Feedback screenshots:** need the NEW private Vercel Blob store connected with the env prefix `FEEDBACK_BLOB` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, decision #74 b). Until then "Add screenshot" is hidden; feedback without one works.
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
-**Next step:** M8 plan awaiting approval (`docs/m8-plan.md`). After approval: record the answers as a decision, then M8a CP1 (badge removal + settings server).
+**Next step:** owner: review stop A phone test (the M8a CP2 entry below), and the private Blob store set-up (steps sent one at a time). After the go-ahead: M8a CP3 (in-app + web account deletion, `/api/cron/purge`, `/api/cron/digest`, `staging-backdate-deletion.yml`).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
-- Carried-forward list: in the M7 gate entry below.
+- Carried-forward list: in the M7 gate entry below (M8a items now partly done: see the CP2 entry).
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M8a CP1 + CP2: badge gone, settings server and screens (owner Step 82; branch `m8a-cp1`)
+
+**Plan approved** with the owner's seven answers → **decision #74** (split M8a/M8b; a new private Vercel Blob store for feedback screenshots; soft-deleted products purged after 30 days keeping thumbnails past orders show; support WhatsApp asked at M8b, email fallback; digest 08:00 Nairobi; help guides drafted in M8b; `qrcode` pre-approved). `m8-plan.md`, `milestones.md` and `data-model.md` updated.
+
+**CP1 · server**
+- **Till badge removed** (#72 a): shop page, product page (`mpesaChecked` gone from `publicRepo`), onboarding step 5 copy ("oda never touches your money…"); the onboarding state no longer returns `verificationStatus`; new accounts aren't marked `pending`. Playwright: no page shows "till checked" even with a Till (shop, product, checkout).
+- **Migration 0006** (expand only): `reviews.report_notified_at`, `reports.notified_at`, `feedback.notified_at`, `deletion_requests.token_hash` (unique) / `expires_at` / `confirmed_at`.
+- **Endpoints** (seller session, strict zod whitelists in `@oda/shared`): `GET/PATCH /api/me/details` (email read-only; empty phone = removed), `GET/PATCH /api/shop/profile` (logo checked like any upload and the old one deleted; link change → old link in `shop_slug_history`, redirects; 5 link changes a day), `GET/PATCH /api/payments` ("When buyers pay": at least one on; turning pay on delivery off needs an active account), `POST /api/payments/accounts`, `PATCH|DELETE /api/payments/accounts/:id` (only a saved, not active, one can be removed), `POST …/:id/activate`, `GET/PATCH /api/shop/pause`, `GET/POST /api/feedback` (5 a day per shop; screenshot under `feedback/{shop}/` checked like any image).
+- **Change password:** Better Auth `/change-password` added to the allowed routes, with 10 tries an hour per account and 30 per IP (wrong passwords count), the password rules, "different from your current one", and a "Your oda password was changed" email (kind `password-changed`); `revokeOtherSessions` signs other phones out and gives this phone a new session.
+- **Private store** (#74 b): `getPrivateStorage()` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, private Vercel Blob: presigned PUT, read, delete, signed GET links; local folder in dev/tests). Without it on Vercel, feedback uploads answer 503 and `GET /api/feedback` says `screenshots: false`.
+- Tests: `server/settings.test.ts` (17: 401/404 on every endpoint, whitelists, slug change + redirect + taken + limit, logo replace/foreign key, payments rules incl. the carried-forward "Till shop can turn pay on delivery on", pause, feedback limit and foreign screenshot, change password wrong/weak/same/limit/revoke/email), `uploads.test.ts` (+3: feedback kind, screenshots off without the store, private Blob driver), shared locations + whitelist contract, Playwright `e2e/settings.spec.ts` (2: no badge; pause → browse only → resume).
+
+**CP2 · app** (EAS Update, no native change)
+- **More:** Shop profile and Payments rows in "Your shop", a Settings row; sign-out moved to a shared `signOutOnThisPhone()` that also empties the new settings caches.
+- **Settings** (20b-settings), **Your details** (20b-your-details), **Change your password** (21-change-password), **Share feedback** (21-share-feedback), **Shop profile** (20b-shop-profile: logo, name, Change link sheet with the warning and a live check, about, location picker with search + free text, WhatsApp / calls / TikTok / Instagram), **Payments** (20b-payments: accounts with the active radio, Edit, add / edit / make active / remove, the two toggles, the "Buyers see" line, "oda never touches your money"), **Add / edit account**. Every screen: loading, error + Try again, offline (saved copy read-only, OfflineBar).
+- Helpers tested (`src/settings/form.test.ts`, 5; `onboarding.test.ts` +1 for the screenshot upload).
+
+**Compared with the designs**
+- 20b-settings: no Theme row (light only), no Rate the app yet (M8b), no Delete account yet (CP3); "Terms and privacy" opens a sheet with both pages; Log out asks first.
+- 20b-your-details: no camera badge on the initials (design-changes); email note "Email can't be changed yet"; saving shows "Saved." and goes back.
+- 21-change-password: the shared password rules plus "Not the same as your old password"; no 4-segment strength bar; a success state ("Password changed… We emailed you").
+- 21-share-feedback: as designed; "Add screenshot" hidden until the private store is connected; a thank-you state after sending.
+- 20b-shop-profile: as designed, plus "Remove logo"; TikTok uses a neutral note icon (#56); the WhatsApp / TikTok / Instagram rows open a small edit sheet; the save button is disabled until something changes.
+- 20b-payments: with one account it matches the design (Edit link); with several, each is a box with a radio (tap → make active / edit / remove); a no-account state; no verification wording.
+
+**Checks:** `pnpm check:all` green (shared 251, web 323, db 23, seller 97, Playwright 20).
 
 ## 2026-10-06 · M7 gate passed; M8 plan proposed (owner Step 81; branch `m7-gate`)
 

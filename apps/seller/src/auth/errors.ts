@@ -27,6 +27,7 @@ const SERVER_WORDED = new Set([
   'RATE_LIMITED',
   'rate_limited',
   'WEAK_PASSWORD',
+  'SAME_PASSWORD',
   'EMAIL_HAS_ACCOUNT',
   'NO_CODE',
   'invalid', // input checks from our API (zod messages written for sellers)
@@ -71,6 +72,9 @@ export function friendlyAuthError(error: AuthError | null | undefined): Friendly
       };
     case 'INVALID_EMAIL':
       return { message: 'Enter a valid email, like you@example.com.', action: null };
+    case 'INVALID_PASSWORD':
+      // Change password: the current password is wrong.
+      return { message: "That isn't your current password. Try again.", action: null };
     case 'PASSWORD_TOO_SHORT':
       return { message: 'Use at least 8 characters.', action: null };
   }

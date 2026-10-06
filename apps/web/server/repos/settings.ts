@@ -189,6 +189,10 @@ export function settingsRepo(db: Db, ctx: SellerCtx) {
 
     // Pause ----------------------------------------------------------------------------
 
+    async getPaused() {
+      return { paused: (await seller.getShop()).isPaused };
+    },
+
     async setPaused(paused: boolean) {
       const shop = await seller.updateShop({ isPaused: paused });
       return { paused: shop.isPaused };

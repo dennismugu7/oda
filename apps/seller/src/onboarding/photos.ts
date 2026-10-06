@@ -28,7 +28,7 @@ export interface PhotoDeps {
   encode(uri: string, width: number, quality: number): Promise<Encoded>;
   readFile(uri: string): Promise<Blob>;
   requestUpload(body: {
-    kind: 'product' | 'logo';
+    kind: 'product' | 'logo' | 'feedback';
     contentType: 'image/jpeg';
     size: number;
   }): Promise<{ data: SignedUpload | null; error: ApiError | null }>;
@@ -64,7 +64,7 @@ const UPLOAD_FAILED = "Couldn't upload your photo. Try again.";
 /** Uploads one encoded file; returns its storage key. */
 async function uploadOne(
   file: Encoded,
-  kind: 'product' | 'logo',
+  kind: 'product' | 'logo' | 'feedback',
   deps: PhotoDeps,
 ): Promise<{ key: string | null; error: string | null }> {
   const blob = await deps.readFile(file.uri);
@@ -109,6 +109,21 @@ export async function uploadProductPhoto(
     };
   } catch {
     return { photo: null, error: UPLOAD_FAILED };
+  }
+}
+
+/** A feedback screenshot: one full-size re-encoded JPEG (private store, decision #74 b). */
+export async function uploadScreenshot(
+  picked: Picked,
+  deps: PhotoDeps,
+): Promise<{ key: string | null; previewUri: string | null; error: string | null }> {
+  try {
+    const size = fitWithin(picked.width, picked.height, FULL_MAX);
+    const encoded = await deps.encode(picked.uri, size.width, FULL_QUALITY);
+    const { key, error } = await uploadOne(encoded, 'feedback', deps);
+    return { key, previewUri: key ? encoded.uri : null, error };
+  } catch {
+    return { key: null, previewUri: null, error: UPLOAD_FAILED };
   }
 }
 

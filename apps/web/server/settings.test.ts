@@ -14,6 +14,7 @@ import {
   deleteAccount,
   getDetails,
   getFeedback,
+  getPause,
   getPayments,
   getShopProfile,
   patchAccount,
@@ -47,7 +48,7 @@ const patch = (s: Seller, h: Handler, body: unknown, id?: string) =>
 
 describe('every settings endpoint', () => {
   it('needs a session (401) and never reaches another shop (404)', async () => {
-    for (const handler of [getDetails, getShopProfile, getPayments, getFeedback]) {
+    for (const handler of [getDetails, getShopProfile, getPayments, getFeedback, getPause]) {
       expect(await anonCall(handler)).toBe(401);
     }
     for (const handler of [patchDetails, patchShopProfile, patchPayments, patchPause]) {
@@ -261,7 +262,9 @@ describe('payments', () => {
 describe('pause', () => {
   it('pauses and resumes; a paused shop takes no orders', async () => {
     const s = await newSeller();
+    expect((await s.call(getPause)).json).toEqual({ paused: false });
     expect((await patch(s, patchPause, { paused: true })).json).toEqual({ paused: true });
+    expect((await s.call(getPause)).json).toEqual({ paused: true });
     const shop = await db().query.shops.findFirst({ where: eq(t.shops.id, s.shopId) });
     expect(shop?.isPaused).toBe(true);
     // The checkout refuses paused shops (checkout.test.ts, 'shop_paused').

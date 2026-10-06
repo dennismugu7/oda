@@ -22,12 +22,15 @@ export function Sheet({
   title,
   options,
   onClose,
+  header,
   children,
 }: {
   visible: boolean;
   title: string;
   options: SheetOption[];
   onClose: () => void;
+  /** Above the options (e.g. a search field). */
+  header?: ReactNode;
   /** Extra content under the options (e.g. a "custom colour" field). */
   children?: ReactNode;
 }) {
@@ -40,6 +43,7 @@ export function Sheet({
         <Text accessibilityRole="header" style={styles.title}>
           {title}
         </Text>
+        {header}
         <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
           {options.map((o) => (
             <Pressable

@@ -78,6 +78,9 @@ export const postActivateAccount = handle(async (request, id) =>
   (await repo(request)).activateAccount(id!),
 );
 
+/** GET /api/shop/pause (the Settings toggle). */
+export const getPause = handle(async (request) => (await repo(request)).getPaused());
+
 /** PATCH /api/shop/pause: paused = browse only, no new orders. */
 export const patchPause = handle(async (request) => {
   const r = await repo(request);
