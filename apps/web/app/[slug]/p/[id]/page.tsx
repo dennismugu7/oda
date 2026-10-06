@@ -1,12 +1,15 @@
 // Product page (web 02, with design-changes: no "only 3 left" or arrival date, no size guide;
 // "{units_sold} sold" only from 5; delivery card "Delivery from KES x · Free over KES y";
-// payment card "Pay the seller directly on M-Pesa" (+ "or on delivery")). Reviews arrive in
-// M7, so the rating line and reviews show only once there are some (decision #59 c).
+// payment card "Pay the seller directly on M-Pesa" (+ "or on delivery")). The rating line
+// (linking to the reviews) and the reviews list show once there are some (M7, decision #73).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { formatKes } from '@oda/shared';
 import { FavouriteButton, VisitBeacon } from '@/components/store/interactive';
 import { CartIcon, Gallery, ProductBuy } from '@/components/store/product';
+import { ProductReviews } from '@/components/store/ProductReviews';
+import { getDb } from '@/server/db';
+import { productReviews } from '@/server/repos/reviews';
 import Link from 'next/link';
 import { HttpError } from '@/server/errors';
 import { loadShop, restOf, shopData, shopLink, takingOrders } from '@/server/storefront';
@@ -48,7 +51,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function ProductPage(props: Props) {
   const { shop, data, product } = await loadProduct(props);
-  const [cards, areas] = await Promise.all([data.catalog(), data.deliveryAreas()]);
+  const [cards, areas, reviews] = await Promise.all([
+    data.catalog(),
+    data.deliveryAreas(),
+    productReviews(getDb(), shop.id, product.id),
+  ]);
   const badge = cards.find((c) => c.id === product.id)?.badge ?? null;
   const canOrder = takingOrders(shop);
   const cheapest = areas.length ? Math.min(...areas.map((a) => a.fee)) : null;
@@ -108,8 +115,14 @@ export default async function ProductPage(props: Props) {
         <p className="mt-1 text-body text-text-secondary">
           {product.ratingCount > 0 ? (
             <>
-              <span className="text-star">★</span> {Number(product.ratingAvg).toFixed(1)} ·{' '}
-              {product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'}
+              <span className="text-star">★</span>{' '}
+              <span className="font-semibold text-navy">
+                {Number(product.ratingAvg).toFixed(1)}
+              </span>{' '}
+              ·{' '}
+              <a href="#reviews" className="text-primary">
+                {product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'}
+              </a>
             </>
           ) : null}
           {product.ratingCount > 0 && product.unitsSold ? ' · ' : null}
@@ -175,6 +188,16 @@ export default async function ProductPage(props: Props) {
           </p>
         </section>
       ) : null}
+
+      <ProductReviews
+        slug={shop.slug}
+        productId={product.id}
+        shopName={shop.name}
+        ratingAvg={product.ratingCount > 0 ? Number(product.ratingAvg) : null}
+        ratingCount={product.ratingCount}
+        initial={reviews.reviews}
+        initialNext={reviews.next}
+      />
     </main>
   );
 }

@@ -2,21 +2,67 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 77)
+## Handoff (keep current; updated 2026-10-06, owner Step 79)
 
 **Current state**
-- **Milestones:** M0–M6 closed; latest tag **`m6-done`** (on `main` after the gate PR). **M9 removed** (decision #72: no admin back office; its jobs moved to M8 and M10). **M7 plan proposed in `docs/m7-plan.md` — awaiting the owner's approval and answers to its six questions. M7 not started.**
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers manage delivery, orders (every action, WhatsApp prefills, buyer emails), manual orders, Home and notifications; pushes go to the seller's phone (Expo, `EXPO_ACCESS_TOKEN` in Vercel); unpaid buyer orders expire after 48 h (hourly `cron-expire-orders`, `CRON_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging** remakes its sample orders (its owner has no password; phone tests use the owner's own shop).
-- **App:** EAS preview build **0.3.0** (`1f0323b4`, runtime 0.3.0) on the Redmi: push + `@sentry/react-native` 7.11.0 **inactive until M10** (decision #70). EAS Updates now target runtime 0.3.0 (`pnpm update:preview "…"`).
-- **Git:** everything merged and pushed; no open PRs.
+- **Milestones:** M0–M6 closed; latest tag **`m6-done`**. **M9 removed** (decision #72). **M7 in progress** (plan approved in Step 79, decision #73): CP1 (review server) and CP2 (buyer web) built and merged to `main`; **🛑 at review stop A** (buyer review flow on the phone's browser; test list in the entry below). CP3 (seller app Reviews screen, report) not started.
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Everything from M6, plus reviews: delivered buyer-placed orders get "Rate your order" (`/o/{token}/review`), photos, product reviews and averages, the delivered email/WhatsApp link to the review page, a `new_review` push. Removing a review: **Actions → review-remove** (`OPS_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging**.
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi; no app change in M7 yet (a `new_review` push opens the order until CP3).
+- **Git:** branch `m7-reviews` merged (see the entry below); no open PRs.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
-**Next step:** M7 plan awaiting approval (`docs/m7-plan.md`). After approval: CP1 (review server) per the plan.
+**Next step:** the owner runs review stop A. After the go-ahead: CP3 (seller app Reviews screen with reply and report, `new_review` tap → the review) as an EAS Update.
 
 **Open items**
 - **Owner:** confirm Expo's "Enhanced security for push notifications" is **on** (expo.dev → project oda → Settings); delete the oda admin-SDK key file from Downloads.
-- Carried-forward list: in the M6 gate entry below.
+- Carried-forward list: in the M6 gate entry below, plus the M7 additions in the entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M7 CP1–CP2: reviews server and buyer web (owner Step 79; branch `m7-reviews`)
+
+**Owner's answers recorded** as decision #73 (`docs/m7-plan.md` approved and updated; `data-model.md`, `milestones.md`).
+
+**CP1 · Review server**
+- Migration **0005** (expand only): `reviews.reported_at`, `reviews.report_reason`; table `ops_events`.
+- Shared `reviews.ts`: tags, labels, limits, `cleanReviewText` (links + phone numbers removed), `reviewDisplayName` ("Wanjiku M."), `canReviewOrder` (delivered + not manual), input schemas. `buyerTimeline` takes the review state ("Rate your order" current → done; absent for manual orders).
+- Buyer: `GET/POST/PUT /api/o/:token/review` (Origin check, per-IP lookup limit, 10 writes a day per order, one per order via the unique key, 7-day edits, items must be the order's own), `POST /api/o/:token/uploads` (presigned `reviews/{orderId}/…`, 20 an hour per order; bytes checked on submit; replaced photos deleted). New review → `new_review` notification row in the same transaction + push after the response (`sendSellerPushes`, shared with order pushes). Edits send nothing.
+- Seller: `GET /api/reviews?tab=all|needs_reply|low` (summary, 5→1 histogram, tab counts, pages of 20), `GET /api/reviews/:id`, `PUT /api/reviews/:id/reply`, `POST /api/reviews/:id/report` (photos hidden publicly; 10 a day per shop; reporting twice changes nothing).
+- Public: `productReviews()` + `GET /api/shops/:slug/products/:id/reviews?cursor=` (no phone, email or order number; no photo once reported).
+- Ops: `POST /api/ops/reviews/remove` (Bearer `OPS_SECRET` via `requireOps`, 404 otherwise; by review id, or shop link name + order number) → audit row + delete + averages + photos; `.github/workflows/review-remove.yml`. The Bearer check is shared with the cron job (`assertBearer`).
+- Delivered email: a "Rate your order" button to `/o/{token}/review`; delivered WhatsApp message: "Please rate your order here: …/review". Manual orders keep the order link.
+- Tests: `server/reviews.test.ts` (13: create with name/items/notification/push; refused when undelivered, cancelled or manual; race → one review; edits + lock after 7 days; averages incl. unrated items; item/tag/field whitelist + Origin; limits; photo prefix, location, missing, replace; seller list/tabs/pages/reply/authorization; report hides photos; public fields; ops 404 + removal with audit/averages/photos), shared `reviews.test.ts` (19); timeline, WhatsApp and delivered-email tests updated.
+
+**CP2 · Buyer web**
+- `/o/{token}/review` (5d): shop header, big stars with label, tag chips, per-item stars/text/photo (resized in the browser to 1280 px JPEG, which drops location data; uploaded with the signed URL), "Submit review" / "Save changes", "Shows as Wanjiku M. · Verified buyer". A read-only "Your review" after 7 days; "Not delivered yet" and "Reviews aren't open for this order" (manual) notices.
+- Order page (05c): "How was your order?" with five star links (→ the review page with that rating chosen) + **Rate your order**; afterwards "Thanks for your review" + Edit your review / See your review; the timeline's last step goes current → done; nothing for manual orders (and the bookmark line drops "leave a review").
+- Product page (02): "★ 4.0 · 1 review" links to the list; reviews (stars, name, date, text, photo tap-to-enlarge, tags, seller reply) with "See more reviews". Shop home (01) and product cards already showed ratings (M4).
+- Playwright `e2e/reviews.spec.ts` (2): delivered → review with a photo → product page average and photo → edit (2 stars, photo removed); undelivered: notice + API 409.
+
+**Design comparison (CP2):** 5d — the item photo button sits under the text box (beside it once a photo is added, as in the image); unrated items say "Optional" instead of "Tap the stars to rate" (the big label says it until the overall stars are chosen); the URL is `/o/{token}/review` (design-changes). 05c — a normal button, not the slider (design-changes); the empty stars are tappable shortcuts; the order status card keeps its M5 layout with the "Rate your order" step. 02 — the design shows no review list; ours follows the page's card style.
+
+**Checks:** `pnpm check:all` green (shared 237, web 302, db 23, seller 86, Playwright 18). **`OPS_SECRET`** generated on the laptop and piped into GitHub Actions secrets and Vercel Production (same value) and Vercel Preview (its own value), Sensitive; never printed; verified by name.
+
+**Deviations / notes**
+- One photo size (1280 px) rather than a separate thumbnail: `review_items.photo_path` holds one key.
+- Uploads never submitted stay in storage until M8's purge of unreferenced keys (now including `reviews/`).
+- No deadline to write a review after delivery (not in the spec).
+- `review-remove` also accepts shop link name + order number, since the review id isn't shown anywhere yet.
+
+**Carried forward (M7 additions):** M8: the support digest includes reported reviews (and whatever it needs to mail each only once); the purge covers `reviews/` keys. CP3: app Reviews screen, reply, report, push tap → review.
+
+**🛑 Review stop A — phone test (buyer on the phone's browser, your own shop)**
+Before you start: your shop takes pay on delivery and has at least two products.
+1. On the phone's browser, open your shop, add **two different products**, check out with **pay on delivery** and **your email**. On the order page: no "How was your order?" card; the Order status list ends with a grey **Rate your order · Unlocks once it's delivered**.
+2. In the address bar, add `/review` to the end of the order link and open it → **Not delivered yet · You can rate your order once it's delivered.**
+3. In the app: open the order → **Accept** → **Mark as sent** → **Mark as delivered** (tick "I've collected", WhatsApp toggle **on**). WhatsApp opens with "…Please rate your order here: https://oda-eta.vercel.app/o/…/review" (you don't need to send it).
+4. Your email "Your order #… was delivered" has a **Rate your order** button → it opens the review page.
+5. Review page: tap **5 stars** → "Loved it!"; tick **two tags**; for the first product tap **4 stars**, type `Great fit, call 0712 345 678`, **Add photo** from the gallery; leave the second product empty → **Submit review**. You land on the order page: **Thanks for your review** with **Edit your review**; the Order status's last step **Rate your order** is green.
+6. Within about 10 seconds the Redmi shows a push **★★★★★ from {your first name} {initial}. · #…** with "Great fit, call"; tapping it opens that order (the Reviews screen comes in CP3). The bell's list has the same notification.
+7. Open your shop: the header shows **★ 5.0**; the first product's card shows **★ 4.0 (1)**; the second product shows no rating. Open the first product: **4.0 · 1 review** → tap it → the review shows your photo, "{Name} {initial}. · Verified buyer", the text **without the phone number**, and the two tags.
+8. Back on the order page → **Edit your review** → set the first product to **2 stars**, tap ✕ on the photo → **Save changes**. The product page now shows **2.0** and no photo.
+9. Place a **second order** with the same first product, deliver it in the app, and review it with that product at **5 stars**. Its product page shows **3.5 · 2 reviews**.
+10. Manual order: in the app, **New order** → any product → "Already paid" → create, then mark it sent and delivered (WhatsApp on). The message ends with "Your order: …" (no review link). Open that order's link: **no** "How was your order?" card, **no** "Rate your order" step, and the bookmark line reads "…how you track your order." Adding `/review` shows **Reviews aren't open for this order**.
+11. Removing a review: GitHub → **Actions → review-remove → Run workflow**: shop link name = your shop's link name, order number = the order from step 9, reason = `test` → the run is green. The product page shows **2.0 · 1 review** again and the shop header's rating changes.
 
 ## 2026-10-06 · M6 gate passed; M9 removed; M7 plan proposed (owner Step 77; branch `m6-gate`)
 

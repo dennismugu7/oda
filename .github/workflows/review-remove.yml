@@ -1,0 +1,75 @@
+name: review-remove
+
+# Removes one review from staging (decision #73 c), never by a raw database edit. Give the review
+# id, or the shop's link name and the order number. The server writes an audit row in ops_events
+# (who ran this, why, and a snapshot), deletes the review, recomputes the shop and product
+# averages and deletes its photos. Called with the Bearer secret OPS_SECRET (the same value is
+# set in Vercel); a wrong or missing secret answers 404.
+on:
+  workflow_dispatch:
+    inputs:
+      review_id:
+        description: 'Review id (leave empty to use shop + order number)'
+        required: false
+      shop_slug:
+        description: 'Shop link name, e.g. amani-styles'
+        required: false
+      order_number:
+        description: 'Order number, e.g. 1042'
+        required: false
+      reason:
+        description: 'Why it is removed (kept in the audit log)'
+        required: true
+
+concurrency:
+  group: review-remove
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  URL: https://oda-eta.vercel.app/api/ops/reviews/remove
+
+jobs:
+  remove:
+    name: Remove a review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the inputs and call the server
+        env:
+          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          REVIEW_ID: ${{ inputs.review_id }}
+          SLUG: ${{ inputs.shop_slug }}
+          NUMBER: ${{ inputs.order_number }}
+          REASON: ${{ inputs.reason }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          [ -n "$OPS_SECRET" ] || { echo "::error::Repository secret OPS_SECRET is not set."; exit 1; }
+          if [ -n "$REVIEW_ID" ]; then
+            [[ "$REVIEW_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "::error::Not a review id."; exit 1; }
+            BODY=$(jq -n --arg id "$REVIEW_ID" --arg reason "$REASON" --arg actor "$ACTOR" \
+              '{reviewId: $id, reason: $reason, actor: $actor}')
+          else
+            [[ "$SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "::error::Give a review id, or a shop link name and order number."; exit 1; }
+            [[ "$NUMBER" =~ ^[0-9]{1,7}$ ]] || { echo "::error::Not an order number."; exit 1; }
+            BODY=$(jq -n --arg slug "$SLUG" --argjson n "$NUMBER" --arg reason "$REASON" --arg actor "$ACTOR" \
+              '{shopSlug: $slug, orderNumber: $n, reason: $reason, actor: $actor}')
+          fi
+          # Neon may need a few seconds to wake up: retry twice on a timeout. Never prints the secret.
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $OPS_SECRET" -H 'content-type: application/json' \
+              --data "$BODY" --max-time 60 "$URL" || echo 000)
+            if [ "$status" = "200" ]; then
+              echo "Removed: $(cat result.json)"
+              echo "Review removed: $(cat result.json)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ "$status" != "000" ]; then break; fi
+            echo "Attempt $attempt timed out"
+            sleep 15
+          done
+          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 without a message means OPS_SECRET differs from the one in Vercel."
+          exit 1

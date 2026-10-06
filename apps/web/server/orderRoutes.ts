@@ -16,6 +16,7 @@ import type { Defer } from './checkout';
 import { getDb } from './db';
 import { parseInput } from './errors';
 import { insertOrder, quoteOrder, transitionOrder } from './orders';
+import { reviewLink } from './orderLink';
 import { sellerOrdersRepo } from './repos/sellerOrders';
 import { body, handle } from './routeHandler';
 
@@ -63,6 +64,7 @@ export function postOrderAction(defer: Defer) {
             total: order.total,
             shopName: detail.shop.name,
             link: detail.link,
+            reviewLink: order.source === 'manual' ? null : reviewLink(order.publicToken),
             paymentStatus: order.paymentStatus,
             sentMethod: order.sentMethod,
             riderPhone: order.riderPhone,

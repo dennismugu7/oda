@@ -5,3 +5,8 @@ import { serverEnv } from './env';
 export function orderLink(token: string): string {
   return `${serverEnv().PUBLIC_SHOP_BASE_URL}/o/${token}`;
 }
+
+/** The review page for a delivered, buyer-placed order (M7, decision #73 i). */
+export function reviewLink(token: string): string {
+  return `${orderLink(token)}/review`;
+}

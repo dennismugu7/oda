@@ -17,6 +17,11 @@ const schema = z
       .string()
       .min(32, { message: 'CRON_SECRET must be at least 32 characters' })
       .optional(),
+    /** Bearer secret for /api/ops/* (manual ops workflows, decision #73 c); unset = 404. */
+    OPS_SECRET: z
+      .string()
+      .min(32, { message: 'OPS_SECRET must be at least 32 characters' })
+      .optional(),
   })
   // Shared shop links must be full public https:// URLs wherever the app is deployed: a
   // missing value once made staging share "localhost:3000/…" links (owner Step 58).

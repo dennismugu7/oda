@@ -52,6 +52,13 @@ describe('WhatsApp prefills', () => {
       }),
     ).toContain('is ready for pickup at Kilimani stall, Mon–Sat 9am–6pm');
     expect(whatsappMessage('markDelivered', order)).toContain(order.link);
+    // M7: buyer-placed orders get the review link; manual orders keep the order link (#73 i).
+    expect(whatsappMessage('markDelivered', { ...order, reviewLink: `${order.link}/review` })).toBe(
+      'Hi Wanjiku, thank you for order #1042 from Amani Styles! I hope you love it. Please rate your order here: https://oda.example/o/abcdefghijkl/review',
+    );
+    expect(whatsappMessage('markDelivered', { ...order, reviewLink: null })).toContain(
+      'Your order: https://oda.example/o/abcdefghijkl',
+    );
     expect(
       whatsappMessage('sellerCancel', { ...order, paymentStatus: 'refund_due' }, 'out_of_stock'),
     ).toBe(

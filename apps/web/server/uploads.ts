@@ -91,6 +91,14 @@ export async function verifyStoredImage(
   db: Db = getDb(),
 ): Promise<void> {
   assertOwnsKey(ctx, key, allowed);
+  await checkStoredBytes(key, db);
+}
+
+/**
+ * The byte checks of verifyStoredImage() for a key whose ownership the caller already
+ * checked (review photos are owned through the order token, decision #73 k).
+ */
+export async function checkStoredBytes(key: string, db: Db = getDb()): Promise<void> {
   let bytes: Uint8Array | null;
   try {
     bytes = await getStorage().read(key);
@@ -120,7 +128,9 @@ export async function verifyStoredImage(
   }
   if (hasLocationData(bytes, type!)) {
     await reject(
-      'This photo still contains its location. Take or choose it again in the oda app.',
+      key.startsWith('reviews/')
+        ? 'This photo still contains its location. Choose it again.'
+        : 'This photo still contains its location. Take or choose it again in the oda app.',
       'PHOTO_HAS_LOCATION',
     );
   }

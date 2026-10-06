@@ -134,6 +134,8 @@ export interface OrderEmailData {
   total: number;
   /** The buyer's order page, /o/{token}. */
   link: string;
+  /** The review page, /o/{token}/review; null for manual orders (decision #73 i). */
+  reviewLink?: string | null;
 }
 
 function itemRows(o: OrderEmailData): { html: string; text: string } {
@@ -264,8 +266,8 @@ const UPDATE_KINDS: Record<UpdateTemplate, Email['kind']> = {
 
 /**
  * The seller-triggered updates (order-lifecycle.md "email" side effects). Each says what
- * happened, what's next, and links to the order page. The delivered email's review link is
- * the order page until reviews open (M7).
+ * happened, what's next, and links to the order page; the delivered email links to the review
+ * page (M7) for orders that can be reviewed.
  */
 export function orderUpdateEmail(
   template: UpdateTemplate,
@@ -278,6 +280,7 @@ export function orderUpdateEmail(
   let subject: string;
   let lines: string[];
   let button = 'See your order';
+  let link = o.link;
   switch (template) {
     case 'payment_confirmed':
       heading = 'Payment confirmed';
@@ -318,10 +321,12 @@ export function orderUpdateEmail(
     case 'delivered':
       heading = 'Delivered';
       subject = `Your order ${n} from ${o.shopName} was delivered`;
-      lines = [
-        `Your order ${n} from ${o.shopName} was delivered. We hope you love it!`,
-        'You can rate your order on your order page soon.',
-      ];
+      lines = [`Your order ${n} from ${o.shopName} was delivered. We hope you love it!`];
+      if (o.reviewLink) {
+        lines.push(`How was it? Your review helps other buyers and ${o.shopName}.`);
+        button = 'Rate your order';
+        link = o.reviewLink;
+      }
       break;
     case 'seller_cancelled': {
       heading = 'Order cancelled';
@@ -359,7 +364,7 @@ export function orderUpdateEmail(
     `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">${escapeHtml(heading)}</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:16px;">Hi ${escapeHtml(o.buyerName)},</td></tr>
 ${lines.map((l) => `<tr><td style="font-size:15px;line-height:24px;padding-bottom:16px;">${escapeHtml(l)}</td></tr>`).join('\n')}
-${orderButton(o.link, button)}`,
+${orderButton(link, button)}`,
   );
   const text = `${heading}
 
@@ -367,7 +372,7 @@ Hi ${o.buyerName},
 
 ${lines.join('\n\n')}
 
-${button}: ${o.link}
+${button}: ${link}
 
 Thank you,
 The oda team`;

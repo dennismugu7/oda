@@ -340,6 +340,7 @@ export function publicRepo(db: Db) {
               tags: t.reviews.tags,
               sellerReply: t.reviews.sellerReply,
               repliedAt: t.reviews.repliedAt,
+              reportedAt: t.reviews.reportedAt,
               createdAt: t.reviews.createdAt,
             })
             .from(t.reviews)
@@ -361,7 +362,8 @@ export function publicRepo(db: Db) {
                 .innerJoin(t.orderItems, eq(t.orderItems.id, t.reviewItems.orderItemId))
                 .where(inArray(t.reviewItems.reviewId, ids))
             : [];
-          return reviews.map((r) => ({
+          // A reported review's photos are hidden on public pages (decision #73 a).
+          return reviews.map(({ reportedAt, ...r }) => ({
             ...r,
             items: items
               .filter((i) => i.reviewId === r.id)
@@ -370,7 +372,7 @@ export function publicRepo(db: Db) {
                 productName: i.productName,
                 rating: i.rating,
                 text: i.text,
-                photoPath: i.photoPath,
+                photoPath: reportedAt ? null : i.photoPath,
               })),
           }));
         },

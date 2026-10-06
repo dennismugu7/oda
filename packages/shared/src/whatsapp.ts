@@ -22,6 +22,8 @@ export interface WhatsAppOrder {
   shopName: string;
   /** The buyer's order page. */
   link: string;
+  /** The review page; null for manual orders, which can't be reviewed (decision #73 i). */
+  reviewLink?: string | null;
   paymentStatus: 'unpaid' | 'claimed' | 'paid' | 'refund_due' | 'refunded';
   sentMethod: SentMethod | null;
   riderPhone: string | null;
@@ -39,8 +41,8 @@ const CANCEL_SENTENCE: Record<string, string> = {
 
 /**
  * The message for an action just saved, or null when the action has no WhatsApp step.
- * `order` is the order *after* the action. The delivered message links to the order page;
- * it becomes the review link in M7.
+ * `order` is the order *after* the action. The delivered message links to the review page
+ * (M7), or to the order page for manual orders.
  */
 export function whatsappMessage(
   action: SellerActionType,
@@ -66,7 +68,9 @@ export function whatsappMessage(
       return `${hi} your ${ref} ${how}. Track it here: ${order.link}`;
     }
     case 'markDelivered':
-      return `${hi} thank you for ${ref}! I hope you love it. Your order: ${order.link}`;
+      return order.reviewLink
+        ? `${hi} thank you for ${ref}! I hope you love it. Please rate your order here: ${order.reviewLink}`
+        : `${hi} thank you for ${ref}! I hope you love it. Your order: ${order.link}`;
     case 'sellerCancel': {
       const why = CANCEL_SENTENCE[cancelReason ?? 'other'] ?? CANCEL_SENTENCE.other;
       const money =

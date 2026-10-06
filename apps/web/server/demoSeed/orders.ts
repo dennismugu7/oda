@@ -104,7 +104,7 @@ const SAMPLES: Sample[] = [
     placedAgo: 2 * DAY,
   },
   {
-    label: 'Delivered (rate card, reviews open soon)',
+    label: 'Delivered (rate it: the review page)',
     buyer: 'Gitau (demo buyer)',
     kind: 'buyer_pay_on_delivery',
     product: 'Demo wrap dress',

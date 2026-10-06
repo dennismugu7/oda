@@ -2,7 +2,7 @@ import 'server-only';
 import { asc, eq } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import { BUYER_LIMITS, type SideEffect } from '@oda/shared';
-import { orderLink } from '../orderLink';
+import { orderLink, reviewLink } from '../orderLink';
 import { hitLimit } from '../rateLimit';
 import {
   orderCancelledEmail,
@@ -64,6 +64,7 @@ export async function sendOrderEmails(
       deliveryFee: order.deliveryFee,
       total: order.total,
       link: orderLink(order.publicToken),
+      reviewLink: order.source === 'manual' ? null : reviewLink(order.publicToken),
     };
     const facts: OrderUpdateFacts = {
       paymentStatus: order.paymentStatus,

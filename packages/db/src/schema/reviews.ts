@@ -30,6 +30,9 @@ export const reviews = pgTable(
     sellerReply: text('seller_reply'),
     repliedAt: tstz('replied_at'),
     editableUntil: tstz('editable_until').notNull(),
+    /** The seller reported it (decision #73 a): its photos are hidden on public pages. */
+    reportedAt: tstz('reported_at'),
+    reportReason: text('report_reason'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
