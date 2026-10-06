@@ -10,6 +10,7 @@ import { pushServer, tokenStore } from '@/push/server';
 import { unregisterThisPhone } from '@/push/session';
 import { resetPushRegistration } from '@/push/usePush';
 import { reviewsCache } from '@/reviews/cache';
+import { insightsCache } from '@/insights/cache';
 import { paymentsCache } from './api';
 import { clearSettingsCaches } from './useLoaded';
 
@@ -27,4 +28,5 @@ export async function signOutOnThisPhone(): Promise<void> {
   reviewsCache.clear();
   paymentsCache.set(null);
   clearSettingsCaches();
+  insightsCache.clear();
 }

@@ -1,5 +1,5 @@
 import 'server-only';
-import { isPublicBaseUrl } from '@oda/shared';
+import { isPublicBaseUrl, normalizeKePhone } from '@oda/shared';
 import { z } from 'zod';
 
 const LOCAL_SHOP_BASE_URL = 'http://localhost:3000';
@@ -22,6 +22,23 @@ const schema = z
       .string()
       .min(32, { message: 'OPS_SECRET must be at least 32 characters' })
       .optional(),
+    /** Help's support contact (decision #77): email always, WhatsApp only when set. */
+    ODA_SUPPORT_EMAIL: z.email().default('support@mugu-labs.com'),
+    ODA_SUPPORT_WHATSAPP: z
+      .string()
+      .optional()
+      .transform((v, ctx) => {
+        if (!v?.trim()) return null;
+        const e164 = normalizeKePhone(v);
+        if (!e164) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'ODA_SUPPORT_WHATSAPP must be a Kenyan mobile number',
+          });
+          return z.NEVER;
+        }
+        return e164;
+      }),
   })
   // Shared shop links must be full public https:// URLs wherever the app is deployed: a
   // missing value once made staging share "localhost:3000/…" links (owner Step 58).

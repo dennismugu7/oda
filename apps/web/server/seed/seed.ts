@@ -721,6 +721,18 @@ export async function seed(db: Db, opts: { password: string; now?: Date }): Prom
     })),
   );
 
+  // Shop visits for Insights (M8b): the last 35 Nairobi days, by source.
+  const visitSources = ['tt', 'wa', 'ig', 'direct', 'status'] as const;
+  const visitRows = [];
+  for (let d = 0; d < 35; d++) {
+    const day = new Date(now.getTime() + 3 * HOUR - d * DAY).toISOString().slice(0, 10);
+    for (const source of visitSources) {
+      const visits = rnd.int(0, source === 'tt' ? 30 : 12);
+      if (visits) visitRows.push({ shopId: shop.id, day, source, visits });
+    }
+  }
+  await db.insert(t.shopVisitsDaily).values(visitRows);
+
   const [final] = await db.select().from(t.shops).where(eq(t.shops.id, shop.id));
   return {
     products: visible.length,

@@ -1,139 +1,129 @@
-// More tab (design 20): "Your business" with Reviews (M7, "4.8 ★ · 38"), the "Your shop"
-// rows (Shop profile and Payments from M8a, Delivery from M6, Categories) and Settings (M8a).
-// Insights, customers and the full 20-more layout arrive in M8b. Sign out lives here too.
+// More tab (design 20-more, M8b): the shop card (logo, name, link, View) in the header, then
+// "Your business" (Insights "KSh x this week", Customers, Reviews "4.8 ★ · 38"), "Your shop"
+// (Shop profile, Payments "Till 123 456", Delivery "3 areas", Categories) and Settings. Help
+// and support arrives with M8b CP3. Values load fresh whenever the tab shows; offline, the last
+// copy stays (read-only).
 import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useMe } from '@/auth/useMe';
-import { signOutOnThisPhone } from '@/settings/signOut';
-import { Button } from '@/ui/auth';
+import { openBuyerView } from '@/catalogue/preview';
+import { growApi, type MoreData } from '@/insights/api';
+import { moreRowValues } from '@/insights/view';
+import { memoryCache, useLoaded } from '@/settings/useLoaded';
+import { Button, FormMessage } from '@/ui/auth';
+import { OfflineBar } from '@/ui/offline';
+import { Card, Row, Section, type FeatherName } from '@/ui/rows';
+import { ShopAvatar } from '@/ui/shopAvatar';
 import { TabScreen } from '@/ui/tabs';
 import { colors, radii, spacing, text } from '@/theme';
 
-const ROWS: {
-  icon: ComponentProps<typeof Feather>['name'];
-  title: string;
-  hint: string;
-  href: Href;
-}[] = [
-  { icon: 'user', title: 'Shop profile', hint: 'Name, link, logo', href: '/shop-profile' },
-  { icon: 'credit-card', title: 'Payments', hint: 'M-Pesa', href: '/payments' },
-  { icon: 'truck', title: 'Delivery', hint: 'Areas, pickup', href: '/delivery' },
-  { icon: 'grid', title: 'Categories', hint: 'How buyers filter', href: '/categories' },
-];
+const cache = memoryCache<MoreData>();
+
+type RowSpec = { icon: FeatherName; title: string; value: string; href: Href };
 
 export default function MoreTab() {
-  const me = useMe();
-  const [signingOut, setSigningOut] = useState(false);
+  const { data, error, offline, reload } = useLoaded(growApi.more, cache);
+  const values = data ? moreRowValues(data) : null;
 
-  async function signOut() {
-    setSigningOut(true);
-    await signOutOnThisPhone();
-    router.replace('/welcome');
-  }
+  const business: RowSpec[] = [
+    { icon: 'bar-chart-2', title: 'Insights', value: values?.insights ?? '', href: '/insights' },
+    { icon: 'users', title: 'Customers', value: values?.customers ?? '', href: '/customers' },
+    { icon: 'star', title: 'Reviews', value: values?.reviews ?? '', href: '/reviews' },
+  ];
+  const shop: RowSpec[] = [
+    {
+      icon: 'home',
+      title: 'Shop profile',
+      value: 'Name, logo, contacts',
+      href: '/shop-profile',
+    },
+    { icon: 'credit-card', title: 'Payments', value: values?.payments ?? '', href: '/payments' },
+    { icon: 'truck', title: 'Delivery', value: values?.delivery ?? '', href: '/delivery' },
+    { icon: 'grid', title: 'Categories', value: values?.categories ?? '', href: '/categories' },
+  ];
 
-  const rating =
-    me?.shop?.ratingCount && me.shop.ratingAvg !== null && me.shop.ratingAvg !== undefined
-      ? `${me.shop.ratingAvg.toFixed(1)} ★ · ${me.shop.ratingCount}`
-      : 'From buyers';
+  const card = (
+    <View style={styles.card}>
+      <ShopAvatar name={data?.shop.name} logoUrl={data?.shop.logoUrl} size={56} />
+      <View style={styles.cardText}>
+        <Text style={styles.shopName} numberOfLines={1}>
+          {data?.shop.name ?? ' '}
+        </Text>
+        <Text style={styles.shopLink} numberOfLines={1}>
+          {data ? `${data.shop.linkPrefix}${data.shop.slug}` : ' '}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="View your shop as buyers see it"
+        disabled={!data}
+        onPress={() => data && openBuyerView(data.shop.url)}
+        style={({ pressed }) => [styles.view, pressed && styles.pressed]}
+      >
+        <Feather name="external-link" size={16} color={colors.navy} />
+        <Text style={styles.viewText}>View</Text>
+      </Pressable>
+    </View>
+  );
+
+  const rows = (list: RowSpec[]) =>
+    list.map((row, i) => (
+      <Row
+        key={row.title}
+        first={i === 0}
+        icon={row.icon}
+        title={row.title}
+        value={row.value}
+        onPress={() => router.push(row.href)}
+      />
+    ));
 
   return (
-    <TabScreen title="More" subtitle={me?.email}>
-      <View style={styles.section}>
-        <Text style={styles.overline}>YOUR BUSINESS</Text>
-        <View style={styles.card}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Reviews: ${rating}`}
-            onPress={() => router.push('/reviews')}
-            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-          >
-            <View style={styles.iconTile}>
-              <Feather name="star" size={20} color={colors.navy} />
-            </View>
-            <Text style={styles.title}>Reviews</Text>
-            <Text style={styles.hint}>{rating}</Text>
-            <Feather name="chevron-right" size={20} color={colors.textMuted} />
-          </Pressable>
-        </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.overline}>YOUR SHOP</Text>
-        <View style={styles.card}>
-          {ROWS.map((row, i) => (
-            <Pressable
-              key={row.title}
-              accessibilityRole="button"
-              accessibilityLabel={`${row.title}: ${row.hint}`}
-              onPress={() => router.push(row.href)}
-              style={({ pressed }) => [
-                styles.row,
-                i > 0 && styles.divider,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.iconTile}>
-                <Feather name={row.icon} size={20} color={colors.navy} />
-              </View>
-              <Text style={styles.title}>{row.title}</Text>
-              <Text style={styles.hint}>{row.hint}</Text>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
-      <View style={styles.section}>
-        <View style={styles.card}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Settings"
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-          >
-            <View style={styles.iconTile}>
-              <Feather name="settings" size={20} color={colors.navy} />
-            </View>
-            <Text style={styles.title}>Settings</Text>
-            <Text style={styles.hint}>Account, pause, feedback</Text>
-            <Feather name="chevron-right" size={20} color={colors.textMuted} />
-          </Pressable>
-        </View>
-        <Text style={styles.soon}>Insights and customers come later.</Text>
-      </View>
-      <Button title="Sign out" variant="secondary" onPress={signOut} loading={signingOut} />
+    <TabScreen title="More" header={card}>
+      {offline ? <OfflineBar /> : null}
+      {error && !data && !offline ? (
+        <>
+          <FormMessage>{error}</FormMessage>
+          <Button title="Try again" onPress={reload} />
+        </>
+      ) : null}
+      <Section title="YOUR BUSINESS">
+        <Card>{rows(business)}</Card>
+      </Section>
+      <Section title="YOUR SHOP">
+        <Card>{rows(shop)}</Card>
+      </Section>
+      <Card>
+        <Row first icon="settings" title="Settings" onPress={() => router.push('/settings')} />
+      </Card>
     </TabScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { gap: spacing.sm },
-  overline: { ...text('overline'), color: colors.textSecondary },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    minHeight: 64,
+    marginTop: spacing.lg,
+    backgroundColor: colors.navyRaised,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.navyMuted,
+    padding: spacing.md,
   },
-  divider: { borderTopWidth: 1, borderTopColor: colors.border },
-  iconTile: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
+  cardText: { flex: 1 },
+  shopName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  shopLink: { ...text('body'), color: colors.toggleOff },
+  view: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    minHeight: 44,
   },
-  title: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy, flex: 1 },
-  hint: { ...text('body'), color: colors.textSecondary },
-  soon: { ...text('small'), color: colors.textSecondary },
+  viewText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
   pressed: { opacity: 0.85 },
 });

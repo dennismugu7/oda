@@ -5,18 +5,41 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-06, owner Step 84)
 
 **Current state**
-- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): CP1 insights / customers / More server → CP2 app screens → 🛑 review stop A.
+- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): CP1 + CP2 merged; at 🛑 review stop A.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi), **cron-expire-orders** (hourly), **staging-backdate-deletion**, **staging-backdate-order**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.0** + EAS Update `4c26bde9` (M8a). JS changes: `pnpm update:preview "…"`.
 - **Support contact:** email only, `support@mugu-labs.com`, from server config (decision #77).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build: `pnpm --filter @oda/web build` first. When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it.
 
-**Next step:** M8b CP1 + CP2, then review stop A (phone test + help guide drafts for the owner).
+**Next step:** owner: M8b review stop A phone test and the help guide drafts (`docs/help-guides.md`). After the go-ahead: M8b CP3 (Share with QR + captions, Help, Rate the app).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8a gate entry below.
+
+## 2026-10-06 · M8b CP1 + CP2: Insights, Customers, the full More tab (owner Step 84; branch `m8b-cp1`)
+
+**Server (CP1)**
+- `@oda/shared` `insights.ts`: Nairobi periods (today by hour, this week Mon–Sun, this month by day) with the same stretch of the previous period (a month back is counted on the Nairobi calendar and never runs past the end of a shorter month), bar placement, "+22% vs last week / yesterday / last month", every source's name.
+- `GET /api/insights?period=`: sales (confirmed / sent / delivered by `confirmed_at`), bars, previous period and change, orders (sales), average order, shop visits (`shop_visits_daily`, Nairobi dates), orders by source (sales), top 5 products (units over sale orders, with the order thumbnail).
+- `GET /api/customers?filter=all|repeat|new&q=&cursor=`: grouped by phone, buyers with at least one sale; totals / counts sales only; Repeat ≥ 2; New this month = first sale this Nairobi month; search by name or phone in any format; 30 a page; tab counts.
+- `GET /api/more` (shop card + row values), `GET /api/support` (decision #77: `ODA_SUPPORT_EMAIL` default support@mugu-labs.com, `ODA_SUPPORT_WHATSAPP` optional, validated), `/api/me` now carries `logoUrl`.
+- The dev seed adds 35 days of shop visits.
+- **Acceptance test** `server/insights.test.ts` (10): the seed runs with a fixed clock and every Insights number for today / this week / this month is compared with an independent SQL query in Africa/Nairobi (totals, bars, previous period, orders, average, visits, sources, top products); an unpaid order changes nothing; customers counts / order / sales-only totals / search vs SQL; More values vs SQL; 401 signed out on all four; another seller sees only their own empty shop (no leak through search); support defaults and env validation. Shared `insights.test.ts` (5).
+
+**App (CP2)**
+- **More** rebuilt to 20-more: shop card (logo or initial, name, link, **View** → the buyer shop in the in-app browser) in the header; Your business (Insights "KSh x this week", Customers n, Reviews "4.8 ★ · 38"), Your shop (Shop profile, Payments "Till 123 456" / "Pay on delivery" / "Add M-Pesa", Delivery "3 areas" / "Pickup" / "Add an area", Categories n), Settings. Help and support comes with CP3. The old "Sign out" button is gone (Settings → Log out).
+- **Shop tab** card shows the logo (carried forward from M6).
+- **Insights** (20b-insights): period tabs in the header; sales card with the change pill (green up, amber down) and bars (today 24 hourly bars labelled every 6 h and "Now"; month one bar per day); Orders / Avg. order / Shop visits; Where orders come from; Top products. Empty lines for a period without sales; each period kept for offline.
+- **Customers** (20b-customers): "n people have ordered from you", search in the header, All / Repeat / New this month with counts, rows (tinted initial, "3 orders · today", Repeat badge, "KSh x spent", WhatsApp "Hi Wanjiku, "), more on scroll, empty and no-match states, first page kept for offline.
+- `ScreenHeader` and `TabScreen` take content under the title; `ShopAvatar` shared by Shop and More. Helpers tested (`src/insights/view.test.ts`, 5).
+
+**Compared with the designs:** 20-more as designed minus the Help row (CP3) and with real values; 20b-insights as designed (the "today" and "this month" charts have more, thinner bars than the week shown in the image); 20b-customers as designed (the search button is a plain icon, not a ring).
+
+**Help guide drafts** for the owner's review: `docs/help-guides.md` (6 guides: getting paid, delivery and pickup, orders, reviews, sharing, account and help; email-only contact).
+
+**Also:** the `/api/me` shape test gets `logoUrl`; the M7 reviews-list test gets a 20 s timeout (timed out at ~5.1 s twice on a busy laptop). `pnpm check:all` green (shared 256, web 355, db 23, seller 102, Playwright 22).
 
 ## 2026-10-06 · M8a gate passed (owner Step 84; branch `m8a-gate`)
 
