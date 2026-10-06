@@ -251,8 +251,12 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
         })
         .returning();
 
+      // One millisecond apart, so items list in the cart's order (ordered by created_at;
+      // now() is the same for the whole transaction).
+      const itemsAt = Date.now();
       await tx.insert(t.orderItems).values(
-        lines.map((l) => ({
+        lines.map((l, i) => ({
+          createdAt: new Date(itemsAt + i),
           orderId: order!.id,
           productId: l.product.id,
           nameSnapshot: l.product.name,
