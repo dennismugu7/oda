@@ -1,6 +1,7 @@
 // Privacy (placeholder, owner Step 63): section headings + the facts already decided,
 // including the oda_v visit cookie (decision #59).
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalPage, SUPPORT_EMAIL } from '@/components/LegalPage';
 
 export const metadata: Metadata = { title: 'Privacy · oda (placeholder)' };
@@ -38,6 +39,11 @@ export default function Privacy() {
       <section>
         <h2>Your rights and deleting your data</h2>
         <p>Under Kenya&apos;s Data Protection Act you can ask to see or delete your data.</p>
+        <p>
+          Sellers can delete their account in the oda app (More → Settings → Delete account) or on
+          the web at <Link href="/delete-account">oda&apos;s delete-account page</Link>. The shop
+          closes at once; its data, photos and the account are removed after 30 days.
+        </p>
       </section>
       <section>
         <h2>Changes</h2>

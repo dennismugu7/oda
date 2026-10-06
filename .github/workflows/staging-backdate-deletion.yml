@@ -1,0 +1,54 @@
+name: staging-backdate-deletion
+
+# Test tool for the purge (M8a review stop B, decision #75): makes one ALREADY DELETED staging
+# shop look deleted 31 days ago, so the next cron-purge run removes it. It can never touch a
+# shop that isn't deleted, and never Demo Duka (refused here and in the SQL). Inputs are
+# checked before they reach SQL and passed as psql variables, never pasted into the query.
+on:
+  workflow_dispatch:
+    inputs:
+      shop_slug:
+        description: 'Link name of a shop you already deleted, e.g. test-shop-1'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  backdate:
+    name: Backdate one deleted shop
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the inputs and the secret
+        env:
+          SLUG: ${{ inputs.shop_slug }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          [[ "$SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "::error::Not a shop link name."; exit 1; }
+          [ "$SLUG" != "demo-duka" ] || { echo "::error::Demo Duka is never backdated or purged."; exit 1; }
+          [ -n "$DATABASE_URL_UNPOOLED" ] || { echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is not set."; exit 1; }
+
+      - name: Backdate it
+        env:
+          SLUG: ${{ inputs.shop_slug }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          rows=$(psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -At -v slug="$SLUG" <<'SQL'
+          with s as (
+            update shops set deleted_at = now() - interval '31 days'
+            where slug = :'slug' and deleted_at is not null and slug <> 'demo-duka'
+              and exists (select 1 from profiles p where p.id = shops.owner_id and p.deleted_at is not null)
+            returning owner_id
+          ), p as (
+            update profiles set deleted_at = now() - interval '31 days'
+            where id in (select owner_id from s) and deleted_at is not null
+            returning 1
+          ) select (select count(*) from s) || ',' || (select count(*) from p);
+          SQL
+          )
+          if [ "$rows" = "1,1" ]; then
+            echo "Shop $SLUG now looks deleted 31 days ago. Run cron-purge next (dry run first)." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::No deleted shop $SLUG (only shops already deleted in the app or on the web can be backdated; got $rows)."; exit 1
+          fi

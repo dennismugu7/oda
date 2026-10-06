@@ -18,6 +18,8 @@ export type EmailKind =
   | 'verification-code'
   | 'reset-link'
   | 'password-changed'
+  | 'delete-account-link'
+  | 'support-digest'
   | 'order-receipt'
   | 'order-cancelled'
   // Seller-triggered order updates (M6, decision #61 f).

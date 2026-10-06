@@ -96,6 +96,8 @@ export const settingsApi = {
   paused: () => apiJson<{ paused: boolean }>('/api/shop/pause'),
   setPaused: (paused: boolean) =>
     apiJson<{ paused: boolean }>('/api/shop/pause', { method: 'PATCH', body: { paused } }),
+  deleteAccount: () =>
+    apiJson<Record<string, never>>('/api/me/delete', { body: { confirm: 'DELETE' } }),
   feedbackForm: () => apiJson<FeedbackForm>('/api/feedback'),
   sendFeedback: (body: {
     kind: FeedbackKind;

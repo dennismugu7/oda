@@ -1,0 +1,70 @@
+name: cron-purge
+
+# Daily purge (decisions #72 c, #74 c, #75): accounts deleted 30+ days ago (files, data, auth
+# user), soft-deleted products after 30 days (keeping thumbnails past orders show), failed file
+# deletes, unreferenced files over 24 h old, sign-up attempts over 7 days. The work runs on the
+# server (/api/cron/purge); this only calls it with the Bearer secret CRON_SECRET.
+# Manual runs default to a DRY RUN: it reports what it would remove and removes nothing. Every
+# run writes an ops_events audit row with the GitHub user who ran it.
+on:
+  schedule:
+    - cron: '43 0 * * *' # 03:43 Nairobi
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: report what would be removed, remove nothing'
+        type: boolean
+        default: true
+
+concurrency:
+  group: cron-purge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  URL: https://oda-eta.vercel.app/api/cron/purge
+
+jobs:
+  purge:
+    name: Purge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Call the job
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Scheduled runs have no inputs: a real run. Manual runs: the checkbox (default on).
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+          ACTOR: ${{ github.event_name == 'workflow_dispatch' && github.actor || 'schedule' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Repository secret CRON_SECRET is not set."; exit 1
+          fi
+          body=$(jq -cn --argjson dry "$DRY_RUN" '{dryRun: $dry}')
+          # Neon may need a few seconds to wake up: retry twice. The secret is never printed.
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" -H "x-oda-actor: $ACTOR" \
+              -H 'content-type: application/json' -d "$body" --max-time 90 "$URL" || echo 000)
+            if [ "$status" = "200" ]; then
+              echo "Result: $(cat result.json)"
+              {
+                if [ "$DRY_RUN" = "true" ]; then echo "### Purge DRY RUN: nothing was removed"; else echo "### Purge"; fi
+                jq -r '"- Deleted accounts: \(.accounts) (\(.accountFiles) files)\(if (.slugs|length) > 0 then ": " + (.slugs|map(. // "no shop")|join(", ")) else "" end)",
+                       "- Demo shops skipped: \(.skippedDemo|length)",
+                       "- Soft-deleted products: \(.products) (\(.productFiles) files; \(.keptForOrders) kept for past orders)",
+                       "- Failed deletes retried: \(.retried)",
+                       "- Unreferenced files: \(.unreferenced)",
+                       "- Old sign-up attempts: \(.signupAttempts)",
+                       "- Files that failed (queued for next run): \(.failedFiles)",
+                       "- More left for the next run: \(.more)"' result.json
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Attempt $attempt answered $status"
+            sleep 15
+          done
+          echo "::error::The job did not answer 200 (404 = CRON_SECRET differs from Vercel's)."
+          exit 1

@@ -1,6 +1,6 @@
 // Settings (design 20b-settings): your details, change password, pause the shop, share
 // feedback, terms and privacy, log out. Theme is hidden (light only, design-changes); Rate the
-// app comes in M8b and Delete account at M8a CP3.
+// app comes in M8b. Delete account (M8a CP3) opens its own confirm screen.
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
@@ -184,6 +184,14 @@ export default function SettingsScreen() {
               title={signingOut ? 'Logging out…' : 'Log out'}
               onPress={logOut}
               disabled={signingOut}
+              right={<></>}
+            />
+            <Row
+              icon="trash-2"
+              title="Delete account"
+              danger
+              onPress={() => router.push('/settings/delete')}
+              disabled={offline}
               right={<></>}
             />
           </Card>

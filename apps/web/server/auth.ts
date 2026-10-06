@@ -299,6 +299,25 @@ export const authOptions = {
         },
       },
     },
+    session: {
+      create: {
+        // A deleted account (decision #75) can't sign in again: this runs only after the
+        // password was right, so it tells nothing to someone who just knows the email.
+        before: async (session) => {
+          const profile = await getDb().query.profiles.findFirst({
+            columns: { deletedAt: true },
+            where: eq(schema.profiles.id, session.userId),
+          });
+          if (profile?.deletedAt) {
+            throw new APIError('FORBIDDEN', {
+              code: 'ACCOUNT_DELETED',
+              message:
+                'This account was deleted. Its shop is closed, and its data is removed after 30 days.',
+            });
+          }
+        },
+      },
+    },
   },
 } satisfies BetterAuthOptions;
 
