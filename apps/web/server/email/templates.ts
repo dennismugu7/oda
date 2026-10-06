@@ -114,6 +114,24 @@ The oda team`;
   return { kind: 'reset-link', to, subject: 'Reset your oda password', html, text };
 }
 
+/** 21-change-password: tells the seller their password changed (M8a, decision #74 i). */
+export function passwordChangedEmail(to: string): Email {
+  const line =
+    "Your oda password was just changed. If this wasn't you, reset your password from the oda app's sign-in screen (Forgot password) and email support@mugu-labs.com.";
+  const html = layout(
+    'Your oda password was changed',
+    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Your password was changed</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};">${escapeHtml(line)}</td></tr>`,
+  );
+  const text = `Your password was changed
+
+${line}
+
+Thank you,
+The oda team`;
+  return { kind: 'password-changed', to, subject: 'Your oda password was changed', html, text };
+}
+
 export interface OrderEmailData {
   to: string;
   shopName: string;

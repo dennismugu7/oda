@@ -48,7 +48,6 @@ export interface OnboardingState {
       accountName: string;
       accountRefMode: 'fixed' | 'order_number' | null;
       accountRef: string | null;
-      verificationStatus: string;
     } | null;
     acceptsPayBefore: boolean;
     acceptsPayOnDelivery: boolean;
@@ -100,10 +99,14 @@ export interface SignedUpload {
   url: string;
   method: 'PUT';
   headers: Record<string, string>;
-  publicUrl: string;
+  /** null for feedback screenshots (private store, decision #74 b). */
+  publicUrl: string | null;
 }
 
 export const uploadsApi = {
-  request: (body: { kind: 'product' | 'logo'; contentType: 'image/jpeg'; size: number }) =>
-    apiJson<SignedUpload>('/api/uploads', { body }),
+  request: (body: {
+    kind: 'product' | 'logo' | 'feedback';
+    contentType: 'image/jpeg';
+    size: number;
+  }) => apiJson<SignedUpload>('/api/uploads', { body }),
 };

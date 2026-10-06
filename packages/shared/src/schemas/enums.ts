@@ -22,6 +22,9 @@ export const DELIVERY_METHODS = ['rider', 'parcel'] as const;
 export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
 
 export const PRODUCT_STATUSES = ['available', 'sold_out', 'hidden'] as const;
+/** Seller feedback (21-share-feedback; `problem` = Help → Report a problem, M8b). */
+export const FEEDBACK_KINDS = ['idea', 'broken', 'confusing', 'love', 'problem'] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
 /** Where the seller sells today (onboarding step 2, decision #41). Orders the share buttons. */

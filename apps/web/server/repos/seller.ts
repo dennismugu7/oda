@@ -122,7 +122,7 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
       );
     },
 
-    /** New accounts wait for admin verification (`pending`). The first one becomes active. */
+    /** The first account becomes active. (No verification: decision #72 a.) */
     async createPaymentAccount(input: PaymentAccountInput) {
       return db.transaction(async (tx) => {
         const [active] = await tx
@@ -132,7 +132,7 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
         const [row] = await withDbErrors(() =>
           tx
             .insert(t.paymentAccounts)
-            .values({ ...input, shopId, isActive: !active, verificationStatus: 'pending' })
+            .values({ ...input, shopId, isActive: !active })
             .returning(),
         );
         return row!;

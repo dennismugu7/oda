@@ -303,17 +303,17 @@ describe('step 4: the first product', () => {
 });
 
 describe('step 5: where buyers pay', () => {
-  it('saves the account as pending and active, and moves to step 6', async () => {
+  it('saves the account as active, and moves to step 6 (no verification, #72 a)', async () => {
     const s = await newSeller();
     await throughStep4(s);
     const res = await s.call(postPayment, TILL);
     expect(res.json.step).toBe(6);
+    expect(res.json.payment.account).not.toHaveProperty('verificationStatus');
     expect(res.json.payment).toMatchObject({
       account: {
         type: 'till',
         number: '123456',
         accountName: 'AMANI STYLES',
-        verificationStatus: 'pending',
       },
       acceptsPayBefore: true,
       acceptsPayOnDelivery: false,

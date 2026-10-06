@@ -1,20 +1,12 @@
-// More tab (design 20): "Your business" with Reviews (M7, "4.8 ★ · 38") and the "Your shop"
-// rows that exist (Delivery from M6, decision #61; Categories); insights, customers, payments
-// and settings arrive in M8. Sign out lives here.
+// More tab (design 20): "Your business" with Reviews (M7, "4.8 ★ · 38"), the "Your shop"
+// rows (Shop profile and Payments from M8a, Delivery from M6, Categories) and Settings (M8a).
+// Insights, customers and the full 20-more layout arrive in M8b. Sign out lives here too.
 import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { signOutLocal } from '@/auth/client';
 import { useMe } from '@/auth/useMe';
-import { deliveryCache } from '@/delivery/api';
-import { homeCache, notificationsCache } from '@/home/api';
-import { clearOnboardingState } from '@/onboarding/useOnboarding';
-import { ordersCache } from '@/orders/api';
-import { pushServer, tokenStore } from '@/push/server';
-import { reviewsCache } from '@/reviews/cache';
-import { unregisterThisPhone } from '@/push/session';
-import { resetPushRegistration } from '@/push/usePush';
+import { signOutOnThisPhone } from '@/settings/signOut';
 import { Button } from '@/ui/auth';
 import { TabScreen } from '@/ui/tabs';
 import { colors, radii, spacing, text } from '@/theme';
@@ -25,6 +17,8 @@ const ROWS: {
   hint: string;
   href: Href;
 }[] = [
+  { icon: 'user', title: 'Shop profile', hint: 'Name, link, logo', href: '/shop-profile' },
+  { icon: 'credit-card', title: 'Payments', hint: 'M-Pesa', href: '/payments' },
   { icon: 'truck', title: 'Delivery', hint: 'Areas, pickup', href: '/delivery' },
   { icon: 'grid', title: 'Categories', hint: 'How buyers filter', href: '/categories' },
 ];
@@ -35,18 +29,7 @@ export default function MoreTab() {
 
   async function signOut() {
     setSigningOut(true);
-    // This phone stops getting pushes (decision #65 a); asked while the session still works.
-    await unregisterThisPhone(tokenStore, pushServer);
-    resetPushRegistration();
-    // Works offline too: the stored session is removed either way.
-    await signOutLocal();
-    clearOnboardingState();
-    // Another account on this phone must never see this shop's orders.
-    ordersCache.clear();
-    deliveryCache.set(null);
-    homeCache.set(null);
-    notificationsCache.set(null);
-    reviewsCache.clear();
+    await signOutOnThisPhone();
     router.replace('/welcome');
   }
 
@@ -99,7 +82,24 @@ export default function MoreTab() {
             </Pressable>
           ))}
         </View>
-        <Text style={styles.soon}>Insights, customers, payments and settings come later.</Text>
+      </View>
+      <View style={styles.section}>
+        <View style={styles.card}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          >
+            <View style={styles.iconTile}>
+              <Feather name="settings" size={20} color={colors.navy} />
+            </View>
+            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.hint}>Account, pause, feedback</Text>
+            <Feather name="chevron-right" size={20} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        <Text style={styles.soon}>Insights and customers come later.</Text>
       </View>
       <Button title="Sign out" variant="secondary" onPress={signOut} loading={signingOut} />
     </TabScreen>

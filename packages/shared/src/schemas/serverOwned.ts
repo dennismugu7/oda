@@ -30,6 +30,10 @@ export const SERVER_OWNED_FIELDS = [
   'isActive',
   // orders: only transitionOrder() changes these
   'paymentStatus',
+  // support digest marks (decision #74 h) and the team's ticket notes
+  'notifiedAt',
+  'reportNotifiedAt',
+  'adminNote',
 ] as const;
 
 /**

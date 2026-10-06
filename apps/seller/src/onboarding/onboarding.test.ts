@@ -7,6 +7,7 @@ import {
   THUMB_MAX,
   uploadLogo,
   uploadProductPhoto,
+  uploadScreenshot,
   type PhotoDeps,
 } from './photos';
 import { errorMessage } from './labels';
@@ -156,6 +157,15 @@ describe('photos: re-encoded on the phone, never uploaded as picked (decision #5
     expect(result).toMatchObject({ key: 'logos/shop/1.jpg', error: null });
     expect(deps.encode).toHaveBeenCalledWith(picked.uri, 400, 0.8);
     expect(uploads[0]!.kind).toBe('logo');
+    expect(put[0]!.from).not.toContain('DCIM');
+  });
+
+  it('a feedback screenshot is re-encoded at full size and uploaded as feedback', async () => {
+    const { deps, uploads, put } = fakeDeps();
+    const result = await uploadScreenshot(picked, deps);
+    expect(result.error).toBeNull();
+    expect(deps.encode).toHaveBeenCalledWith(picked.uri, 1600, 0.8);
+    expect(uploads[0]!.kind).toBe('feedback');
     expect(put[0]!.from).not.toContain('DCIM');
   });
 });

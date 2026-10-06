@@ -671,7 +671,6 @@ describe('6. database guards', () => {
       }),
     );
     expect(second.isActive).toBe(false);
-    expect(second.verificationStatus).toBe('pending');
     await expect(
       db
         .update(t.paymentAccounts)

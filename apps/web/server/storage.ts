@@ -58,6 +58,9 @@ const envSchema = z.object({
   // or the static read-write token).
   BLOB_STORE_ID: z.string().min(1).optional(),
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+  // The private store for feedback screenshots (decision #74 b), connected with the env
+  // prefix FEEDBACK_BLOB. Unset on Vercel = screenshots off.
+  FEEDBACK_BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
 });
 
 type StorageEnv = z.infer<typeof envSchema>;
@@ -269,6 +272,104 @@ export function vercelBlobStorage(
   };
 }
 
+// Private (feedback screenshots) -----------------------------------------------------------
+
+/**
+ * Objects nobody may read by URL (decision #74 b): seller feedback screenshots. Read only by
+ * the server, or through a signed link that expires (the support digest).
+ */
+export interface PrivateStorage {
+  readonly driver: 'local' | 'vercel-blob';
+  presignPut(key: string, contentType: string, size: number): Promise<PresignedUpload>;
+  read(key: string): Promise<Uint8Array | null>;
+  delete(key: string): Promise<void>;
+  /** A link that opens the object for `seconds`. */
+  signedReadUrl(key: string, seconds: number): Promise<string>;
+}
+
+export function privateVercelBlobStorage(
+  token: string,
+  api: BlobApi = blobSdk,
+  now: () => number = Date.now,
+): PrivateStorage {
+  return {
+    driver: 'vercel-blob',
+    async presignPut(key, contentType, size) {
+      const validUntil = now() + UPLOAD_TTL_SECONDS * 1000;
+      const limits = { allowedContentTypes: [contentType], maximumSizeInBytes: size, validUntil };
+      const signed = await api.issueSignedToken({
+        token,
+        pathname: key,
+        operations: ['put'],
+        ...limits,
+      });
+      const { presignedUrl } = await api.presignUrl(signed, {
+        operation: 'put',
+        pathname: key,
+        access: 'private',
+        ...limits,
+        addRandomSuffix: false,
+        allowOverwrite: false,
+      });
+      return {
+        url: presignedUrl,
+        method: 'PUT',
+        headers: { 'content-type': contentType },
+        expiresAt: new Date(validUntil).toISOString(),
+      };
+    },
+    async read(key) {
+      const result = await api.get(key, { access: 'private', token, useCache: false });
+      if (!result || result.statusCode !== 200) return null;
+      return new Uint8Array(await new Response(result.stream).arrayBuffer());
+    },
+    async delete(key) {
+      await api.del(key, { token });
+    },
+    async signedReadUrl(key, seconds) {
+      const validUntil = now() + seconds * 1000;
+      const signed = await api.issueSignedToken({
+        token,
+        pathname: key,
+        operations: ['get'],
+        validUntil,
+      });
+      const { presignedUrl } = await api.presignUrl(signed, {
+        operation: 'get',
+        pathname: key,
+        access: 'private',
+        validUntil,
+      });
+      return presignedUrl;
+    },
+  };
+}
+
+let cachedPrivate: PrivateStorage | null | undefined;
+
+/**
+ * The private store, or null when it isn't connected (the app then hides "Add screenshot").
+ * Locally and in tests: the local folder, like photos (a development tool only).
+ */
+export function getPrivateStorage(): PrivateStorage | null {
+  if (cachedPrivate !== undefined) return cachedPrivate;
+  const { driver, env } = storageDriver();
+  if (driver === 'local') {
+    const local = localStorage(env);
+    cachedPrivate = {
+      driver: 'local',
+      presignPut: local.presignPut,
+      read: local.read,
+      delete: local.delete,
+      signedReadUrl: async (key) => local.publicUrl(key),
+    };
+  } else {
+    const token = env.FEEDBACK_BLOB_READ_WRITE_TOKEN;
+    cachedPrivate = token ? privateVercelBlobStorage(token) : null;
+  }
+  return cachedPrivate;
+}
+
 // Disabled --------------------------------------------------------------------------------
 
 const disabledStorage: ObjectStorage = {
@@ -298,4 +399,5 @@ export function getStorage(): ObjectStorage {
 /** Tests only: re-read the environment on next use. */
 export function resetStorageForTests(): void {
   cached = undefined;
+  cachedPrivate = undefined;
 }

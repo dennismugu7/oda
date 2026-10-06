@@ -1,6 +1,6 @@
-# M8 plan: grow & manage (proposed, not approved)
+# M8 plan: grow & manage (approved)
 
-Proposed in owner Step 81. **Not approved yet; no M8 work started.** Acceptance criteria stay in `milestones.md` (M8). M8 is large, so it's split in two (like M2): **M8a · Settings, accounts and operations** first (Play requires account deletion, and the M9 jobs live here), then **M8b · Grow** (More, Insights, Customers, Share, Help, Rate the app). Each part has its own branch, checkpoints, review stops, gate and tag (`m8a-done`, then `m8-done`).
+Proposed in owner Step 81; **approved in owner Step 82 with the answers below (decision #74)**. Acceptance criteria stay in `milestones.md` (M8). M8 is large, so it's split in two (like M2): **M8a · Settings, accounts and operations** first (Play requires account deletion, and the M9 jobs live here), then **M8b · Grow** (More, Insights, Customers, Share, Help, Rate the app). Each part has its own branch, checkpoints, review stops, gate and tag (`m8a-done`, then `m8-done`).
 
 **Native build: none expected.** Everything M8 needs on the phone is already in build 0.3.0: image picker + manipulator (logo, feedback screenshot), view-shot + SVG (share images, QR), sharing, clipboard, store review (rate the app), web browser (terms/privacy), WebView. All of M8 ships as EAS Updates. One small **JavaScript** package is needed for QR codes (M8b, below).
 
@@ -106,15 +106,11 @@ Screens: **20-more** (full), **20b-insights, 20b-customers, 19b-share, 20b-help,
 
 ---
 
-## Questions for the owner
-1. **Feedback screenshots need private storage.** Decision #72 b sends them as short-lived signed links, so they must not sit in the public image store. Options: (a) you create a second, **private** Vercel Blob store for staging (e.g. `oda-staging-private`) and connect it to the web project. That takes a few clicks on the dashboard; I'd tell you exactly which. (b) No screenshots until R2 in M11. **I suggest (a).**
-2. **Soft-deleted products:** (a) keep them forever (rows and photos stay; simplest); (b) **purge them 30 days after deletion**: delete the row (order items keep their name and price snapshot; `order_items.product_id` becomes null, as the schema already allows) and its photos, except a thumbnail still shown on a past order. **I suggest (b).** It keeps storage within the free limits, and past orders still look right.
-3. **Support WhatsApp number** for Help (`ODA_SUPPORT_WHATSAPP`): which number (M8b)? It goes in Vercel/EAS config, not in the repo.
-4. **Digest time:** 08:00 Nairobi every day, or another time?
-5. **Help guides:** fine for me to write the first drafts (plain English, short) for you to review at M8b review stop B?
-
-## What I need from you
-- Approval of the split and the plan, and answers to the five questions.
-- M8a: if you choose 1 (a), the private Blob store (I'll send the exact steps). Nothing else external: Resend, cron secrets and storage exist.
-- M8b: the support WhatsApp number; approval of one small npm package for QR codes (`qrcode`, about 100 KB, pure JavaScript, rendered with the existing `react-native-svg`), installed when M8b starts.
-- No native build, no paid service.
+## Owner answers (Step 82, decision #74)
+1. **Split** into M8a and M8b: yes.
+2. **Feedback screenshots:** a NEW private Vercel Blob store (not the backups store); the setup steps are sent one at a time when M8a reaches it. Until it's connected, "Add screenshot" is hidden.
+3. **Soft-deleted products:** purged 30 days after deletion, keeping any photo a past order still shows as its thumbnail.
+4. **Support WhatsApp number:** asked when M8b starts; email-only is the fallback.
+5. **Digest:** 08:00 Nairobi (minute jittered).
+6. **Help guides:** drafted in M8b for the owner's review.
+7. **`qrcode`** (~100 KB) pre-approved for M8b.

@@ -157,33 +157,20 @@ describe('catalog (shop home and search)', () => {
     expect((await repo.catalog()).map((p) => p.name)).not.toContain('Not mine');
   });
 
-  it('the till badge shows only once an admin verified the active account', async () => {
+  it('pay now needs an active account; no till badge, verified or not (decision #72 a)', async () => {
     const s = await newSeller();
-    expect((await shopRepo(s.slug)).shop).toMatchObject({
-      mpesaChecked: false,
-      payNowAvailable: false,
-      logoUrl: null,
+    expect((await shopRepo(s.slug)).shop).toMatchObject({ payNowAvailable: false, logoUrl: null });
+    await db().insert(schema.paymentAccounts).values({
+      shopId: s.shopId,
+      type: 'till',
+      number: '123456',
+      accountName: 'DEMO DUKA',
+      isActive: true,
+      verificationStatus: 'verified',
     });
-    const [account] = await db()
-      .insert(schema.paymentAccounts)
-      .values({
-        shopId: s.shopId,
-        type: 'till',
-        number: '123456',
-        accountName: 'DEMO DUKA',
-        isActive: true,
-        verificationStatus: 'pending',
-      })
-      .returning();
-    expect((await shopRepo(s.slug)).shop.mpesaChecked).toBe(false);
-    await db()
-      .update(schema.paymentAccounts)
-      .set({ verificationStatus: 'verified' })
-      .where(eq(schema.paymentAccounts.id, account!.id));
-    expect((await shopRepo(s.slug)).shop).toMatchObject({
-      mpesaChecked: true,
-      payNowAvailable: true,
-    });
+    const { shop } = await shopRepo(s.slug);
+    expect(shop.payNowAvailable).toBe(true);
+    expect(shop).not.toHaveProperty('mpesaChecked');
   });
 
   it('takes orders only with a way to pay and a way to deliver (decision #61 c)', async () => {

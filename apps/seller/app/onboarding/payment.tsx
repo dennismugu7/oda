@@ -162,7 +162,7 @@ function Step({ state }: { state: OnboardingState }) {
         </Field>
       </View>
       <InfoNote icon="shield">
-        Your shop shows &quot;M-Pesa till checked by oda&quot; once we confirm it.
+        oda never touches your money. Payments go straight from the buyer&apos;s M-Pesa to yours.
       </InfoNote>
       {error ? <FormMessage>{error}</FormMessage> : null}
     </OnboardingScreen>
