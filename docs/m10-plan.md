@@ -126,7 +126,7 @@ a reason.
 - **eas-cli** 24.8 → 24.11 on the laptop (a global npm upgrade, ~30 MB, **asks first**), and
   `cli.version` in `eas.json` raised to match.
 - **Expo SDK 57 patches** (decision #80): `expo install` the seven patch versions (a few MB,
-  **asks first**), bump the app to 0.3.1, `check-native-runtime.mjs --write`, and a native
+  **asks first**), bump the app to 0.3.1, `check-native-runtime.mjs --write`, an online `expo-doctor` run, and a native
   build **only with your go-ahead** (EAS or local). Then EAS Updates target 0.3.1. Or skip
   until M11's production build (your call, question 6).
 - → 🛑 **Review stop B** (phone: the states you can trigger, TalkBack script, Sentry test events
