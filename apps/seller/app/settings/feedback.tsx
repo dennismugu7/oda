@@ -4,6 +4,7 @@
 // (decision #74 b).
 import Feather from '@expo/vector-icons/Feather';
 import { FEEDBACK_MAX, formatKePhone, type FeedbackKind } from '@oda/shared';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { errorMessage } from '@/onboarding/labels';
@@ -21,7 +22,11 @@ const cache = memoryCache<FeedbackForm>();
 
 export default function ShareFeedback() {
   const { data, error, offline, reload } = useLoaded(settingsApi.feedbackForm, cache);
-  const [kind, setKind] = useState<FeedbackKind>('idea');
+  // Help → "Report a problem" opens on "Something's broken", "Suggest an idea" on "An idea".
+  const { kind: start } = useLocalSearchParams<{ kind?: string }>();
+  const [kind, setKind] = useState<FeedbackKind>(
+    FEEDBACK_CHOICES.find((c) => c.kind === start)?.kind ?? 'idea',
+  );
   const [message, setMessage] = useState('');
   const [shot, setShot] = useState<Picked | null>(null);
   const [reply, setReply] = useState(true);

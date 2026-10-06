@@ -100,6 +100,44 @@ const CAPTIONS: Record<CaptionLanguage, ((v: Filled) => string)[]> = {
   ],
 };
 
+/** The Share screen's "Collection" image: the whole shop, no single product (M8b). */
+export interface CollectionValues {
+  shop: string;
+  count: number;
+  link: string;
+}
+
+const pieces = (n: number) => `${n} ${n === 1 ? 'piece' : 'pieces'}`;
+
+const COLLECTION_CAPTIONS: Record<CaptionLanguage, ((v: CollectionValues) => string)[]> = {
+  en: [
+    (v) =>
+      `${v.shop}: ${pieces(v.count)}, one link. Order and pay the seller directly on M-Pesa: ${v.link}`,
+    (v) => `Everything from ${v.shop} in one place 🛍️ Browse and order here: ${v.link}`,
+    (v) => `See all ${pieces(v.count)} from ${v.shop} and order in a few taps: ${v.link}`,
+  ],
+  sw: [
+    (v) =>
+      `${v.shop}: bidhaa ${v.count}, kiungo kimoja. Agiza na umlipe muuzaji moja kwa moja kwa M-Pesa: ${v.link}`,
+    (v) => `Bidhaa zote za ${v.shop} mahali pamoja 🛍️ Angalia na uagize hapa: ${v.link}`,
+    (v) => `Tazama bidhaa zote ${v.count} za ${v.shop} na uagize kwa hatua chache: ${v.link}`,
+  ],
+};
+
+export function collectionCaptionCount(language: CaptionLanguage): number {
+  return COLLECTION_CAPTIONS[language].length;
+}
+
+/** Collection caption number `index` (wraps around, for "Try another"). */
+export function collectionCaption(
+  language: CaptionLanguage,
+  index: number,
+  values: CollectionValues,
+): string {
+  const list = COLLECTION_CAPTIONS[language];
+  return list[((index % list.length) + list.length) % list.length]!(values);
+}
+
 export function captionCount(language: CaptionLanguage): number {
   return CAPTIONS[language].length;
 }

@@ -3,7 +3,7 @@
 // product to edit it; long-press to change its status. "View" opens the real buyer shop in
 // the in-app browser (19b-preview, decision #60). After a delete, "Product deleted · Undo" shows for ~5 seconds.
 import Feather from '@expo/vector-icons/Feather';
-import { displayUrl, formatKsh, shareUrl, type ProductStatus } from '@oda/shared';
+import { displayUrl, formatKsh, type ProductStatus } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,7 +15,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -124,9 +123,9 @@ export default function ShopTab() {
     ]);
   }
 
+  /** The Share screen (19b-share): images, captions and tagged links (M8b). */
   function share() {
-    if (!me?.shop) return;
-    Share.share({ message: shareUrl(SHOP_BASE_URL, me.shop.slug, 'more') }).catch(() => {});
+    if (me?.shop) router.push('/share');
   }
 
   const shop = me?.shop;
@@ -182,7 +181,7 @@ export default function ShopTab() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Share your shop link"
+            accessibilityLabel="Share your shop"
             onPress={share}
             style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
           >

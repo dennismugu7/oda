@@ -8,7 +8,7 @@ import { getAuth } from './auth';
 import { requireSeller, type SellerCtx } from './authz';
 import { getDb } from './db';
 import { envSchema } from './env';
-import { getCustomers, getInsights, getMore, getSupport } from './insightsRoutes';
+import { getCustomers, getInsights, getMore, getShare, getSupport } from './insightsRoutes';
 import { insertOrder } from './orders';
 import { insightsRepo } from './repos/insights';
 import { seed } from './seed/seed';
@@ -213,6 +213,82 @@ describe('customers', () => {
     expect(
       (await r.customers({ filter: 'all', q: 'zzzz-nobody', cursor: 0 }, NOW)).counts.all,
     ).toBe(0);
+  });
+});
+
+describe('share (19b-share)', () => {
+  it('the newest available product with a cover photo, and how many products buyers see', async () => {
+    const share = await insightsRepo(db(), ctx).share('https://oda.test');
+    const latest = (
+      await db().$client.query(
+        `select p.id, p.name, p.price
+         from products p join product_photos ph on ph.product_id = p.id and ph.position = 0
+         where p.shop_id = $1 and p.deleted_at is null and p.status = 'available'
+         order by p.created_at desc limit 1`,
+        [ctx.shopId],
+      )
+    ).rows[0] as { id: string; name: string; price: number } | undefined;
+    const [visible] = (
+      await db().$client.query(
+        `select count(*)::int as n from products
+         where shop_id = $1 and deleted_at is null and status <> 'hidden'`,
+        [ctx.shopId],
+      )
+    ).rows as { n: number }[];
+    expect(share.productCount).toBe(visible!.n);
+    expect(share.productCount).toBeGreaterThan(0);
+    expect(share.latest?.id ?? null).toBe(latest?.id ?? null);
+    if (latest) expect(share.latest).toMatchObject({ name: latest.name, price: latest.price });
+    expect(share.shop).toMatchObject({ name: 'Amani Styles', linkPrefix: 'oda.test/' });
+  });
+
+  it('needs a session; a shop with no products shares no "New in"', async () => {
+    expect(await anonCall(getShare)).toBe(401);
+    const other = await newSeller();
+    expect((await other.call(getShare)).json).toMatchObject({ latest: null, productCount: 0 });
+
+    // A product with a cover photo becomes "New in"; a newer hidden one, or one without a
+    // photo, doesn't.
+    const day = 86_400_000;
+    const [dress, hidden] = await db()
+      .insert(t.products)
+      .values([
+        {
+          shopId: other.shopId,
+          name: 'Kitenge dress',
+          price: 2500,
+          createdAt: new Date(Date.now() - 2 * day),
+        },
+        {
+          shopId: other.shopId,
+          name: 'Hidden top',
+          price: 900,
+          status: 'hidden',
+          createdAt: new Date(Date.now() - day),
+        },
+        { shopId: other.shopId, name: 'No photo yet', price: 500 },
+      ])
+      .returning();
+    await db()
+      .insert(t.productPhotos)
+      .values([
+        {
+          productId: dress!.id,
+          objectKey: `products/${other.shopId}/d.jpg`,
+          thumbKey: `products/${other.shopId}/d_t.jpg`,
+        },
+        {
+          productId: hidden!.id,
+          objectKey: `products/${other.shopId}/h.jpg`,
+          thumbKey: `products/${other.shopId}/h_t.jpg`,
+        },
+      ]);
+    const shared = (await other.call(getShare)).json;
+    expect(shared).toMatchObject({
+      latest: { id: dress!.id, name: 'Kitenge dress', price: 2500 },
+      productCount: 2,
+    });
+    expect(shared.latest.photoUrl).toContain(`products/${other.shopId}/d.jpg`);
   });
 });
 

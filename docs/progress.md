@@ -5,18 +5,33 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-06, owner Step 84)
 
 **Current state**
-- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): CP1 + CP2 merged; at 🛑 review stop A.
+- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): review stop A passed (Step 85); CP3 (Share, Help, Rate) merged; at 🛑 review stop B.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi), **cron-expire-orders** (hourly), **staging-backdate-deletion**, **staging-backdate-order**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.0** + EAS Update `1b506668` (M8b: More, Insights, Customers), staging `5aa9f70`. JS changes: `pnpm update:preview "…"`.
 - **Support contact:** email only, `support@mugu-labs.com`, from server config (decision #77).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build: `pnpm --filter @oda/web build` first. When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it.
 
-**Next step:** owner: M8b review stop A phone test and the help guide drafts (`docs/help-guides.md`). After the go-ahead: M8b CP3 (Share with QR + captions, Help, Rate the app).
+**Next step:** owner: M8b review stop B phone test. After the go-ahead: the M8 gate (✅/❌ against `milestones.md`) → tag `m8-done`. Open: the QR code image (deferred, decision #78 b).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8a gate entry below.
+
+## 2026-10-06 · M8b CP3: Share, Help, Rate the app (owner Step 85; branch `m8b-cp3`)
+
+**Review stop A passed** (owner, Redmi, Step 85): all 9 items (More with live values and View, Shop tab logo, an unaccepted order not counted, an accepted `?s=tt` order in Today / Week / Month with the TikTok source, visits +1, repeat customer grouping, search by name and 07… phone, WhatsApp button, offline). **Help guides approved** with four fixes.
+
+**Built (decision #78)**
+- **Guides:** the four fixes, every button name re-checked against the app (seven corrected), in-app copy `src/help/guides.ts` kept identical to `docs/help-guides.md` by a test; `{deleteAccountUrl}` / `{supportEmail}` filled from config.
+- **QR code image deferred** (owner: no package for now); the Sharing guide doesn't mention it.
+- **Share** (19b-share): `GET /api/share`; channel tabs in the header (official marks on white circles, TikTok neutral); **New in** (newest available product with a photo) and **Collection** images drawn on the phone (320 × 400 dp) and captured (view-shot); EN/SW captions with Try another (new collection captions); Copy caption / Copy link (tagged for the channel); **Share to …** copies the tagged caption and opens the share sheet with the image, with a note on what to pick ("My status" for Status); `Orders from this post will show as "via TikTok"`; ticks "Share your link". The Shop tab's Share opens it.
+- **Help** (20b-help): search, Email oda support (WhatsApp only when configured, #77), the six guides (guide screen with bold button names), Report a problem / Suggest an idea → the feedback screen on the right topic. More gets **Help and support**.
+- **Rate the app** (21-rate-app): a Settings row → the "Enjoying oda?" sheet; 4–5 stars ask Play's in-app review only once a Play listing is configured (M11), otherwise a clear "not on Google Play yet"; 1–3 stars → feedback.
+- **Checks:** `pnpm check:all` green (shared 258, web 357, db 23, seller 112, Playwright 22).
+- **Tests:** `src/help/guides.test.ts` (4: doc sync, the owner's fixes, search "refund" → Getting paid, placeholders/bold), `src/share/plan.test.ts` (4), `src/settings/rate.test.ts` (2), shared collection captions (+2), `server/insights.test.ts` +2 (share data vs SQL; a hidden newer product and a product without a photo are never "New in"; 401).
+
+**Compared with the designs:** 19b-share as designed without the QR card, the channel row scrolls (5 channels), the button sits at the end of the page instead of pinned; 20b-help with "Talk to us" by email (#77) instead of WhatsApp and our six guides as the list; 21-rate-app as designed ("oda" lowercase), plus the not-on-Play message and the low-stars path.
 
 ## 2026-10-06 · M8b CP1 + CP2: Insights, Customers, the full More tab (owner Step 84; branch `m8b-cp1`)
 
