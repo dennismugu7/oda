@@ -9,6 +9,8 @@ import { storeJpeg } from '@/test/storage';
 import { requireOps } from './authz';
 import type { Defer } from './checkout';
 import { getDb } from './db';
+import { listNotifications } from './homeRoutes';
+import { GET as getMe } from '@/app/api/me/route';
 import { postOrderAction } from './orderRoutes';
 import { insertOrder, type NewOrder } from './orders';
 import { testPush } from './push';
@@ -557,6 +559,18 @@ describe('the seller’s reviews', () => {
     // Another shop's id finds nothing.
     const other = await newSeller();
     expect((await productReviews(db, other.shopId, w.dress.id)).reviews).toEqual([]);
+  });
+});
+
+describe('the app’s entry points (CP3)', () => {
+  it('notifications carry the review id; /api/me carries the shop’s rating', async () => {
+    const w = await shopWorld();
+    const { o } = await reviewed(w, 4, 4);
+    const res = await w.call(listNotifications);
+    const note = res.json.notifications.find((n: Json) => n.type === 'new_review');
+    expect(note).toMatchObject({ orderId: o.id, reviewId: (await reviewOf(o.id))!.id });
+    const me = await w.call(getMe as unknown as Parameters<Seller['call']>[0]);
+    expect(me.json.shop).toMatchObject({ ratingAvg: 4, ratingCount: 1 });
   });
 });
 

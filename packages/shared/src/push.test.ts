@@ -23,4 +23,17 @@ describe('push', () => {
     expect(pushRoute({ type: 'new_order', orderId: '../settings' })).toBeNull();
     expect(pushRoute(null)).toBeNull();
   });
+
+  it('a new review opens the Reviews screen at that review (M7)', () => {
+    const orderId = '6f1c1d8e-3a52-4c1b-9a43-0d6c2b1e7f10';
+    const reviewId = '0b7a2c3d-4e5f-4a1b-8c9d-0e1f2a3b4c5d';
+    expect(pushRoute({ type: 'new_review', orderId, reviewId })).toEqual({
+      pathname: '/reviews',
+      params: { review: reviewId },
+    });
+    expect(pushRoute({ type: 'new_review', orderId, reviewId: 'x' })).toEqual({
+      pathname: '/orders/[id]',
+      params: { id: orderId },
+    });
+  });
 });

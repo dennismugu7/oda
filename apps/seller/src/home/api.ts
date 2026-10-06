@@ -16,6 +16,8 @@ export interface NotificationItem {
   title: string;
   body: string;
   orderId: string | null;
+  /** new_review rows (M7): tapping opens the Reviews screen at this review. */
+  reviewId?: string | null;
   readAt: string | null;
   createdAt: string;
 }

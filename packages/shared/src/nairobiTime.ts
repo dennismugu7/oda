@@ -44,3 +44,12 @@ export function headerTime(at: Date, now: Date = new Date()): string {
   const day = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : shortDate(at);
   return `${day}, ${clock24(at)}`;
 }
+
+/** Review cards (20b-reviews): "Today", "Yesterday", "3 days ago" (up to 6), then "Wed 30 Sep". */
+export function daysAgo(at: Date, now: Date = new Date()): string {
+  const days = dayNumber(now) - dayNumber(at);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return shortDate(at);
+}

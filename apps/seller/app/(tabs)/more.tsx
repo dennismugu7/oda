@@ -1,5 +1,6 @@
-// More tab (design 20): for now the "Your shop" rows that exist (Delivery from M6, decision
-// #61; Categories); insights, customers, payments and settings arrive in M8. Sign out lives here.
+// More tab (design 20): "Your business" with Reviews (M7, "4.8 ★ · 38") and the "Your shop"
+// rows that exist (Delivery from M6, decision #61; Categories); insights, customers, payments
+// and settings arrive in M8. Sign out lives here.
 import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
@@ -11,6 +12,7 @@ import { homeCache, notificationsCache } from '@/home/api';
 import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import { ordersCache } from '@/orders/api';
 import { pushServer, tokenStore } from '@/push/server';
+import { reviewsCache } from '@/reviews/cache';
 import { unregisterThisPhone } from '@/push/session';
 import { resetPushRegistration } from '@/push/usePush';
 import { Button } from '@/ui/auth';
@@ -44,11 +46,35 @@ export default function MoreTab() {
     deliveryCache.set(null);
     homeCache.set(null);
     notificationsCache.set(null);
+    reviewsCache.clear();
     router.replace('/welcome');
   }
 
+  const rating =
+    me?.shop?.ratingCount && me.shop.ratingAvg !== null && me.shop.ratingAvg !== undefined
+      ? `${me.shop.ratingAvg.toFixed(1)} ★ · ${me.shop.ratingCount}`
+      : 'From buyers';
+
   return (
     <TabScreen title="More" subtitle={me?.email}>
+      <View style={styles.section}>
+        <Text style={styles.overline}>YOUR BUSINESS</Text>
+        <View style={styles.card}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Reviews: ${rating}`}
+            onPress={() => router.push('/reviews')}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          >
+            <View style={styles.iconTile}>
+              <Feather name="star" size={20} color={colors.navy} />
+            </View>
+            <Text style={styles.title}>Reviews</Text>
+            <Text style={styles.hint}>{rating}</Text>
+            <Feather name="chevron-right" size={20} color={colors.textMuted} />
+          </Pressable>
+        </View>
+      </View>
       <View style={styles.section}>
         <Text style={styles.overline}>YOUR SHOP</Text>
         <View style={styles.card}>

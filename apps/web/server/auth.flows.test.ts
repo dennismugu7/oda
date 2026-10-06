@@ -434,6 +434,8 @@ describe('GET /api/me', () => {
       name: 'Amani Styles',
       slug: 'amani-styles',
       businessType: 'other',
+      ratingAvg: null,
+      ratingCount: 0,
     });
 
     await getDb()
