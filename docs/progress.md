@@ -7,7 +7,7 @@ Newest entries at the top.
 **Current state**
 - **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. Review stop A passed (Step 83, 11 items). M8a CP3 (deletion, purge, digest; decision #75) built and merged to `main` (staging); at 🛑 review stop B.**
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration 0006 applied. New in CP3: `/delete-account` (+ `/confirm`), `/api/me/delete`, `/api/cron/purge` (dry run), `/api/cron/digest`. Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default), **cron-digest** (daily 08:11 Nairobi), **staging-backdate-deletion** (test tool), plus cron-expire-orders, review-remove, demo-seed-staging.
-- **App:** EAS preview build **0.3.0** + the CP3 EAS Update (Settings → Delete account). JS changes: `pnpm update:preview "…"`.
+- **App:** EAS preview build **0.3.0** + EAS Update `4c26bde9` (CP3: Settings → Delete account), staging `f5a8144`. JS changes: `pnpm update:preview "…"`.
 - **Feedback screenshots:** private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, decision #74 b), working (stop A item 10).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own (not through `pnpm test:e2e` / `check:all`) reuses the last web build: `pnpm --filter @oda/web build` first. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
@@ -30,6 +30,8 @@ Newest entries at the top.
 - **Workflows:** `cron-purge.yml` (manual = dry run by default; summary lists counts and slugs), `cron-digest.yml`, `staging-backdate-deletion.yml` (only an already-deleted shop with a deleted owner, never `demo-duka`, one SQL statement).
 - **App:** Settings → Delete account (red row) → confirm screen (what happens, "type DELETE", danger button) → signed out → Welcome with "Your account is deleted".
 - **Tests:** `deletion.test.ts` (6: DELETE typed exactly, shop 404 + sessions gone + sign-in refused + audit; web same answer, link valid → used, expired/wrong/missing, double tap, limits + cross-site), `purge.test.ts` (6: dry run vs real with live / 29-day / 31-day shops, demo skipped, failed file queued and retried, soft-deleted product keeps the order thumbnail, unreferenced files + old sign-ups, route secret + actor), `digest.test.ts` (5: quiet day, once per item with every field and the screenshot link, failed send marks nothing, concurrent runs, route secret), `uploads.test.ts` (+2: private list, S3 list parsing), Playwright `delete-account.spec.ts` (2). The e2e shop helper now gives each shop a unique email (two parallel tests could get the same `shop-<ms>` address).
+
+**Staging check:** Actions → cron-purge dry run (`f5a8144`): 0 accounts, 0 products, 2 unreferenced files (old abandoned uploads; the first real run removes them), 0 failed.
 
 **Compared with the designs:** delete account confirm (design-changes NEW) as described: "type DELETE", explains the 30-day removal; the web pages use the reset-password page's layout (no separate design). Settings now ends with Log out and a red Delete account row, as in 20b-settings.
 
