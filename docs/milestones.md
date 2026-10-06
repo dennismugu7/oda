@@ -73,12 +73,13 @@ Screens **20b-delivery first** (moved from M8, decision #61), 15, 16, 17-*, 17b-
 - **Accept:** the lifecycle can be driven end to end by a buyer on web + a seller on the phone; push arrives on a real device within 10s of a web order; forbidden transitions are rejected by the server.
 
 ## M7 · Reviews
-**Plan: `docs/m7-plan.md`** (approved, owner Step 79; decision #73).
+**Status: closed 2026-10-06** (gate passed, owner Step 81; PRs #36, #37 and the gate docs, tag `m7-done`; EAS Update `2d1fe8f7` on build 0.3.0; owner's review stops A (11 items) and B (12 items) passed). Plan: `docs/m7-plan.md` (decision #73).
 Web 05c, 5d; app 20b-reviews.
 - Review submission (delivered only, one per order, 7-day edit), photos, rating aggregates (shop + product), seller replies, reviews on the product page.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
 
 ## M8 · Grow & manage
+**Proposed plan: `docs/m8-plan.md`** (owner Step 81; awaiting approval): split into **M8a** (settings, accounts, deletion, purge, digest, badge removal) and **M8b** (More, insights, customers, share, help, rate the app).
 Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-settings, 20b-your-details, 20b-help, 21-*.
 - Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
 - Account deletion: in-app flow, the **self-serve** web `/delete-account` (confirm link by email, then the 30-day purge; no admin step, decision #72 c), and the daily `/api/cron/purge` job with its scheduler.

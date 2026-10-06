@@ -2,21 +2,48 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 80)
+## Handoff (keep current; updated 2026-10-06, owner Step 81)
 
 **Current state**
-- **Milestones:** M0–M6 closed; latest tag **`m6-done`**. **M9 removed** (decision #72). **M7 in progress** (plan approved in Step 79, decision #73): CP1–CP2 passed review stop A (Step 80); CP3 (seller app Reviews screen) merged to `main` and published as an EAS Update; **🛑 at review stop B** (test list in the CP3 entry below). After it: the M7 gate and tag `m7-done`.
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Everything from M6, plus reviews: delivered buyer-placed orders get "Rate your order" (`/o/{token}/review`), photos, product reviews and averages, the delivered email/WhatsApp link to the review page, a `new_review` push. Removing a review: **Actions → review-remove** (`OPS_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + the M7 CP3 EAS Update (Reviews screen; a `new_review` push opens the review).
-- **Git:** `m7-reviews` (PR #36) and `m7-cp3` merged; no open PRs.
-- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
+- **Milestones:** M0–M7 closed; latest tag **`m7-done`** (on `main` after the gate PR). **M9 removed** (decision #72). **M8 plan proposed in `docs/m8-plan.md` (split into M8a and M8b): awaiting the owner's approval and answers to its five questions. M8 not started.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers manage delivery, orders (every action, WhatsApp prefills, buyer emails), manual orders, Home, notifications and **reviews** (reply, report); buyers review delivered orders with photos (`/o/{token}/review`), reviews show on product pages; pushes go to the seller's phone (Expo, `EXPO_ACCESS_TOKEN`); unpaid buyer orders expire after 48 h (hourly `cron-expire-orders`, `CRON_SECRET`). Removing a review: **Actions → review-remove** (`OPS_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging** (phone tests use the owner's own shop).
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `2d1fe8f7` (M7 Reviews screen). Sentry installed but inactive until M10 (decision #70). JS changes: `pnpm update:preview "…"`.
+- **Git:** everything merged and pushed; no open PRs.
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i). When the laptop is slow, a Vitest test can hit its 5 s timeout: rerun before chasing it.
 
-**Next step:** the owner runs review stop B. After the go-ahead: the M7 gate (✅/❌ against `milestones.md` + definition of done) and tag `m7-done`.
+**Next step:** M8 plan awaiting approval (`docs/m8-plan.md`). After approval: record the answers as a decision, then M8a CP1 (badge removal + settings server).
 
 **Open items**
-- **Owner:** confirm Expo's "Enhanced security for push notifications" is **on** (expo.dev → project oda → Settings); delete the oda admin-SDK key file from Downloads.
-- Carried-forward list: in the M6 gate entry below, plus the M7 additions in the entry below.
+- **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
+- Carried-forward list: in the M7 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M7 gate passed; M8 plan proposed (owner Step 81; branch `m7-gate`)
+
+**Review stop B passed** (owner, Redmi, EAS Update `2d1fe8f7`): all 12 items (More → Reviews row; Reviews tabs and summary; a 2★ review push opens the review highlighted; tab counts; reply save / edit / remove reflected on the web; report → photos hidden on the web with the rating unchanged; open order; photo viewer; bell → review; cold start from a push; offline read-only). Review stop A passed in Step 80 (11 items).
+
+**Gate (milestones.md M7 + definition of done)**
+- ✅ **Review submission:** delivered only, one per order (unique key, race test), 7-day edit (backdated lock test), photos (presigned under the order's prefix, bytes re-checked, replaced photos deleted), seller replies, reviews on the product page — `server/reviews.test.ts` (14), shared `reviews.test.ts` (19), Playwright `e2e/reviews.spec.ts` (2); review stops A 1–11 and B 1–12.
+- ✅ **Accept — aggregates update correctly (tests):** shop and product averages on create, edit, clearing an item's stars, two reviews of one product (4 + 5 → 4.5), unrated items not counted, and recomputed after a removal — `reviews.test.ts` ("averages…", "edits…", "removing a review…"), the 0002 triggers (`packages/db` `triggers.test.ts`); on the phone: 5.0 / 4.0 (1) → 2.0 → 3.5 · 2 reviews → 2.0 · 1 review after review-remove (stop A 7–11).
+- ✅ **Accept — no review on an undelivered order:** the API answers 409 `not_delivered` for open and cancelled orders and refuses photo uploads — `reviews.test.ts` "refuses orders that are not delivered…", Playwright "an order that isn't delivered can't be reviewed"; the order page shows no prompt (stop A 1–2).
+- ✅ **No review on manual orders (decision #73 i):** 409 `review_not_allowed`, no uploads, no prompt, no "Rate your order" step, the delivered WhatsApp message keeps the order link — `reviews.test.ts`, shared timeline + WhatsApp tests; stop A 10.
+- ✅ **Moderation per decision #73:** links and phone numbers stripped on the server (shared tests + server test + stop A 5/7); the seller reports a review → photos hidden publicly at once, stars/text/rating stay, reporting twice changes nothing, 10 reports a day per shop (`reviews.test.ts` "reporting hides the photos…"; stop B 7); removal only through `review-remove.yml` → `POST /api/ops/reviews/remove` (Bearer `OPS_SECRET`, 404 otherwise) with an `ops_events` audit row, averages recomputed and photos deleted (`reviews.test.ts` "removing a review…"; stop A 11); migration 0005 expand-only.
+- ✅ **Definition of done:** `pnpm check:all` green on every branch (latest: shared 239, web 303, db 23, seller 91, Playwright 18) and CI green on PRs #36, #37; new logic unit-tested; every new endpoint has authorization tests (another shop's review 404, signed out 401, a token reaches only its own order's items and photo prefix, ops 404 without the secret, public reviews carry no buyer contact); new buyer flows have Playwright tests; screens compared with their designs (5d, 05c, 02 in the CP1–CP2 entry; 20b-reviews in the CP3 entry) and checked on the Redmi at both review stops; staging deployed (`5d12cb1` + this gate); app shipped as EAS Update `2d1fe8f7`; decision #73; progress updated.
+
+**Tag `m7-done`** on `main` after this branch is merged.
+
+**M8 plan proposed** in `docs/m8-plan.md`: **M8a** (badge removal, settings / details / password / shop profile with link change / payments with the "when buyers pay" toggles / pause / feedback; in-app and self-serve web deletion; the daily purge job; the daily support digest) and **M8b** (20-more, insights, customers, share images + QR + captions, help guides, rate the app); each with three checkpoints, two review stops and a phone test plan. No native build expected; one small JS package (`qrcode`) for M8b. Schema (M8a, expand only): `reports.notified_at`, `feedback.notified_at`, `reviews.report_notified_at`, `deletion_requests.token_hash/expires_at/confirmed_at`. Five questions (private storage for feedback screenshots, soft-deleted products, support WhatsApp number, digest time, help-guide drafts). Not approved; not started.
+
+**Carried forward (all milestones so far)**
+- **M8a** (`docs/m8-plan.md`): drop the till badge and verification copy (#72 a; the product page still reads `mpesaChecked`); settings, details, change password, shop profile (link change), Payments (the "when buyers pay" toggles: today a shop that entered a Till can't turn pay on delivery on), pause, feedback; in-app + self-serve web deletion (#72 c, `deletion_requests.token_hash/expires_at/confirmed_at`); `/api/cron/purge` — deleted shops after 30 days (incl. `reviews/` photos of their orders), `signup_attempts` older than 7 days, leftover `storage_deletions`, unreferenced `products/` / `logos/` / `reviews/` keys (incl. review photos never submitted), soft-deleted products (owner decision); the daily support digest with `notified_at` on reports/feedback and reported reviews (#72 b, #73 a).
+- **M8b:** 20-more (the Shop tab's card shows the initial, not the logo: `/api/me` has no logo URL), insights, customers, share (19b-share; "My status" from the Status button to confirm on the phone; TikTok logo only with TikTok's written permission), help guides, rate the app.
+- **M10:** suspend/unsuspend workflow reusing `OPS_SECRET` + `ops_events` (#72 d, #73 c); remove `requireAdmin`/`adminRepo`/`is_admin` paths and the `admin@example.test` seed (#72 f); wire Sentry (installed, inactive, #70); poll Expo push **receipts**; automated UI tests for the app (jest-expo/Maestro); the checkout page bundles zod through `@oda/shared` (performance pass); orders paging sorts on `date_trunc('milliseconds', placed_at)`, which the `(shop_id, status, placed_at)` index doesn't serve; reviews paging likewise on `created_at` — check with real volumes; `orders.idempotency_key` is unique across shops while lookups are per shop; review photos are a single 1280 px size (no thumbnail) — fine at current volumes.
+- **M11:** Cloudflare R2 with a custom image domain (replacing Vercel Blob, #54); `armeabi-v7a`; production keystore and EAS environment (and `autoIncrement` versionCode — 0.3.0 kept versionCode 1); production Neon and Resend; Vercel Hobby is non-commercial (#10); `vercel logout` on the laptop; real privacy/terms text; a production Firebase/FCM key, `EXPO_ACCESS_TOKEN` and `OPS_SECRET` per environment.
+- Not built: dragging products within a category (20b1); dragging delivery areas (hold menu instead).
+- `react-native-draggable-flatlist` 4.0.3 works with reanimated 4.5; re-check on every Expo SDK / reanimated upgrade. Categories screen: the drag list sits inside a ScrollView (dev-only warning).
+- Search filters are a panel of selects (accepted at M4 review stop B).
+- Blob usage: check the Hobby usage page (review photos now add to it).
+- eas-cli 24.8.0 on the laptop (24.10 available); EAS free-tier builds can queue for ~2 h.
 
 ## 2026-10-06 · M7 CP3: seller Reviews screen (owner Step 80; branch `m7-cp3`)
 
