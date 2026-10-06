@@ -79,6 +79,7 @@ Web 05c, 5d; app 20b-reviews.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
 
 ## M8 · Grow & manage
+**Status: M8a closed 2026-10-06** (gate passed, tag `m8a-done`); M8b in progress.
 **Plan: `docs/m8-plan.md`** (approved in owner Step 82, decision #74): split into **M8a** (settings, accounts, deletion, purge, digest, badge removal) and **M8b** (More, insights, customers, share, help, rate the app).
 Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-settings, 20b-your-details, 20b-help, 21-*.
 - Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
