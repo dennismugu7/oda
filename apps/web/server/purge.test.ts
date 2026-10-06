@@ -36,6 +36,13 @@ async function age(key: string, days: number) {
   await utimes(file, when, when);
 }
 
+/** An old file (2 days) under `key`. */
+async function oldFile(key: string) {
+  await storeJpeg(key);
+  await age(key, 2);
+  return key;
+}
+
 /** A shop with a product (2 photos), a logo, a delivered-style order with a review photo and a feedback screenshot. */
 async function fullShop() {
   const s = await newSeller();
@@ -297,5 +304,124 @@ describe('POST /api/cron/purge', () => {
     const actors = (await db().select().from(t.opsEvents)).map((e) => `${e.action}:${e.actor}`);
     expect(actors).toContain('purge_dry_run:dennismugu7');
     expect(actors).toContain('purge_run:schedule');
+  });
+});
+
+describe('unreferenced sweep: safety (owner Step 84)', () => {
+  it('every place a file can be referenced keeps it, each on its own', async () => {
+    const s = await fullShop();
+    const deleted = await fullShop();
+    await deletedDaysAgo(deleted, 10);
+    const sid = s.shopId;
+
+    // 1–2. A live product's full photo and its thumbnail (separate rows, so each column alone).
+    const [p1, p2] = await db()
+      .insert(t.products)
+      .values([
+        { shopId: sid, name: 'Only full', price: 100 },
+        { shopId: sid, name: 'Only thumb', price: 100 },
+      ])
+      .returning();
+    const fullOnly = await oldFile(`products/${sid}/full-only.jpg`);
+    const thumbOnly = await oldFile(`products/${sid}/thumb-only.jpg`);
+    const filler = await storeJpeg(`products/${sid}/filler.jpg`); // fresh, never swept
+    await db()
+      .insert(t.productPhotos)
+      .values([
+        { productId: p1!.id, objectKey: fullOnly, thumbKey: filler },
+        { productId: p2!.id, objectKey: filler, thumbKey: thumbOnly },
+      ]);
+    // 3. A product deleted yesterday (not yet purged) keeps its photo.
+    const [soft] = await db()
+      .insert(t.products)
+      .values({
+        shopId: sid,
+        name: 'Deleted yesterday',
+        price: 100,
+        deletedAt: new Date(Date.now() - DAY),
+      })
+      .returning();
+    const softPhoto = await oldFile(`products/${sid}/soft.jpg`);
+    await db()
+      .insert(t.productPhotos)
+      .values({ productId: soft!.id, objectKey: softPhoto, thumbKey: softPhoto });
+    // 4. The shop logo.
+    const logo = await oldFile(`logos/${sid}/logo2.jpg`);
+    await db().update(t.shops).set({ logoPath: logo }).where(eq(t.shops.id, sid));
+    // 5. A review photo, on a review the seller reported (hidden publicly, still referenced).
+    const reviewPhoto = await oldFile(`reviews/${s.order.id}/reported.jpg`);
+    const [review] = await db().select().from(t.reviews).where(eq(t.reviews.orderId, s.order.id));
+    await db()
+      .update(t.reviewItems)
+      .set({ photoPath: reviewPhoto })
+      .where(eq(t.reviewItems.reviewId, review!.id));
+    await db()
+      .update(t.reviews)
+      .set({ reportedAt: new Date(), reportReason: 'fake' })
+      .where(eq(t.reviews.id, review!.id));
+    // 6. An order item's thumbnail only (no product photo row points at it any more).
+    const cover = await oldFile(`products/${sid}/cover-only.jpg`);
+    await db()
+      .update(t.orderItems)
+      .set({ coverPathSnapshot: cover })
+      .where(eq(t.orderItems.orderId, s.order.id));
+    // 7. Files of a shop deleted 10 days ago (rows still there until the 30-day purge).
+    for (const key of deleted.files) await age(key, 2);
+    // The control: an old file nothing points at.
+    const orphan = await oldFile(`products/${sid}/orphan.jpg`);
+
+    const report = await purge(db(), { dryRun: false });
+    expect(report.unreferencedFiles.map((f) => f.key)).toContain(orphan);
+    const kept = [fullOnly, thumbOnly, softPhoto, logo, reviewPhoto, cover, ...deleted.files];
+    const present = await exists(kept);
+    expect(Object.fromEntries(kept.map((k, i) => [k, present[i]]))).toEqual(
+      Object.fromEntries(kept.map((k) => [k, true])),
+    );
+    expect(await localObjectExists(orphan)).toBe(false);
+  });
+
+  it('a file is only swept once it is more than 24 hours old', async () => {
+    const s = await newSeller();
+    const almost = await storeJpeg(`products/${s.shopId}/23h59.jpg`);
+    const over = await storeJpeg(`products/${s.shopId}/24h01.jpg`);
+    await age(almost, (24 * 60 - 1) / (24 * 60));
+    await age(over, (24 * 60 + 1) / (24 * 60));
+    await purge(db(), { dryRun: false });
+    expect(await exists([almost, over])).toEqual([true, false]);
+  });
+
+  it('never sweeps the private feedback store (its files go only with their shop)', async () => {
+    const s = await newSeller();
+    const shot = await oldFile(`feedback/${s.shopId}/never-sent.jpg`);
+    const report = await purge(db(), { dryRun: false });
+    expect(report.unreferencedFiles.map((f) => f.key)).not.toContain(shot);
+    expect(await localObjectExists(shot)).toBe(true);
+  });
+
+  it('a dry run lists each unreferenced file with why nothing points at it', async () => {
+    const s = await fullShop();
+    const product = await oldFile(`products/${s.shopId}/never-saved.jpg`);
+    const logo = await oldFile(`logos/${s.shopId}/replaced.jpg`);
+    const unsent = await oldFile(`reviews/${s.order.id}/not-used.jpg`);
+    const lostOrder = await oldFile('reviews/00000000-0000-4000-8000-000000000000/x.jpg');
+    const gone = await oldFile('products/00000000-0000-4000-8000-000000000001/x.jpg');
+    const report = await purge(db(), { dryRun: true });
+    const why = Object.fromEntries(report.unreferencedFiles.map((f) => [f.key, f.why]));
+    expect(why).toMatchObject({
+      [product]: 'product photo uploaded but never saved to a product, or replaced',
+      [logo]: 'logo uploaded but never saved, or replaced',
+      [unsent]: 'review photo replaced or removed (the order’s review doesn’t use it)',
+      [lostOrder]: 'review photo of an order that no longer exists',
+      [gone]: 'product photo of a shop that no longer exists',
+    });
+    for (const f of report.unreferencedFiles)
+      expect(Date.parse(f.uploadedAt)).toBeLessThan(Date.now() - DAY);
+    expect(await exists([product, logo, unsent, lostOrder, gone])).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
   });
 });
