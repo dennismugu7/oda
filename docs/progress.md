@@ -5,9 +5,9 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-06, owner Step 82)
 
 **Current state**
-- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. M8a CP1 + CP2 built and merged to `main` (staging); at 🛑 review stop A.**
+- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. M8a CP1 + CP2 built and merged to `main` (`8aed5bd`, staging, migration 0006 applied); at 🛑 review stop A.**
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration **0006** (digest marks + web deletion link columns, expand only). New: settings APIs (`/api/me/details`, `/api/shop/profile`, `/api/payments` + accounts, `/api/shop/pause`, `/api/feedback`), Better Auth `/change-password`; the till badge is gone. Removing a review: **Actions → review-remove**. Demo Duka: **Actions → demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** + the M8a EAS Update (Settings, Your details, Change password, Share feedback, Shop profile, Payments; More rows). JS changes: `pnpm update:preview "…"`.
+- **App:** EAS preview build **0.3.0** + EAS Update `3ebfa826` (M8a: Settings, Your details, Change password, Share feedback, Shop profile, Payments; More rows). JS changes: `pnpm update:preview "…"`.
 - **Feedback screenshots:** need the NEW private Vercel Blob store connected with the env prefix `FEEDBACK_BLOB` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, decision #74 b). Until then "Add screenshot" is hidden; feedback without one works.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
