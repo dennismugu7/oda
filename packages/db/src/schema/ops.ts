@@ -74,6 +74,8 @@ export const feedback = pgTable(
     replyOnWhatsapp: boolean('reply_on_whatsapp').notNull().default(false),
     status: ticketStatus('status').notNull().default('new'),
     adminNote: text('admin_note'),
+    /** The daily support digest mailed it (decisions #72 b, #74 h). */
+    notifiedAt: tstz('notified_at'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -92,13 +94,18 @@ export const reports = pgTable(
     contactPhone: text('contact_phone'),
     status: ticketStatus('status').notNull().default('new'),
     adminNote: text('admin_note'),
+    /** The daily support digest mailed it (decisions #72 b, #74 h). */
+    notifiedAt: tstz('notified_at'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [index('reports_status_idx').on(t.status, t.createdAt)],
 );
 
-/** From the web form at /delete-account. */
+/**
+ * From the web form at /delete-account (decision #72 c): the emailed confirm link's token is
+ * stored only as its sha-256 hash; single use (`confirmed_at`), valid for 1 hour.
+ */
 export const deletionRequests = pgTable(
   'deletion_requests',
   {
@@ -108,6 +115,9 @@ export const deletionRequests = pgTable(
     reason: text('reason'),
     status: ticketStatus('status').notNull().default('new'),
     processedAt: tstz('processed_at'),
+    tokenHash: text('token_hash').unique(),
+    expiresAt: tstz('expires_at'),
+    confirmedAt: tstz('confirmed_at'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

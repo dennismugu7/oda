@@ -48,7 +48,6 @@ export interface OnboardingState {
       accountName: string;
       accountRefMode: 'fixed' | 'order_number' | null;
       accountRef: string | null;
-      verificationStatus: string;
     } | null;
     acceptsPayBefore: boolean;
     acceptsPayOnDelivery: boolean;

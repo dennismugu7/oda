@@ -8,13 +8,14 @@ import { getDb } from './db';
 import { ForbiddenError, HttpError, TooManyRequestsError, ValidationError } from './errors';
 import { hasLocationData, sniffImageType, type ImageType } from './imageCheck';
 import { hitLimit } from './rateLimit';
-import { getStorage, StorageUnavailableError } from './storage';
+import { getPrivateStorage, getStorage, StorageUnavailableError } from './storage';
 
 // Uploads (docs/data-model.md → File storage, decision #52). The phone asks for an upload,
 // sends the file straight to storage, then saves the key through the API, which checks the
 // stored bytes before any row points at it: a real JPEG/PNG/WebP, at most 5 MB, under the
 // seller's own shop prefix, and without location data. Replaced and rejected objects are
 // queued in storage_deletions and deleted right away (the M8 purge retries leftovers).
+// Feedback screenshots go to the private store instead (decision #74 b).
 
 export const SHOP_KEY_PREFIXES = ['products', 'logos', 'feedback'] as const;
 export type ShopKeyPrefix = (typeof SHOP_KEY_PREFIXES)[number];
@@ -43,7 +44,7 @@ const EXTENSIONS: Record<string, ImageType> = {
 const EXT_OF: Record<ImageType, string> = { jpeg: 'jpg', png: 'png', webp: 'webp' };
 
 export const uploadRequest = z.strictObject({
-  kind: z.enum(['product', 'logo'], { error: 'Unknown upload.' }),
+  kind: z.enum(['product', 'logo', 'feedback'], { error: 'Unknown upload.' }),
   contentType: z.enum(['image/jpeg', 'image/png', 'image/webp'], {
     error: 'Use a JPEG, PNG or WebP photo.',
   }),
@@ -61,14 +62,38 @@ export class UploadsOffError extends HttpError {
   }
 }
 
+const isPrivateKey = (key: string) => key.startsWith('feedback/');
+
+/** Where a key lives: feedback screenshots in the private store, everything else public. */
+function storeFor(key: string) {
+  if (!isPrivateKey(key)) return getStorage();
+  const store = getPrivateStorage();
+  if (!store) throw new UploadsOffError();
+  return store;
+}
+
+/** Whether feedback screenshots can be uploaded (the private store is connected). */
+export function screenshotsEnabled(): boolean {
+  try {
+    return getPrivateStorage() !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** POST /api/uploads: a signed upload for one file, at a key the server chooses. */
 export async function createUpload(ctx: SellerCtx, input: UploadRequest, db: Db = getDb()) {
   if (!(await hitLimit(db, `uploads:${ctx.shopId}`, UPLOADS_PER_HOUR))) {
     throw new TooManyRequestsError('Too many photos for now. Try again in an hour.', 3600);
   }
-  const prefix: ShopKeyPrefix = input.kind === 'logo' ? 'logos' : 'products';
+  const prefix: ShopKeyPrefix =
+    input.kind === 'logo' ? 'logos' : input.kind === 'feedback' ? 'feedback' : 'products';
   const key = `${prefix}/${ctx.shopId}/${randomUUID()}.${EXT_OF[EXTENSIONS[input.contentType]!]}`;
   try {
+    if (input.kind === 'feedback') {
+      const upload = await storeFor(key).presignPut(key, input.contentType, input.size);
+      return { key, publicUrl: null, ...upload };
+    }
     const upload = await getStorage().presignPut(key, input.contentType, input.size);
     return { key, publicUrl: getStorage().publicUrl(key), ...upload };
   } catch (error) {
@@ -101,7 +126,7 @@ export async function verifyStoredImage(
 export async function checkStoredBytes(key: string, db: Db = getDb()): Promise<void> {
   let bytes: Uint8Array | null;
   try {
-    bytes = await getStorage().read(key);
+    bytes = await storeFor(key).read(key);
   } catch (error) {
     if (error instanceof StorageUnavailableError) throw new UploadsOffError();
     throw error;
@@ -150,7 +175,7 @@ export async function flushDeletions(db: Db, keys: readonly string[]): Promise<v
   const done: string[] = [];
   for (const key of keys) {
     try {
-      await getStorage().delete(key);
+      await storeFor(key).delete(key);
       done.push(key);
     } catch (error) {
       console.warn(`[storage] delete failed, left for the purge job: ${(error as Error).message}`);

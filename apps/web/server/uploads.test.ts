@@ -11,7 +11,9 @@ import { getDb } from './db';
 import { getOnboarding, postAnswer, postLogo, postProduct, postShop } from './onboardingRoutes';
 import {
   type BlobApi,
+  getPrivateStorage,
   getStorage,
+  privateVercelBlobStorage,
   resetStorageForTests,
   UPLOAD_TTL_SECONDS,
   vercelBlobStorage,
@@ -67,6 +69,31 @@ const queued = async () =>
   (await db().select().from(schema.storageDeletions)).map((r) => r.objectKey);
 
 describe('POST /api/uploads', () => {
+  it('feedback screenshots get a key under feedback/{shop} and no public URL', async () => {
+    const s = await seller();
+    const res = await s.call(uploadRoute, {
+      kind: 'feedback',
+      contentType: 'image/jpeg',
+      size: 99,
+    });
+    expect(res.status).toBe(200);
+    expect(res.json.key).toMatch(new RegExp(`^feedback/${s.shopId}/[0-9a-f-]{36}\.jpg$`));
+    expect(res.json.publicUrl).toBeNull();
+  });
+
+  it('on Vercel without the private store, screenshots are off (503)', async () => {
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('STORAGE_DRIVER', 'vercel-blob');
+    vi.stubEnv('STORAGE_PUBLIC_BASE_URL', 'https://abc.public.blob.vercel-storage.com');
+    vi.stubEnv('BLOB_STORE_ID', 'store_abc');
+    vi.stubEnv('FEEDBACK_BLOB_READ_WRITE_TOKEN', undefined);
+    resetStorageForTests();
+    expect(getPrivateStorage()).toBeNull();
+    const s = await seller();
+    const res = await s.call(uploadRoute, { kind: 'feedback', contentType: 'image/jpeg', size: 9 });
+    expect(res.status).toBe(503);
+  });
+
   it('signs an upload at a key under the seller’s own shop, with the right extension', async () => {
     const s = await seller();
     const res = await s.call(uploadRoute, {
@@ -89,7 +116,7 @@ describe('POST /api/uploads', () => {
       { kind: 'product', contentType: 'text/html', size: 10 },
       { kind: 'product', contentType: 'image/jpeg', size: 0 },
       { kind: 'product', contentType: 'image/jpeg', size: 5 * 1024 * 1024 + 1 },
-      { kind: 'feedback', contentType: 'image/jpeg', size: 10 },
+      { kind: 'review', contentType: 'image/jpeg', size: 10 },
       { kind: 'product', contentType: 'image/jpeg', size: 10, key: 'products/x/y.jpg' },
     ]) {
       expect((await s.call(uploadRoute, bad)).status, JSON.stringify(bad)).toBe(422);
@@ -461,5 +488,65 @@ describe('Vercel Blob driver (staging, decision #54), no network', () => {
     const ttl = (Date.parse(up.expiresAt) - before) / 1000;
     expect(ttl).toBeGreaterThan(590);
     expect(ttl).toBeLessThanOrEqual(601);
+  });
+});
+
+describe('private Vercel Blob store (feedback screenshots, decision #74 b), no network', () => {
+  const NOW = Date.UTC(2026, 9, 6, 8, 0, 0);
+  const TOKEN = 'vercel_blob_rw_test_token';
+
+  function fakeBlob() {
+    const calls: { fn: string; args: unknown[] }[] = [];
+    const api: BlobApi = {
+      issueSignedToken: (async (...args: unknown[]) => {
+        calls.push({ fn: 'issueSignedToken', args });
+        return { delegationToken: 'dt', clientSigningToken: 'cst', validUntil: NOW };
+      }) as BlobApi['issueSignedToken'],
+      presignUrl: (async (...args: unknown[]) => {
+        calls.push({ fn: 'presignUrl', args });
+        return { presignedUrl: 'https://store.private.blob.vercel-storage.com/x?sig=1' };
+      }) as BlobApi['presignUrl'],
+      get: (async (...args: unknown[]) => {
+        calls.push({ fn: 'get', args });
+        return null;
+      }) as BlobApi['get'],
+      del: (async (...args: unknown[]) => {
+        calls.push({ fn: 'del', args });
+      }) as BlobApi['del'],
+    };
+    return { api, calls };
+  }
+
+  it('uploads privately with its own token; reads, deletes and signs links with it', async () => {
+    const { api, calls } = fakeBlob();
+    const store = privateVercelBlobStorage(TOKEN, api, () => NOW);
+    const key = `feedback/${randomUUID()}/s.jpg`;
+    await store.presignPut(key, 'image/jpeg', 500);
+    expect(calls[0]!.args[0]).toMatchObject({ token: TOKEN, pathname: key, operations: ['put'] });
+    expect(calls[1]!.args[1]).toMatchObject({ operation: 'put', access: 'private' });
+
+    expect(await store.read(key)).toBeNull();
+    expect(calls[2]).toEqual({
+      fn: 'get',
+      args: [key, { access: 'private', token: TOKEN, useCache: false }],
+    });
+    await store.delete(key);
+    expect(calls[3]).toEqual({ fn: 'del', args: [key, { token: TOKEN }] });
+
+    const link = await store.signedReadUrl(key, 7 * 86_400);
+    expect(link).toBe('https://store.private.blob.vercel-storage.com/x?sig=1');
+    const week = NOW + 7 * 86_400_000;
+    expect(calls[4]!.args[0]).toEqual({
+      token: TOKEN,
+      pathname: key,
+      operations: ['get'],
+      validUntil: week,
+    });
+    expect(calls[5]!.args[1]).toEqual({
+      operation: 'get',
+      pathname: key,
+      access: 'private',
+      validUntil: week,
+    });
   });
 });

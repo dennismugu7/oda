@@ -18,3 +18,4 @@ export * from './nairobiTime';
 export * from './sellerHome';
 export * from './push';
 export * from './reviews';
+export * from './locations';

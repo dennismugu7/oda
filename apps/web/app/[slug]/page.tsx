@@ -94,26 +94,6 @@ export default async function ShopHome({ params, searchParams }: Props) {
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-1.5 text-title text-navy">
             <span className="truncate">{shop.name}</span>
-            {shop.mpesaChecked ? (
-              <span title="M-Pesa till checked by oda" className="shrink-0 text-green">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  aria-label="M-Pesa till checked by oda"
-                >
-                  <circle cx="12" cy="12" r="10" fill="currentColor" />
-                  <path
-                    d="M7.5 12.5l3 3 6-6.5"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            ) : null}
           </h1>
           {meta.length ? (
             <p className="truncate text-body text-text-secondary">{meta.join(' · ')}</p>

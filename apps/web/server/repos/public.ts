@@ -64,8 +64,6 @@ export type PublicShop = Awaited<ReturnType<typeof selectShop>>[number] & {
   payNowAvailable: boolean;
   /** At least one delivery area, or pickup on: needed to take orders (decision #61 c). */
   hasDeliveryOption: boolean;
-  /** "M-Pesa till checked by oda": the active account was verified by an admin. */
-  mpesaChecked: boolean;
   logoUrl: string | null;
   readonly [visible]: true;
 };
@@ -89,7 +87,7 @@ export function publicRepo(db: Db) {
       if (row) {
         const [[active], [area]] = await Promise.all([
           db
-            .select({ id: t.paymentAccounts.id, status: t.paymentAccounts.verificationStatus })
+            .select({ id: t.paymentAccounts.id })
             .from(t.paymentAccounts)
             .where(and(eq(t.paymentAccounts.shopId, row.id), eq(t.paymentAccounts.isActive, true))),
           db
@@ -102,7 +100,6 @@ export function publicRepo(db: Db) {
           ...row,
           payNowAvailable: row.acceptsPayBefore && !!active,
           hasDeliveryOption: row.pickupEnabled || !!area,
-          mpesaChecked: active?.status === 'verified',
           logoUrl: publicUrl(row.logoPath),
         } as PublicShop;
         return { kind: 'shop', shop };

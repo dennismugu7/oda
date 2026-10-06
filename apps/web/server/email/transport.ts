@@ -17,6 +17,7 @@ import { z } from 'zod';
 export type EmailKind =
   | 'verification-code'
   | 'reset-link'
+  | 'password-changed'
   | 'order-receipt'
   | 'order-cancelled'
   // Seller-triggered order updates (M6, decision #61 f).

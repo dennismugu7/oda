@@ -16,7 +16,7 @@ import {
 } from '@oda/shared';
 import { z } from 'zod';
 import { getDb } from './db';
-import { resetPasswordEmail } from './email/templates';
+import { passwordChangedEmail, resetPasswordEmail } from './email/templates';
 import { sendEmail } from './email/transport';
 import { ensureProfile } from './profiles';
 import {
@@ -67,12 +67,21 @@ export const AUTH_LIMITS = {
   resetMailsPerEmail: { window: 3600, max: 5 },
   resetRequestsPerIp: { window: 3600, max: 30 },
   resetsPerIp: { window: 3600, max: 30 },
+  // 21-change-password: tries per account (a wrong current password counts too) and per IP.
+  passwordChangesPerUser: { window: 3600, max: 10 },
+  passwordChangesPerIp: { window: 3600, max: 30 },
 } satisfies Record<string, Limit>;
 
 /** The HTTP endpoints the app and the web use; everything else Better Auth offers is 404. */
 export const AUTH_ROUTES = {
   GET: ['/get-session'],
-  POST: ['/sign-in/email', '/sign-out', '/request-password-reset', '/reset-password'],
+  POST: [
+    '/sign-in/email',
+    '/sign-out',
+    '/request-password-reset',
+    '/reset-password',
+    '/change-password',
+  ],
 } as const;
 
 const signInFailKey = (email: string) => `signin-fail:${email.trim().toLowerCase()}`;
@@ -154,10 +163,36 @@ async function checkLimitsAndRules(ctx: Parameters<Parameters<typeof createAuthM
       await limitOrThrow(`reset-ip:${ip}`, AUTH_LIMITS.resetsPerIp, 'Too many tries.');
       return;
     }
+    case '/change-password': {
+      // Better Auth's own middleware answers 401 without a session; with one, count the try.
+      // (Through getSession, so the bearer token works as well as the app's cookie.)
+      const session = ctx.headers
+        ? await getAuth()
+            .api.getSession({ headers: ctx.headers })
+            .catch(() => null)
+        : null;
+      if (!session) return;
+      const message = 'Too many password changes.';
+      await limitOrThrow(
+        `pw-change:${session.user.id}`,
+        AUTH_LIMITS.passwordChangesPerUser,
+        message,
+      );
+      await limitOrThrow(`pw-change-ip:${ip}`, AUTH_LIMITS.passwordChangesPerIp, message);
+      weakPassword(body.newPassword);
+      if (typeof body.currentPassword === 'string' && body.currentPassword === body.newPassword) {
+        throw new APIError('BAD_REQUEST', {
+          code: 'SAME_PASSWORD',
+          message: 'Choose a new password that is different from your current one.',
+        });
+      }
+      return;
+    }
   }
 }
 
 const afterHook = createAuthMiddleware(async (ctx) => {
+  if (ctx.path === '/change-password') return afterPasswordChange(ctx);
   if (ctx.path !== '/sign-in/email') return;
   const returned = ctx.context.returned;
   if (!isAPIError(returned) || returned.statusCode !== 401) return;
@@ -169,6 +204,23 @@ const afterHook = createAuthMiddleware(async (ctx) => {
     max: 2_147_483_647, // count only; never blocks here
   });
 });
+
+/** A changed password: the seller gets an email, and any sign-in lock is lifted. */
+async function afterPasswordChange(
+  ctx: Parameters<Parameters<typeof createAuthMiddleware>[0]>[0],
+): Promise<void> {
+  const returned = ctx.context.returned;
+  if (isAPIError(returned)) return;
+  const email = ctx.context.session?.user.email;
+  if (!email) return;
+  await clearLimit(getDb(), signInFailKey(email));
+  try {
+    await sendEmail(passwordChangedEmail(email));
+  } catch (error) {
+    // The password did change; a failed notice must not turn that into an error.
+    console.warn(`[auth] password-changed email failed: ${(error as Error).name}`);
+  }
+}
 
 /**
  * Better Auth's Expo server plugin, without its OAuth parts: the app sends its scheme in

@@ -5,6 +5,7 @@ import {
   BUSINESS_TYPES,
   CHANNELS,
   DELIVERY_METHODS,
+  FEEDBACK_KINDS,
   PAYMENT_ACCOUNT_TYPES,
   PRODUCT_STATUSES,
 } from './enums';
@@ -47,6 +48,20 @@ export const profileUpdate = z
   })
   .partial();
 export type ProfileUpdate = z.infer<typeof profileUpdate>;
+
+/** 20b-your-details. The email is read-only ("Email can't be changed yet"). */
+export const detailsUpdate = z
+  .strictObject({
+    firstName: profileUpdate.shape.firstName,
+    lastName: profileUpdate.shape.lastName,
+    // An empty field removes the recovery number.
+    recoveryPhone: z.preprocess(
+      (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+      kePhone.nullable(),
+    ),
+  })
+  .partial();
+export type DetailsUpdate = z.infer<typeof detailsUpdate>;
 
 // Shop ----------------------------------------------------------------------------------
 
@@ -95,6 +110,50 @@ export const shopUpdate = z
     error: 'Keep at least one way for buyers to pay: before delivery or on delivery.',
   });
 export type ShopUpdate = z.infer<typeof shopUpdate>;
+
+/** 20b-shop-profile: what buyers see at the top of the shop (the link change included). */
+export const shopProfileUpdate = z
+  .strictObject({
+    name: shopFields.name,
+    slug: shopFields.slug,
+    logoPath: shopFields.logoPath,
+    about: shopFields.about,
+    locationLabel: shopFields.locationLabel,
+    whatsappPhone: shopFields.whatsappPhone,
+    callsEnabled: shopFields.callsEnabled,
+    tiktokHandle: shopFields.tiktokHandle,
+    instagramHandle: shopFields.instagramHandle,
+  })
+  .partial();
+export type ShopProfileUpdate = z.infer<typeof shopProfileUpdate>;
+
+/** 20b-payments "When buyers pay": at least one stays on. */
+export const paymentSettingsUpdate = z
+  .strictObject({
+    acceptsPayBefore: shopFields.acceptsPayBefore,
+    acceptsPayOnDelivery: shopFields.acceptsPayOnDelivery,
+  })
+  .partial()
+  .refine((s) => !(s.acceptsPayBefore === false && s.acceptsPayOnDelivery === false), {
+    error: 'Keep at least one way for buyers to pay: before delivery or on delivery.',
+  });
+export type PaymentSettingsUpdate = z.infer<typeof paymentSettingsUpdate>;
+
+/** 20b-settings "Pause my shop". */
+export const pauseUpdate = z.strictObject({ paused: z.boolean({ error: 'Choose on or off.' }) });
+
+// Feedback ------------------------------------------------------------------------------
+
+export const FEEDBACK_MAX = 500;
+
+/** 21-share-feedback (and Help → Report a problem / Suggest an idea, M8b). */
+export const feedbackInput = z.strictObject({
+  kind: z.enum(FEEDBACK_KINDS, { error: "Choose what it's about." }),
+  message: requiredText(1, FEEDBACK_MAX, 'Your message'),
+  screenshotPath: objectKey.nullable().default(null),
+  replyOnWhatsapp: z.boolean().default(false),
+});
+export type FeedbackInput = z.infer<typeof feedbackInput>;
 
 /** 20b-delivery: pickup and free delivery (the areas have their own endpoints). */
 export const deliverySettingsUpdate = z
@@ -263,8 +322,13 @@ export type ProductPhotoInput = z.infer<typeof productPhotoInput>;
 /** Every write whitelist, for the server-owned contract test (and future endpoints). */
 export const WRITE_SCHEMAS = {
   profileUpdate,
+  detailsUpdate,
   shopCreate,
   shopUpdate,
+  shopProfileUpdate,
+  paymentSettingsUpdate,
+  pauseUpdate,
+  feedbackInput,
   deliverySettingsUpdate,
   paymentAccountInput,
   deliveryAreaInput,

@@ -138,7 +138,6 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
                 accountName: account.accountName,
                 accountRefMode: account.accountRefMode,
                 accountRef: account.accountRef,
-                verificationStatus: account.verificationStatus,
               }
             : null,
           acceptsPayBefore: shop.acceptsPayBefore,
@@ -312,7 +311,7 @@ export function onboardingShopRepo(db: Db, ctx: SellerCtx) {
     },
 
     /**
-     * Step 5: the M-Pesa account buyers pay (verification `pending`), or Skip, which turns on
+     * Step 5: the M-Pesa account buyers pay, or Skip, which turns on
      * pay on delivery (spec §5.2). A redo replaces the active account's details.
      */
     async savePayment(input: OnboardingPayment) {

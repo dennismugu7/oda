@@ -172,9 +172,6 @@ export default async function ProductPage(props: Props) {
           {payLine ? (
             <div className="p-4">
               <p className="text-body-strong text-navy">{payLine}</p>
-              {shop.mpesaChecked ? (
-                <p className="text-body text-green">M-Pesa till checked by oda</p>
-              ) : null}
             </div>
           ) : null}
         </div>

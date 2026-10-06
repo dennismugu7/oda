@@ -33,6 +33,8 @@ export const reviews = pgTable(
     /** The seller reported it (decision #73 a): its photos are hidden on public pages. */
     reportedAt: tstz('reported_at'),
     reportReason: text('report_reason'),
+    /** The daily support digest mailed this report (decision #74 h). */
+    reportNotifiedAt: tstz('report_notified_at'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
