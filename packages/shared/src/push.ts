@@ -22,11 +22,22 @@ export interface PushData {
   reviewId?: string | null;
 }
 
-/** Where a tapped notification goes, or null when it has nowhere to go. */
-export function pushRoute(
-  data: unknown,
-): { pathname: '/orders/[id]'; params: { id: string } } | null {
-  const orderId = (data as Partial<PushData> | null | undefined)?.orderId;
-  if (typeof orderId !== 'string' || !/^[0-9a-f-]{36}$/i.test(orderId)) return null;
+export type PushRoute =
+  | { pathname: '/orders/[id]'; params: { id: string } }
+  | { pathname: '/reviews'; params: { review: string } };
+
+const UUID = /^[0-9a-f-]{36}$/i;
+
+/**
+ * Where a tapped notification goes, or null when it has nowhere to go: a new review opens the
+ * Reviews screen at that review (M7); everything else opens its order.
+ */
+export function pushRoute(data: unknown): PushRoute | null {
+  const d = data as Partial<PushData> | null | undefined;
+  if (typeof d?.reviewId === 'string' && UUID.test(d.reviewId)) {
+    return { pathname: '/reviews', params: { review: d.reviewId } };
+  }
+  const orderId = d?.orderId;
+  if (typeof orderId !== 'string' || !UUID.test(orderId)) return null;
   return { pathname: '/orders/[id]', params: { id: orderId } };
 }

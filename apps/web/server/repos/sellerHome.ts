@@ -39,6 +39,7 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
         title: n.title,
         body: n.body,
         orderId: n.orderId,
+        reviewId: n.reviewId,
         readAt: n.readAt,
         createdAt: n.createdAt,
       })),

@@ -1,5 +1,5 @@
 // Notifications (design-changes NEW: notifications list): newest first, an unread dot, tap →
-// the order (marked read), "Mark all read". The same events reach the phone as push in CP4.
+// the order, or the review for a new review (marked read), "Mark all read". The same events reach the phone as push in CP4.
 import Feather from '@expo/vector-icons/Feather';
 import { listTime } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
@@ -82,7 +82,8 @@ export default function NotificationsScreen() {
       );
       homeApi.markRead([n.id]).then(({ data }) => data && keep(data));
     }
-    if (n.orderId) router.push({ pathname: '/orders/[id]', params: { id: n.orderId } });
+    if (n.reviewId) router.push({ pathname: '/reviews', params: { review: n.reviewId } });
+    else if (n.orderId) router.push({ pathname: '/orders/[id]', params: { id: n.orderId } });
   }
 
   async function markAll() {
@@ -136,7 +137,7 @@ export default function NotificationsScreen() {
               <Feather name="bell" size={28} color={colors.primary} />
               <Text style={styles.emptyTitle}>No notifications yet</Text>
               <Text style={styles.emptyLine}>
-                New orders, payments and cancellations will show here.
+                New orders, payments, cancellations and reviews will show here.
               </Text>
             </View>
           }

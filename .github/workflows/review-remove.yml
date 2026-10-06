@@ -4,7 +4,7 @@ name: review-remove
 # id, or the shop's link name and the order number. The server writes an audit row in ops_events
 # (who ran this, why, and a snapshot), deletes the review, recomputes the shop and product
 # averages and deletes its photos. Called with the Bearer secret OPS_SECRET (the same value is
-# set in Vercel); a wrong or missing secret answers 404.
+# set in Vercel); a wrong or missing secret answers 404 "We couldn’t find that.".
 on:
   workflow_dispatch:
     inputs:
@@ -71,5 +71,5 @@ jobs:
             echo "Attempt $attempt timed out"
             sleep 15
           done
-          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 without a message means OPS_SECRET differs from the one in Vercel."
+          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 with the message 'We couldn’t find that.' means OPS_SECRET differs from the one in Vercel; 'No review found…' means the secret is right but no review matched."
           exit 1

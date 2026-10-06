@@ -1,6 +1,6 @@
 // Push in the running app (decision #65 a): register this phone once the seller reaches the
-// tabs (right after sign-in), and open the order when a notification is tapped — also when the
-// tap started the app.
+// tabs (right after sign-in), and open the order (or, for a new review, the Reviews screen at
+// that review) when a notification is tapped — also when the tap started the app.
 import { pushRoute } from '@oda/shared';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
@@ -32,7 +32,7 @@ export function resetPushRegistration() {
   registered = false;
 }
 
-/** Tapping a notification opens that order's detail. */
+/** Tapping a notification opens that order's detail, or the review (M7). */
 export function usePushTaps() {
   const response = Notifications.useLastNotificationResponse();
   const handled = useRef<string | null>(null);

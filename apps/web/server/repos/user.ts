@@ -46,6 +46,8 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
           businessType: true,
           onboardingStep: true,
           onboardingCompletedAt: true,
+          ratingAvg: true,
+          ratingCount: true,
         },
         where: and(eq(schema.shops.ownerId, ctx.userId), isNull(schema.shops.deletedAt)),
       });
@@ -62,7 +64,15 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
         emailVerified: user!.emailVerified,
         onboarding: { step, done: step === null },
         shop: shop
-          ? { id: shop.id, name: shop.name, slug: shop.slug, businessType: shop.businessType }
+          ? {
+              id: shop.id,
+              name: shop.name,
+              slug: shop.slug,
+              businessType: shop.businessType,
+              /** The More tab's Reviews row ("4.8 ★ · 38", M7). */
+              ratingAvg: shop.ratingAvg === null ? null : Number(shop.ratingAvg),
+              ratingCount: shop.ratingCount,
+            }
           : null,
       };
     },

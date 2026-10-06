@@ -12,6 +12,9 @@ export interface Me {
     slug: string;
     /** Sets the size presets offered for products (decision #41 d). */
     businessType?: BusinessType;
+    /** The shop's rating for the More tab's Reviews row (M7). */
+    ratingAvg?: number | null;
+    ratingCount?: number;
   } | null;
 }
 
