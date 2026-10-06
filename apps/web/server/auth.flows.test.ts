@@ -433,6 +433,7 @@ describe('GET /api/me', () => {
       id: shop!.id,
       name: 'Amani Styles',
       slug: 'amani-styles',
+      logoUrl: null,
       businessType: 'other',
       ratingAvg: null,
       ratingCount: 0,

@@ -10,10 +10,13 @@ import { colors, radii, spacing, text } from '@/theme';
 export function TabScreen({
   title,
   subtitle,
+  header,
   children,
 }: {
   title: string;
   subtitle?: string | null;
+  /** Under the title, inside the navy header (e.g. More's shop card). */
+  header?: ReactNode;
   children: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -25,6 +28,7 @@ export function TabScreen({
           {title}
         </Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        {header}
       </View>
       <ScrollView contentContainerStyle={styles.body}>{children}</ScrollView>
     </View>

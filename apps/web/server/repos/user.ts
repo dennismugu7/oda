@@ -4,6 +4,7 @@ import { schema, type Db } from '@oda/db';
 import type { ProfileUpdate, ShopCreate } from '@oda/shared';
 import type { SellerCtx, UserCtx } from '../authz';
 import { ConflictError, withDbErrors } from '../errors';
+import { publicUrl } from '../uploads';
 
 // The signed-in user's own profile, and shop creation (onboarding step 3).
 
@@ -43,6 +44,7 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
           id: true,
           name: true,
           slug: true,
+          logoPath: true,
           businessType: true,
           onboardingStep: true,
           onboardingCompletedAt: true,
@@ -68,6 +70,8 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
               id: shop.id,
               name: shop.name,
               slug: shop.slug,
+              /** The Shop tab and More cards show the logo when there is one (M8b). */
+              logoUrl: publicUrl(shop.logoPath),
               businessType: shop.businessType,
               /** The More tab's Reviews row ("4.8 ★ · 38", M7). */
               ratingAvg: shop.ratingAvg === null ? null : Number(shop.ratingAvg),

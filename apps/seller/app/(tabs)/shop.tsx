@@ -36,6 +36,7 @@ import { openBuyerView, shopPageUrl } from '@/catalogue/preview';
 import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { Button, FormMessage } from '@/ui/auth';
+import { ShopAvatar } from '@/ui/shopAvatar';
 import { colors, radii, spacing, text } from '@/theme';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
@@ -160,9 +161,7 @@ export default function ShopTab() {
         />
       ) : (
         <View style={styles.shopCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(shop?.name ?? ' ').charAt(0).toUpperCase()}</Text>
-          </View>
+          <ShopAvatar name={shop?.name} logoUrl={shop?.logoUrl} />
           <View style={styles.shopText}>
             <Text style={styles.shopName} numberOfLines={1}>
               {shop?.name ?? ' '}
@@ -384,15 +383,6 @@ const styles = StyleSheet.create({
     borderColor: colors.navyMuted,
     padding: spacing.md,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radii.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { ...text('title'), color: colors.textOnPrimary },
   shopText: { flex: 1 },
   shopName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
   shopLink: { ...text('small'), color: colors.toggleOff },

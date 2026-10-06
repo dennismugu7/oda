@@ -2,6 +2,7 @@
 // a title with an optional line under it, and an optional ⋮ menu.
 import Feather from '@expo/vector-icons/Feather';
 import { StatusBar } from 'expo-status-bar';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, spacing, text } from '@/theme';
@@ -12,6 +13,9 @@ export function ScreenHeader({
   link,
   onBack,
   onMenu,
+  menuIcon = 'more-vertical',
+  menuLabel = 'More actions',
+  children,
 }: {
   title: string;
   subtitle?: string | null;
@@ -19,57 +23,68 @@ export function ScreenHeader({
   link?: { label: string; onPress: () => void } | null;
   onBack: () => void;
   onMenu?: () => void;
+  menuIcon?: 'more-vertical' | 'search' | 'x';
+  menuLabel?: string;
+  /** Under the title row, inside the navy header (period tabs, filter chips). */
+  children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
       <StatusBar style="light" />
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={onBack}>
-        <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
-      </Pressable>
-      <View style={styles.headerText}>
-        <Text accessibilityRole="header" style={styles.headerTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle || link ? (
-          <Text style={styles.headerSub}>
-            {subtitle}
-            {subtitle && link ? ' · ' : null}
-            {link ? (
-              <Text accessibilityRole="link" onPress={link.onPress} style={styles.headerLink}>
-                {link.label}
-              </Text>
-            ) : null}
-          </Text>
-        ) : null}
-      </View>
-      {onMenu ? (
+      <View style={styles.row}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="More actions"
+          accessibilityLabel="Back"
           hitSlop={12}
-          onPress={onMenu}
+          onPress={onBack}
         >
-          <Feather name="more-vertical" size={26} color={colors.textOnNavy} />
+          <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
         </Pressable>
-      ) : (
-        <View style={styles.headerSpacer} />
-      )}
+        <View style={styles.headerText}>
+          <Text accessibilityRole="header" style={styles.headerTitle} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle || link ? (
+            <Text style={styles.headerSub}>
+              {subtitle}
+              {subtitle && link ? ' · ' : null}
+              {link ? (
+                <Text accessibilityRole="link" onPress={link.onPress} style={styles.headerLink}>
+                  {link.label}
+                </Text>
+              ) : null}
+            </Text>
+          ) : null}
+        </View>
+        {onMenu ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={menuLabel}
+            hitSlop={12}
+            onPress={onMenu}
+          >
+            <Feather name={menuIcon} size={26} color={colors.textOnNavy} />
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
+      </View>
+      {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     backgroundColor: colors.navy,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
     borderBottomLeftRadius: radii.sheet + 8,
     borderBottomRightRadius: radii.sheet + 8,
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerText: { flex: 1 },
   headerTitle: { ...text('headline'), color: colors.textOnNavy },
   headerSub: { ...text('body'), color: colors.toggleOff },

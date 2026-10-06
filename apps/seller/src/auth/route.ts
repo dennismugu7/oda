@@ -10,6 +10,8 @@ export interface Me {
     id: string;
     name: string;
     slug: string;
+    /** The shop logo for the Shop tab and More cards (M8b), null without one. */
+    logoUrl?: string | null;
     /** Sets the size presets offered for products (decision #41 d). */
     businessType?: BusinessType;
     /** The shop's rating for the More tab's Reviews row (M7). */

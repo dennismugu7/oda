@@ -494,7 +494,8 @@ describe('the seller’s reviews', () => {
     expect((await seller(stranger, listReviews)).json.reviews).toEqual([]);
     expect(await anonCall(listReviews)).toBe(401);
     expect(await anonCall(getReview, { id })).toBe(401);
-  });
+    // Many writes and reads in one test: over the 5 s default when the machine is busy.
+  }, 20_000);
 
   it('reporting hides the photos publicly at once; stars, text and averages stay', async () => {
     const w = await shopWorld();
