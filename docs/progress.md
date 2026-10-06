@@ -2,21 +2,54 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 79)
+## Handoff (keep current; updated 2026-10-06, owner Step 80)
 
 **Current state**
-- **Milestones:** M0–M6 closed; latest tag **`m6-done`**. **M9 removed** (decision #72). **M7 in progress** (plan approved in Step 79, decision #73): CP1 (review server) and CP2 (buyer web) built and merged to `main`; **🛑 at review stop A** (buyer review flow on the phone's browser; test list in the entry below). CP3 (seller app Reviews screen, report) not started.
+- **Milestones:** M0–M6 closed; latest tag **`m6-done`**. **M9 removed** (decision #72). **M7 in progress** (plan approved in Step 79, decision #73): CP1–CP2 passed review stop A (Step 80); CP3 (seller app Reviews screen) merged to `main` and published as an EAS Update; **🛑 at review stop B** (test list in the CP3 entry below). After it: the M7 gate and tag `m7-done`.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Everything from M6, plus reviews: delivered buyer-placed orders get "Rate your order" (`/o/{token}/review`), photos, product reviews and averages, the delivered email/WhatsApp link to the review page, a `new_review` push. Removing a review: **Actions → review-remove** (`OPS_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi; no app change in M7 yet (a `new_review` push opens the order until CP3).
-- **Git:** branch `m7-reviews` merged (see the entry below); no open PRs.
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + the M7 CP3 EAS Update (Reviews screen; a `new_review` push opens the review).
+- **Git:** `m7-reviews` (PR #36) and `m7-cp3` merged; no open PRs.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
-**Next step:** the owner runs review stop A. After the go-ahead: CP3 (seller app Reviews screen with reply and report, `new_review` tap → the review) as an EAS Update.
+**Next step:** the owner runs review stop B. After the go-ahead: the M7 gate (✅/❌ against `milestones.md` + definition of done) and tag `m7-done`.
 
 **Open items**
 - **Owner:** confirm Expo's "Enhanced security for push notifications" is **on** (expo.dev → project oda → Settings); delete the oda admin-SDK key file from Downloads.
 - Carried-forward list: in the M6 gate entry below, plus the M7 additions in the entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M7 CP3: seller Reviews screen (owner Step 80; branch `m7-cp3`)
+
+**Review stop A passed** (owner Step 80: all 11 items, incl. the push within ~10 s with Expo's enhanced push security on, and the review-remove workflow).
+
+**CP3 · Seller app (20b-reviews)**
+- **Reviews screen** (`app/reviews.tsx`): navy header "Reviews · From buyers after delivery", tabs **All / Needs reply / Low ratings (1–3★)** with counts; summary card (average, stars, 5→1 histogram); review cards (initial avatar, "Wanjiku M.", stars · day · order number · edited, each item's text with its product chip and stars, tags, photos with tap-to-enlarge, "Reported · photos hidden from buyers"); **Reply** sheet (≤ 500 characters, edit, remove); ⋮ → Reply / Open order / **Report review** (sheet explains: photos hidden at once, stars and text stay, still counts; optional reason); pull to refresh; pages of 20; offline bar with the saved lists (read-only); empty states per tab; the note "Buyers get a review link in your WhatsApp message and their email when you mark an order as delivered."
+- **A tapped `new_review` push or notification** opens Reviews with that review on top, outlined (`pushRoute` → `/reviews?review=<id>`; notifications now carry `reviewId`).
+- **More tab:** a "Your business" section with **Reviews** "4.8 ★ · 38" (`/api/me` now returns the shop's `ratingAvg` / `ratingCount`).
+- Sign-out clears the saved review lists.
+- `review-remove.yml`: the failure hint now says a wrong secret answers 404 "We couldn't find that.", and "No review found…" means the secret is right but no review matched.
+- Tests: app `src/reviews/view.test.ts` (5: tabs, histogram, avatars, cache updates on reply/report, label), shared `push.test.ts` (review route), `nairobiTime.test.ts` (`daysAgo`), server `reviews.test.ts` +1 (notification `reviewId`, `/api/me` rating).
+- **JS only**: shipped as an EAS Update on runtime 0.3.0 (no native change, no build).
+- **Checks:** `pnpm check:all` green (shared 239, web 303, db 23, seller 91, Playwright 18). A first run had one real failure (an `/api/me` test expecting the old shop shape, fixed) and four 5-second timeouts while the laptop was slow (they passed on the rerun).
+
+**Design comparison (20b-reviews):** names show as "Wanjiku M." (decision #73 e), not full names; the meta line adds the order number (and "edited"); a ⋮ menu per card (Reply, Open order, Report); per-item stars next to the product chip, tags under the texts, photos and the "Reported" chip; the summary card shows on every tab (it describes the whole shop); the footer note follows design-changes (oda doesn't send the link: the seller's WhatsApp message and the buyer's email do). More (20): only the Reviews row of "Your business" exists so far (Insights and Customers are M8).
+
+**Accessibility (CP4 pass for M7 screens):** web stars are radio buttons labelled "Rate n out of 5" (overall and per item, each group named), the order page's star shortcuts are links "Rate n out of 5", tag chips are toggle buttons with `aria-pressed`, every target is ≥ 44 px (photo remove/add included), live label under the stars; app tabs are `tab`s with counts in their labels, cards read "Wanjiku M., 4 out of 5 stars, Yesterday, order 1042", ⋮ / Reply / Edit / photos have labels and ≥ 44 dp targets or a hit slop.
+
+**🛑 Review stop B — phone test (Redmi + the phone's browser, your own shop)**
+Before you start: close and reopen the oda app **twice** so it picks up the update.
+1. **More** tab: a **YOUR BUSINESS** section with **Reviews** showing your shop's rating and count (e.g. "5.0 ★ · 1").
+2. Tap **Reviews**: navy header "Reviews · From buyers after delivery"; tabs **All n · Needs reply n · Low ratings n**; the summary card shows the average, stars and the 5→1 bars matching your reviews; the review from review stop A is listed with its product chip and "No reply yet".
+3. On the phone's browser: place a new order (pay on delivery), deliver it in the app, then review it with **2 stars** overall, some text and a **photo**. Within about 10 seconds the Redmi shows **★★☆☆☆ from {Name} {initial}. · #…**. Tap it → the app opens **Reviews** with that review **on top, outlined in orange**.
+4. **Low ratings** tab: the 2-star review is there and the count matches (only 1–3★ reviews). **All** shows every review. **Needs reply** counts the reviews without a reply.
+5. On the 2-star review, tap **Reply** → type `Asante, we'll make it right` → **Save reply** → the card shows **Your reply** with **Edit**; the Needs reply count drops by 1. On the web, that product's page shows **Reply from {your shop}** under the review.
+6. **Edit** → change the text → **Save reply** → the new text shows (web too after a refresh). Then **Edit** → **Remove reply** → back to "No reply yet" (and gone on the web).
+7. ⋮ on the 2-star review → **Report review** → the sheet explains that photos are hidden at once → type a reason (optional) → **Report review**. The card shows **Reported · photos hidden from buyers** and still shows the photo to you; ⋮ now shows "Reported to oda". On the web product page the review is still there with its stars and text but **no photo**, and the shop rating hasn't changed.
+8. ⋮ → **Open order #…** → that order's detail opens.
+9. Tap a photo on a card → it opens large; tap to close.
+10. Home → bell → the review notification has a star icon; tapping it opens **Reviews** at that review.
+11. Force-close the app. On the browser, review another delivered order (any stars; or place and deliver one more). Tap the push → the app starts on **Reviews** with that review on top.
+12. Turn on airplane mode, open **Reviews**: the offline bar "You're offline · showing saved data" and the saved list; **Reply** → Save shows an error and nothing changes. Turn airplane mode off and pull down to refresh.
 
 ## 2026-10-06 · M7 CP1–CP2: reviews server and buyer web (owner Step 79; branch `m7-reviews`)
 
