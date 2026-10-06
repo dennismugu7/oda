@@ -2,22 +2,41 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 83)
+## Handoff (keep current; updated 2026-10-06, owner Step 84)
 
 **Current state**
-- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. Review stop A passed (Step 83, 11 items). M8a CP3 (deletion, purge, digest; decision #75) built and merged to `main` (staging); at 🛑 review stop B.**
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration 0006 applied. New in CP3: `/delete-account` (+ `/confirm`), `/api/me/delete`, `/api/cron/purge` (dry run), `/api/cron/digest`. Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default), **cron-digest** (daily 08:11 Nairobi), **staging-backdate-deletion** (test tool), plus cron-expire-orders, review-remove, demo-seed-staging.
-- **App:** EAS preview build **0.3.0** + EAS Update `4c26bde9` (CP3: Settings → Delete account), staging `f5a8144`. JS changes: `pnpm update:preview "…"`.
-- **Feedback screenshots:** private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, decision #74 b), working (stop A item 10).
+- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): CP1 insights / customers / More server → CP2 app screens → 🛑 review stop A.
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi), **cron-expire-orders** (hourly), **staging-backdate-deletion**, **staging-backdate-order**, **review-remove**, **demo-seed-staging**.
+- **App:** EAS preview build **0.3.0** + EAS Update `4c26bde9` (M8a). JS changes: `pnpm update:preview "…"`.
+- **Support contact:** email only, `support@mugu-labs.com`, from server config (decision #77).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
-- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own (not through `pnpm test:e2e` / `check:all`) reuses the last web build: `pnpm --filter @oda/web build` first. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build: `pnpm --filter @oda/web build` first. When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it.
 
-**Next step:** owner: review stop B phone test (final message of Step 83). After the go-ahead: the M8a gate (✅/❌ against `milestones.md`) → tag `m8a-done` → M8b (ask for the support WhatsApp number first).
+**Next step:** M8b CP1 + CP2, then review stop A (phone test + help guide drafts for the owner).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
-- Carried-forward list: in the M7 gate entry below; M8a items done except the gate.
-- Owner rules: `CLAUDE.md` → Working style.
+- Carried-forward list: in the M8a gate entry below.
+
+## 2026-10-06 · M8a gate passed (owner Step 84; branch `m8a-gate`)
+
+**Review stop B passed** (owner, Redmi, EAS Update `4c26bde9`, staging `c23a56c`+): all 10 items (in-app deletion behind DELETE; shop 404 and "This shop has closed"; a deleted account can't sign in; `/delete-account` same answer for any email; the confirm link deletes B and works once; the backdate tool refuses demo-duka; the purge dry run lists A + files; the real purge removes 1 then 0 with other shops intact; the digest email with a working screenshot link, then "Nothing new"). Review stop A passed in Step 83 (11 items).
+
+**Gate (milestones.md M8 accept lines that belong to M8a + definition of done)**
+- ✅ **Pausing blocks new orders on the web:** `checkout.test.ts` (`shop_paused`), `settings.test.ts` (pause / resume), Playwright `settings.spec.ts` "pause → browse only…"; stop A 8.
+- ✅ **Slug change keeps the old link working:** `settings.test.ts` "a new link keeps the old one working…" (redirect, taken, history, 5 a day), Playwright `storefront.spec.ts` (308 redirect); stop A 6.
+- ✅ **A deleted shop 404s immediately; the purge removes data, photos and auth user after 30 days (backdated):** `deletion.test.ts` (both paths: 404, sessions gone, sign-in refused, audit), `purge.test.ts` (31 / 29-day shops, dry run vs real, demo skipped, failed file retried, every reference source kept, 24 h boundary, feedback store never swept), Playwright `delete-account.spec.ts`; stop B 1–3, 7–9; staging dry runs (decision #76).
+- ✅ **A web deletion request takes effect only after the emailed link is opened:** `deletion.test.ts` "answers the same…; nothing changes until confirmed", single use, expired / wrong token, double tap; Playwright; stop B 4–6.
+- ✅ **The digest goes out once per new item and not at all on a quiet day:** `digest.test.ts` (quiet day, once per item, failed send marks nothing, concurrent runs); stop B 10.
+- ✅ **No page shows the till badge:** Playwright `settings.spec.ts` (shop, product, checkout with a Till), `storefront.test.ts`; stop A 1.
+- ➖ **Insights match a SQL check on the seed data:** M8b.
+- ✅ **Definition of done:** `pnpm check:all` green on every branch (latest: shared 251, web 345, db 23, seller 97, Playwright 22) and CI green on `main` (`6f631d2`); new logic unit-tested; every new endpoint has authorization tests (401 signed out, another shop 404, cron/ops 404 without the secret, buyer-site writes same-origin); new web flows have Playwright tests; screens compared with 20b-settings, 20b-your-details, 21-change-password, 21-share-feedback, 20b-shop-profile, 20b-payments and the delete-account confirm (CP1+CP2 and CP3 entries) and checked on the Redmi at both review stops; staging deployed; app shipped as EAS Updates (`3ebfa826`, `89ca7fc6`, `4c26bde9`); decisions #74–#76; progress updated.
+
+**Tag `m8a-done`** on `main` after this branch is merged. Decision #77 (support contact: email only, server config) recorded for M8b.
+
+**Carried forward**
+- **M8b:** 20-more (incl. the Shop tab card's logo), insights, customers, share (19b-share; "My status" from the Status button; TikTok neutral), help (email only, #77), rate the app.
+- **M10:** suspend/unsuspend workflow (#72 d); remove `requireAdmin` / `adminRepo` / `is_admin` / `admin@example.test` (#72 f); wire Sentry (#70); Expo push receipts; app UI tests; checkout bundle size; orders / reviews paging index checks; `orders.idempotency_key` uniqueness per shop; review photos single size. New from M8a: the e2e helper relied on millisecond timestamps for unique emails and links (fixed with random suffixes; watch for similar patterns); the purge processes 20 accounts per run (fine now; revisit with volume).
 
 ## 2026-10-06 · Purge safety review before the first scheduled run (owner Step 84; branch `m8a-purge-safety`)
 
