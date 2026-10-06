@@ -86,7 +86,7 @@ Six steps, resumable if the app is closed. The progress bar has 6 segments; the 
 - Shop header with View (in-app preview, screen 19b-preview) and Share.
 - The categories screen is **20b-categories** (thumbnails + chevron → 20b1 category detail), reached from both the Shop tab and More. `19b-categories` is not built.
 - Categories: add, rename, show/hide, drag to reorder, assign products. **Empty categories are never shown to buyers.**
-- Share your shop (19b-share): channel tabs, image choice (**New in** = latest product card, **Collection** = shop card, **QR code**), caption EN/SW with "Try another" (template-based, no AI), Copy caption, Copy link, and "Share to {channel}" via the Android share sheet. The link includes the channel's `?s=` tag.
+- Share your shop (19b-share): channel tabs, image choice (**New in** = latest product card, **Collection** = shop card; the QR code is V2, decision #79), caption EN/SW with "Try another" (template-based, no AI), Copy caption, Copy link, and "Share to {channel}" via the Android share sheet. The link includes the channel's `?s=` tag.
 
 ### 5.7 More (screen 20-more)
 - **Insights:** Today / This week / This month. Sales total, % vs the previous period, bar chart, orders, average order, shop visits, orders by source, top products.
@@ -179,4 +179,6 @@ Exactly the "email" side effects listed in `order-lifecycle.md`. Every email inc
 - **Offline (seller app):** show cached data read-only with a clear "You're offline" bar. Queue nothing in v1.
 
 ## 9. Out of scope for v1
+Ideas kept for later, with the decision that moved them: `docs/v2-ideas.md`.
+
 Payment aggregator / STK push / automatic payment confirmation · deposits · automated WhatsApp/SMS messages · courier integrations · stock counts · buyer accounts · iOS app · multiple staff per shop · multiple shops per seller · dark mode · discount codes · AI captions · Google/Facebook sign-in · commissions/subscriptions.
