@@ -79,10 +79,10 @@ Web 05c, 5d; app 20b-reviews.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
 
 ## M8 · Grow & manage
-**Status: M8a closed 2026-10-06** (gate passed, tag `m8a-done`); M8b in progress.
+**Status: closed 2026-10-07** (M8a gate passed, tag `m8a-done`; M8b and M8 gates passed, tags `m8b-done` and `m8-done`).
 **Plan: `docs/m8-plan.md`** (approved in owner Step 82, decision #74): split into **M8a** (settings, accounts, deletion, purge, digest, badge removal) and **M8b** (More, insights, customers, share, help, rate the app).
 Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-settings, 20b-your-details, 20b-help, 21-*.
-- Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
+- Share tools (share images rendered on device, EN/SW captions; the QR code moved to V2, decision #79), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
 - Account deletion: in-app flow, the **self-serve** web `/delete-account` (confirm link by email, then the 30-day purge; no admin step, decision #72 c), and the daily `/api/cron/purge` job with its scheduler.
 - **Drop the "M-Pesa till checked by oda" badge** and every verification line (shop, product, checkout, pay page, onboarding step 5, 20b-payments; decision #72 a).
 - **Daily support digest:** `/api/cron/digest` emails new buyer reports and seller feedback to `support@mugu-labs.com` via Resend, only when there's something new (decision #72 b).
@@ -92,7 +92,8 @@ Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-p
 Removed by decision #72 (owner Step 77): no `/admin`. Its jobs moved: the till badge is dropped (M8), buyer reports and seller feedback go out as a daily email digest (M8), web account deletion is self-serve (M8), suspending a shop is a manual GitHub Actions workflow (M10).
 
 ## M10 · Hardening
-- Security review (auth, authorization layer, endpoints, rate limits, secrets, dependency audit), all empty/error/offline states, accessibility pass, performance pass, Sentry wired in both apps, backup check, full end-to-end regression on staging with a real Android device.
+**Proposed plan: `docs/m10-plan.md`** (owner Step 87; awaiting approval). Output: `docs/hardening-report.md`.
+- Security review (auth, authorization layer, endpoints, rate limits, secrets, dependency audit), all empty/error/offline states, accessibility pass, performance pass, Sentry wired in both apps, Expo push receipts, backup check, automated UI tests for the app, eas-cli upgrade, full end-to-end regression on staging with a real Android device.
 - **Suspend / unsuspend a shop** through a manual GitHub Actions workflow calling a protected endpoint (`OPS_SECRET`), with an audit row in `ops_events` (decision #72 d); remove the unused admin code paths (#72 f).
 - **Accept:** a written review report in `docs/hardening-report.md` with every issue fixed or consciously deferred; a suspended shop returns 404 and unsuspending restores it, both logged (tests).
 

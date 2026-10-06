@@ -8,8 +8,8 @@
     "android": "expo run:android",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "doctor": "expo-doctor",
-    "deps:check": "expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
+    "doctor": "node scripts/expo-offline.mjs expo-doctor",
+    "deps:check": "node scripts/expo-offline.mjs expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run",
     "update:preview": "node scripts/eas-update.mjs",
     "eas-build-pre-install": "node scripts/public-urls.mjs"

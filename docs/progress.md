@@ -2,21 +2,49 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 84)
+## Handoff (keep current; updated 2026-10-07, owner Step 87)
 
 **Current state**
-- **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): review stop A passed (Step 85); CP3 (Share, Help, Rate) merged; at 🛑 review stop B.
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi), **cron-expire-orders** (hourly), **staging-backdate-deletion**, **staging-backdate-order**, **review-remove**, **demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** + EAS Update `76876f26` (M8b CP3: Share, Help, Rate the app), staging `87e3195`. JS changes: `pnpm update:preview "…"`.
-- **Support contact:** email only, `support@mugu-labs.com`, from server config (decision #77).
-- **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
-- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build: `pnpm --filter @oda/web build` first. When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 plan proposed in `docs/m10-plan.md`: awaiting the owner's approval and answers. M10 not started.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `76876f26` (M8b CP3). Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
+- **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
+- **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** owner: M8b review stop B phone test. After the go-ahead: the M8 gate (✅/❌ against `milestones.md`) → tag `m8-done`. Open: the QR code image (deferred, decision #78 b).
+**Next step:** M10 plan awaiting approval (`docs/m10-plan.md`). After approval: record the answers as a decision, then M10 CP1.
 
 **Open items**
-- **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
-- Carried-forward list: in the M8a gate entry below.
+- **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet). Answer the M10 plan's questions.
+- Carried-forward list: in the M8 gate entry below.
+- Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M8b and M8 gates passed; M10 plan proposed (owner Step 87; branch `m8-gate`)
+
+**Review stop B passed** (owner, Redmi, EAS Update `76876f26`, staging `87e3195`): all 12 items (Share channels with official marks, New in / Collection images, EN/SW captions + Try another, tagged links `?s=tt/ig/wa`, share to WhatsApp and Status, Help search + guides with bold labels, email support only, feedback shortcuts, Rate the app high / low paths, offline). Review stop A passed in Step 85 (9 items). **Decision #79:** the QR code moves to V2 (`docs/v2-ideas.md`); removed from the M8 accept line and spec §5.6.
+
+**M8b gate (its part of milestones.md M8 + definition of done)**
+- ✅ **Insights numbers match a SQL check on the seed data:** `server/insights.test.ts` runs the seed with a fixed clock and compares every number (sales, bars, previous period, orders, average, visits, sources, top products) for today / this week / this month with independent SQL in Africa/Nairobi; an unpaid order changes nothing; stop A 3–6 on the phone.
+- ✅ **Customers** (grouped by phone, sales only, Repeat, New this month, search, paging): `insights.test.ts` vs SQL; stop A 7–8.
+- ✅ **More, share tools, help, feedback shortcuts, in-app review:** `src/insights/view.test.ts`, `src/share/plan.test.ts`, `src/help/guides.test.ts` (doc sync, the owner's fixes, search), `src/settings/rate.test.ts`, shared caption tests, `/api/share` + `/api/support` + `/api/more` tests; stop A 1–2, 9 and stop B 1–12.
+- ✅ **Definition of done:** `pnpm check:all` green on every branch (latest: shared 258, web 357, db 23, seller 112, Playwright 22) and CI green on PRs #48–#51 and `main`; new logic unit-tested; every new endpoint has authorization tests (401 signed out; another seller sees only their own shop, nothing leaks through customer search); screens compared with 20-more, 20b-insights, 20b-customers, 19b-share, 20b-help, 21-rate-app (CP1+CP2 and CP3 entries) and checked on the Redmi at both review stops; staging deployed; app shipped as EAS Updates `1b506668`, `76876f26`; decisions #77–#79; progress updated.
+
+**M8 gate (milestones.md M8, whole milestone)**
+- ✅ Insights match a SQL check on the seed data (M8b, above).
+- ✅ Pausing blocks new orders on the web; slug change keeps the old link working; a deleted shop 404s immediately and the purge removes its data, photos and auth user after 30 days (backdated); a web deletion takes effect only after the emailed link; the digest goes out once per new item and not on a quiet day; no page shows the till badge (M8a gate, evidence in its entry below).
+- ✅ Share tools (on-device images, EN/SW captions, tagged links), insights, customers, profile (slug change + history), payments accounts, settings (pause, delete account), help guides, feedback, in-app review: built, tested and passed on the phone (M8a stops A–B, M8b stops A–B). QR code: V2 (#79), not part of v1.
+- ✅ Definition of done for the whole milestone (both halves above).
+
+**Tags `m8b-done` and `m8-done`** on `main` after this branch is merged.
+
+**Expo SDK patches (decision #80):** on 2026-10-07 Expo published SDK 57 patch releases and `expo install --check` (online) started failing `check:all` and CI everywhere. Owner's choice: `deps:check` now compares with the **installed** SDK (`scripts/check-expo-sdk.mjs`, offline); the upgrade (version 0.3.1 + a native build) is planned in M10 CP5, or M11.
+
+**M10 plan proposed** in `docs/m10-plan.md` (not approved, not started): 6 checkpoints, 3 review stops, `docs/hardening-report.md`; six questions.
+
+**Carried forward**
+- **M10** (all in `docs/m10-plan.md`): security review; suspend / unsuspend workflow (#72 d); remove `requireAdmin` / `adminRepo` / `is_admin` reads / the `admin@example.test` seed (#72 f; the column is dropped later, expand → contract); wire Sentry in web and app (#70, JS only, no native build); poll Expo push **receipts**; automated UI tests for the app; eas-cli upgrade (24.8 → 24.11); empty / error / offline states audit; accessibility pass; performance pass (checkout bundles zod through `@oda/shared`; orders / reviews paging sorts vs the indexes; `orders.idempotency_key` is unique across shops while lookups are per shop); backup restore check; review photos single size (decide: keep or add a thumbnail); the purge's 20 accounts per run (fine now); the e2e helper's millisecond timestamps (fixed; watch for similar patterns); full end-to-end regression on staging with the Redmi.
+- **M11:** production (Neon, R2 with its own private feedback bucket, web on `oda.mugu-labs.com`, DNS + email records), Play listing (then `android.playStoreUrl` turns on Rate the app's Play review, #78 e), AAB build, privacy policy URL, data safety form, closed testing.
+- **V2:** `docs/v2-ideas.md` (QR code).
 
 ## 2026-10-06 · M8b CP3: Share, Help, Rate the app (owner Step 85; branch `m8b-cp3`)
 
