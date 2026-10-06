@@ -28,6 +28,8 @@ Owner asked, before review stop B, for a read-only check of the purge's "unrefer
 - **Report:** each unreferenced file with key, upload time and why (response + workflow summary; new test).
 - e2e helper: shop links get a random suffix too (two parallel tests could get the same `e2e-<ms>` link; seen once in check:all).
 - `pnpm check:all` green (shared 251, web 345, db 23, seller 97, Playwright 22).
+- **CI on `main` failed once after the merge** (`54e8303`): CP1's change-password limit test (11 password hashes) passed 5 s on the runner; it now has a 30 s timeout (PR #45). Staging deployed at `c23a56c`.
+- **Staging dry run** (`c23a56c`): 0 accounts, 0 products, 0 retries, 0 sign-ups; 2 unreferenced files, both in live shop `bb610e71-…`, uploaded 2026-10-04 15:39 Nairobi, 3 s apart: `products/bb610e71-…/06e0bf07-….jpg` and `…/07a5ef40-….jpg`, "product photo uploaded but never saved to a product, or replaced": a full photo + thumbnail pair (the app uploads the two seconds apart) whose product was never saved. The 03:43 run removes them.
 
 ## 2026-10-06 · M8a CP3: account deletion, purge, support digest (owner Step 83; branch `m8a-cp3`)
 
