@@ -2,6 +2,7 @@
 // Customers (/api/customers) and Help's support contact (/api/support, decision #77).
 import type { CustomerFilter, InsightPeriod, OrderSource, PaymentAccountType } from '@oda/shared';
 import { apiJson } from '@/api';
+import type { ShareData } from '@/share/plan';
 
 export interface MoreData {
   shop: { name: string; slug: string; url: string; linkPrefix: string; logoUrl: string | null };
@@ -64,4 +65,5 @@ export const growApi = {
       })}`,
     ),
   support: () => apiJson<Support>('/api/support'),
+  share: () => apiJson<ShareData>('/api/share'),
 };

@@ -33,6 +33,11 @@ export const getMore = handle(async (request) =>
   (await repo(request)).more(serverEnv().PUBLIC_SHOP_BASE_URL),
 );
 
+/** GET /api/share: the Share screen's images (19b-share). */
+export const getShare = handle(async (request) =>
+  (await repo(request)).share(serverEnv().PUBLIC_SHOP_BASE_URL),
+);
+
 /** GET /api/support: Help's contact (decision #77), from server config. */
 export const getSupport = handle(async (request) => {
   await requireSeller(request);

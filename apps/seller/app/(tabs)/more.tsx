@@ -1,8 +1,7 @@
 // More tab (design 20-more, M8b): the shop card (logo, name, link, View) in the header, then
 // "Your business" (Insights "KSh x this week", Customers, Reviews "4.8 ★ · 38"), "Your shop"
-// (Shop profile, Payments "Till 123 456", Delivery "3 areas", Categories) and Settings. Help
-// and support arrives with M8b CP3. Values load fresh whenever the tab shows; offline, the last
-// copy stays (read-only).
+// (Shop profile, Payments "Till 123 456", Delivery "3 areas", Categories), Settings and Help and
+// support. Values load fresh whenever the tab shows; offline, the last copy stays (read-only).
 import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -95,6 +94,7 @@ export default function MoreTab() {
       </Section>
       <Card>
         <Row first icon="settings" title="Settings" onPress={() => router.push('/settings')} />
+        <Row icon="help-circle" title="Help and support" onPress={() => router.push('/help')} />
       </Card>
     </TabScreen>
   );

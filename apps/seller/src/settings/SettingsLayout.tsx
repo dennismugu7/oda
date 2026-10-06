@@ -31,6 +31,7 @@ export function SettingsLayout({
   onRetry,
   back = () => goBack(),
   overlay,
+  header,
   children,
 }: {
   title: string;
@@ -43,6 +44,8 @@ export function SettingsLayout({
   back?: () => void;
   /** Sheets and modals, outside the scroll view. */
   overlay?: ReactNode;
+  /** Under the title, inside the navy header (e.g. Share's channel tabs). */
+  header?: ReactNode;
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -68,7 +71,9 @@ export function SettingsLayout({
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title={title} subtitle={subtitle} onBack={back} />
+      <ScreenHeader title={title} subtitle={subtitle} onBack={back}>
+        {header}
+      </ScreenHeader>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"

@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import {
   barOf,
@@ -187,6 +187,55 @@ export function insightsRepo(db: Db, ctx: SellerCtx) {
           repeat: r.orderCount >= REPEAT_MIN_ORDERS,
         })),
         nextCursor: rows.length > CUSTOMERS_PAGE ? opts.cursor + CUSTOMERS_PAGE : null,
+      };
+    },
+
+    /**
+     * What the Share screen (19b-share) draws: the shop, its newest available product with a
+     * photo ("New in") and how many products buyers can see ("Collection").
+     */
+    async share(shopBaseUrl: string) {
+      const [shop] = await db.select().from(t.shops).where(eq(t.shops.id, shopId));
+      const visible = and(
+        eq(t.products.shopId, shopId),
+        isNull(t.products.deletedAt),
+        ne(t.products.status, 'hidden'),
+      );
+      const [[latest], [visibleCount]] = await Promise.all([
+        db
+          .select({
+            id: t.products.id,
+            name: t.products.name,
+            price: t.products.price,
+            photo: t.productPhotos.objectKey,
+          })
+          .from(t.products)
+          .innerJoin(
+            t.productPhotos,
+            and(eq(t.productPhotos.productId, t.products.id), eq(t.productPhotos.position, 0)),
+          )
+          .where(and(visible, eq(t.products.status, 'available')))
+          .orderBy(desc(t.products.createdAt))
+          .limit(1),
+        db.select({ n: count() }).from(t.products).where(visible),
+      ]);
+      return {
+        shop: {
+          name: shop!.name,
+          slug: shop!.slug,
+          logoUrl: publicUrl(shop!.logoPath),
+          linkPrefix: `${shopBaseUrl.replace(/^https?:\/\//, '')}/`,
+        },
+        latest: latest
+          ? {
+              id: latest.id,
+              name: latest.name,
+              price: latest.price,
+              photoUrl: publicUrl(latest.photo),
+            }
+          : null,
+        productCount: visibleCount?.n ?? 0,
+        channels: shop!.channels,
       };
     },
 

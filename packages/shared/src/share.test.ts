@@ -7,6 +7,8 @@ import {
   postForShare,
   shareButtons,
   shareUrl,
+  collectionCaption,
+  collectionCaptionCount,
 } from './share';
 
 describe('share links', () => {
@@ -145,5 +147,28 @@ describe('shop links in shared posts (owner Step 58)', () => {
         expect(postForShare(text, BASE, 'amani-styles', 'whatsapp').linkAdded).toBe(false);
       }
     }
+  });
+});
+
+describe('collection captions (Share → Collection, M8b)', () => {
+  const v = { shop: 'Amani Styles', count: 12, link: 'oda.test/amani-styles' };
+
+  it('every one names the shop and carries the link, in English and Swahili', () => {
+    for (const lang of ['en', 'sw'] as const) {
+      expect(collectionCaptionCount(lang)).toBeGreaterThan(1);
+      for (let i = 0; i < collectionCaptionCount(lang); i++) {
+        const text = collectionCaption(lang, i, v);
+        expect(text).toContain('Amani Styles');
+        expect(text).toContain('oda.test/amani-styles');
+      }
+    }
+  });
+
+  it('"Try another" wraps around, and one piece is singular', () => {
+    expect(collectionCaption('en', collectionCaptionCount('en'), v)).toBe(
+      collectionCaption('en', 0, v),
+    );
+    expect(collectionCaption('en', 0, { ...v, count: 1 })).toContain('1 piece,');
+    expect(collectionCaption('sw', 0, v)).toContain('bidhaa 12');
   });
 });
