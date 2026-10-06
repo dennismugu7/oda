@@ -7,7 +7,7 @@ Newest entries at the top.
 **Current state**
 - **Milestones:** M0–M7 closed; **M8a closed** (tag **`m8a-done`**). **M9 removed** (decision #72). **M8b in progress** (`docs/m8-plan.md`): review stop A passed (Step 85); CP3 (Share, Help, Rate) merged; at 🛑 review stop B.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi), **cron-expire-orders** (hourly), **staging-backdate-deletion**, **staging-backdate-order**, **review-remove**, **demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** + EAS Update `1b506668` (M8b: More, Insights, Customers), staging `5aa9f70`. JS changes: `pnpm update:preview "…"`.
+- **App:** EAS preview build **0.3.0** + EAS Update `76876f26` (M8b CP3: Share, Help, Rate the app), staging `87e3195`. JS changes: `pnpm update:preview "…"`.
 - **Support contact:** email only, `support@mugu-labs.com`, from server config (decision #77).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build: `pnpm --filter @oda/web build` first. When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it.
