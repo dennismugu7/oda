@@ -19,6 +19,16 @@ Newest entries at the top.
 - Carried-forward list: in the M7 gate entry below; M8a items done except the gate.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-06 · Purge safety review before the first scheduled run (owner Step 84; branch `m8a-purge-safety`)
+
+Owner asked, before review stop B, for a read-only check of the purge's "unreferenced files" step (decision #76).
+- **References:** `product_photos.object_key` / `thumb_key`, `shops.logo_path`, `review_items.photo_path`, `order_items.cover_path_snapshot`; no other column holds a file key. New test: an old file referenced by each source alone stays (incl. a soft-deleted product's photo, a reported review's photo, an order thumbnail only, a deleted-but-not-yet-purged shop's files); the control orphan goes.
+- **Age:** strictly older than 24 h (new boundary test 23 h 59 / 24 h 01). **Re-check** right before deleting (new).
+- **Scope:** public store `products/`, `logos/`, `reviews/` only; backups store unreachable (token only in GitHub; keys `staging/…`); feedback store never swept (new test).
+- **Report:** each unreferenced file with key, upload time and why (response + workflow summary; new test).
+- e2e helper: shop links get a random suffix too (two parallel tests could get the same `e2e-<ms>` link; seen once in check:all).
+- `pnpm check:all` green (shared 251, web 345, db 23, seller 97, Playwright 22).
+
 ## 2026-10-06 · M8a CP3: account deletion, purge, support digest (owner Step 83; branch `m8a-cp3`)
 
 **Review stop A passed** (owner, Redmi, Step 83): no till badge, photos load, your details, change password wrong/right + email, shop profile incl. location and TikTok, change link with the old link redirecting, second payment account at checkout, pay-on-delivery-only and both-off refused, pause/unpause, feedback with a screenshot, offline read-only.

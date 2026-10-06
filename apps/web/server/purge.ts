@@ -40,6 +40,13 @@ export interface PurgedAccount {
   files: number;
 }
 
+/** An unreferenced file the sweep found, with why nothing points at it (dry runs show these). */
+export interface OrphanFile {
+  key: string;
+  uploadedAt: string;
+  why: string;
+}
+
 export interface PurgeReport {
   dryRun: boolean;
   accounts: PurgedAccount[];
@@ -51,6 +58,8 @@ export interface PurgeReport {
   keptForOrders: number;
   retried: number;
   unreferenced: number;
+  /** The unreferenced files themselves (step 4), each with its reason. */
+  unreferencedFiles: OrphanFile[];
   signupAttempts: number;
   /** File deletes that failed; queued in storage_deletions for the next run. */
   failedFiles: number;
@@ -185,6 +194,70 @@ async function referenced(db: Db, keys: string[]): Promise<Set<string>> {
   return new Set(found.flat().flatMap((r) => (r.key ? [r.key] : [])));
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * Why each unreferenced file has no row (for the dry-run report): whose prefix it sits under
+ * and whether that shop or order still exists. Read-only.
+ */
+async function explain(db: Db, keys: string[]): Promise<Map<string, string>> {
+  const owner = (key: string) => key.split('/')[1] ?? '';
+  const ids = (prefix: string) => [
+    ...new Set(
+      keys
+        .filter((k) => k.startsWith(prefix))
+        .map(owner)
+        .filter((id) => UUID.test(id)),
+    ),
+  ];
+  const shopIds = [...new Set([...ids('products/'), ...ids('logos/')])];
+  const orderIds = ids('reviews/');
+  const shops = shopIds.length
+    ? await db
+        .select({ id: t.shops.id, deletedAt: t.shops.deletedAt })
+        .from(t.shops)
+        .where(inArray(t.shops.id, shopIds))
+    : [];
+  const orders = orderIds.length
+    ? await db
+        .select({ id: t.orders.id, reviewId: t.reviews.id })
+        .from(t.orders)
+        .leftJoin(t.reviews, eq(t.reviews.orderId, t.orders.id))
+        .where(inArray(t.orders.id, orderIds))
+    : [];
+  const shopById = new Map(shops.map((x) => [x.id, x]));
+  const orderById = new Map(orders.map((x) => [x.id, x]));
+  const why = new Map<string, string>();
+  for (const key of keys) {
+    const id = owner(key);
+    if (key.startsWith('reviews/')) {
+      const order = orderById.get(id);
+      why.set(
+        key,
+        !order
+          ? 'review photo of an order that no longer exists'
+          : order.reviewId
+            ? 'review photo replaced or removed (the order’s review doesn’t use it)'
+            : 'review photo uploaded but the review was never sent',
+      );
+      continue;
+    }
+    const shop = shopById.get(id);
+    const kind = key.startsWith('logos/') ? 'logo' : 'product photo';
+    why.set(
+      key,
+      !shop
+        ? `${kind} of a shop that no longer exists`
+        : shop.deletedAt
+          ? `${kind} of a deleted shop that no row uses`
+          : key.startsWith('logos/')
+            ? 'logo uploaded but never saved, or replaced'
+            : 'product photo uploaded but never saved to a product, or replaced',
+    );
+  }
+  return why;
+}
+
 // The run ---------------------------------------------------------------------------------
 
 export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
@@ -201,6 +274,7 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     keptForOrders: 0,
     retried: 0,
     unreferenced: 0,
+    unreferencedFiles: [],
     signupAttempts: 0,
     failedFiles: 0,
     more: false,
@@ -315,9 +389,11 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     }
   }
 
-  // 4. Unreferenced files older than 24 h.
+  // 4. Unreferenced files older than 24 h (strictly: younger files are never even checked, so
+  // an upload still in progress is never touched).
   const oldEnough = now.getTime() - UNREFERENCED_AFTER_HOURS * 3_600_000;
   const orphans: string[] = [];
+  const uploadedAt = new Map<string, Date>();
   const publicStore = getStorage();
   sweep: for (const prefix of publicStore.driver === 'disabled' ? [] : SWEPT_PREFIXES) {
     let page: string[] = [];
@@ -329,6 +405,7 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     for await (const object of listAll(publicStore, prefix)) {
       if (object.uploadedAt.getTime() >= oldEnough) continue;
       page.push(object.key);
+      uploadedAt.set(object.key, object.uploadedAt);
       if (page.length === 200) await check();
       if (orphans.length >= BATCH.unreferenced) {
         report.more = true;
@@ -337,8 +414,19 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     }
     await check();
   }
-  const sweptOrphans = orphans.slice(0, BATCH.unreferenced);
+  let sweptOrphans = orphans.slice(0, BATCH.unreferenced);
+  if (!dryRun && sweptOrphans.length) {
+    // Checked again right before deleting: a row saved during this run keeps its file.
+    const nowUsed = await referenced(db, sweptOrphans);
+    sweptOrphans = sweptOrphans.filter((k) => !nowUsed.has(k));
+  }
+  const reasons = await explain(db, sweptOrphans);
   report.unreferenced = sweptOrphans.length;
+  report.unreferencedFiles = sweptOrphans.map((key) => ({
+    key,
+    uploadedAt: uploadedAt.get(key)!.toISOString(),
+    why: reasons.get(key) ?? 'no row points at it',
+  }));
   if (!dryRun) report.failedFiles += await deleteFiles(db, sweptOrphans);
 
   // 5. Sign-up attempts older than 7 days (never used: a used one is deleted at sign-up).
@@ -406,7 +494,12 @@ export async function postPurge(
       `[cron] purge${dryRun ? ' (dry run)' : ''}: ${counts.accounts} accounts, ${counts.products} products, ${counts.unreferenced} unreferenced, ${counts.retried} retried, ${counts.signupAttempts} sign-up attempts, ${counts.failedFiles} failed`,
     );
     return Response.json(
-      { ...counts, slugs: report.accounts.map((a) => a.slug), skippedDemo: report.skippedDemo },
+      {
+        ...counts,
+        slugs: report.accounts.map((a) => a.slug),
+        skippedDemo: report.skippedDemo,
+        unreferencedFiles: report.unreferencedFiles.slice(0, 50),
+      },
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch (error) {

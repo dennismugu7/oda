@@ -61,7 +61,7 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
     return { objectKey: pair[0], thumbKey: pair[1], width: 1200, height: 1200 };
   };
 
-  const slug = `e2e-${Date.now().toString(36)}`;
+  const slug = `e2e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   sellerHeaders.set(slug, headers);
   sellerEmails.set(slug, email);
   await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });

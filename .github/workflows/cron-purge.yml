@@ -60,6 +60,11 @@ jobs:
                        "- Old sign-up attempts: \(.signupAttempts)",
                        "- Files that failed (queued for next run): \(.failedFiles)",
                        "- More left for the next run: \(.more)"' result.json
+                if [ "$(jq '.unreferencedFiles|length' result.json)" -gt 0 ]; then
+                  echo
+                  echo "**Unreferenced files** (key · uploaded · why):"
+                  jq -r '.unreferencedFiles[] | "- `\(.key)` · \(.uploadedAt) · \(.why)"' result.json
+                fi
               } >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
