@@ -11,6 +11,9 @@ const PASSWORD = 'kitenge2026';
 /** The seller's API headers per shop, for tests that act as the seller too (M7). */
 export const sellerHeaders = new Map<string, Record<string, string>>();
 
+/** The seller's sign-in email per shop (the M8a deletion test). */
+export const sellerEmails = new Map<string, string>();
+
 export interface ShopOptions {
   /** A Till at onboarding step 5 (pay now); otherwise step 5 is skipped (pay on delivery). */
   till?: boolean;
@@ -28,7 +31,7 @@ export interface ShopOptions {
  */
 export async function sellerShop(request: APIRequestContext, opts: ShopOptions = {}) {
   const ip = randomIp();
-  const email = `shop-${Date.now()}@example.test`;
+  const email = `shop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
   await createVerifiedSeller(request, email, PASSWORD, ip);
   const signIn = await request.post('/api/auth/sign-in/email', {
     data: { email, password: PASSWORD },
@@ -60,6 +63,7 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
 
   const slug = `e2e-${Date.now().toString(36)}`;
   sellerHeaders.set(slug, headers);
+  sellerEmails.set(slug, email);
   await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });
   await post('/api/onboarding/answers', { step: 2, skip: true });
   // Step 3 twice: going back to change the link leaves the first one in the slug history.

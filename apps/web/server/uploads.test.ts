@@ -13,6 +13,7 @@ import {
   type BlobApi,
   getPrivateStorage,
   getStorage,
+  parseListObjectsV2,
   privateVercelBlobStorage,
   resetStorageForTests,
   UPLOAD_TTL_SECONDS,
@@ -406,6 +407,7 @@ describe('Vercel Blob driver (staging, decision #54), no network', () => {
       del: (async (...args: unknown[]) => {
         calls.push({ fn: 'del', args });
       }) as BlobApi['del'],
+      list: (async () => ({ blobs: [], hasMore: false })) as unknown as BlobApi['list'],
       ...overrides,
     };
     return { api, calls };
@@ -513,6 +515,14 @@ describe('private Vercel Blob store (feedback screenshots, decision #74 b), no n
       del: (async (...args: unknown[]) => {
         calls.push({ fn: 'del', args });
       }) as BlobApi['del'],
+      list: (async (...args: unknown[]) => {
+        calls.push({ fn: 'list', args });
+        return {
+          blobs: [{ pathname: 'feedback/x/a.jpg', uploadedAt: new Date(NOW) }],
+          hasMore: true,
+          cursor: 'next',
+        };
+      }) as unknown as BlobApi['list'],
     };
     return { api, calls };
   }
@@ -547,6 +557,35 @@ describe('private Vercel Blob store (feedback screenshots, decision #74 b), no n
       pathname: key,
       access: 'private',
       validUntil: week,
+    });
+    const page = await store.list('feedback/', 'c1');
+    expect(calls[6]).toEqual({
+      fn: 'list',
+      args: [{ prefix: 'feedback/', limit: 1000, cursor: 'c1', token: TOKEN }],
+    });
+    expect(page).toEqual({
+      objects: [{ key: 'feedback/x/a.jpg', uploadedAt: new Date(NOW) }],
+      cursor: 'next',
+    });
+  });
+
+  it('reads S3 ListObjectsV2 pages (keys, dates, next token)', () => {
+    const xml = `<?xml version="1.0"?><ListBucketResult><IsTruncated>true</IsTruncated>
+<Contents><Key>products/a/b&amp;c.jpg</Key><LastModified>2026-10-01T08:00:00.000Z</LastModified></Contents>
+<Contents><Key>logos/a/l.jpg</Key><LastModified>2026-10-02T08:00:00.000Z</LastModified></Contents>
+<NextContinuationToken>tok/1</NextContinuationToken></ListBucketResult>`;
+    expect(parseListObjectsV2(xml)).toEqual({
+      objects: [
+        { key: 'products/a/b&c.jpg', uploadedAt: new Date('2026-10-01T08:00:00.000Z') },
+        { key: 'logos/a/l.jpg', uploadedAt: new Date('2026-10-02T08:00:00.000Z') },
+      ],
+      cursor: 'tok/1',
+    });
+    expect(
+      parseListObjectsV2('<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>'),
+    ).toEqual({
+      objects: [],
+      cursor: null,
     });
   });
 });

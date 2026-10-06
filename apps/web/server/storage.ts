@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import * as blobSdk from '@vercel/blob';
 import { AwsClient } from 'aws4fetch';
@@ -27,6 +27,18 @@ export interface PresignedUpload {
   expiresAt: string;
 }
 
+/** A stored object as the purge job sees it (M8a CP3). */
+export interface StoredObject {
+  key: string;
+  uploadedAt: Date;
+}
+
+/** One page of a listing; pass `cursor` back for the next page (null = done). */
+export interface ListPage {
+  objects: StoredObject[];
+  cursor: string | null;
+}
+
 export interface ObjectStorage {
   readonly driver: 'local' | 's3' | 'vercel-blob' | 'disabled';
   presignPut(key: string, contentType: string, size: number): Promise<PresignedUpload>;
@@ -34,6 +46,21 @@ export interface ObjectStorage {
   read(key: string): Promise<Uint8Array | null>;
   delete(key: string): Promise<void>;
   publicUrl(key: string): string;
+  /** Objects whose key starts with `prefix` (e.g. "products/"), a page at a time. */
+  list(prefix: string, cursor?: string | null): Promise<ListPage>;
+}
+
+/** Every object under `prefix`, page by page. */
+export async function* listAll(
+  store: Pick<ObjectStorage, 'list'>,
+  prefix: string,
+): AsyncGenerator<StoredObject> {
+  let cursor: string | null = null;
+  do {
+    const page: ListPage = await store.list(prefix, cursor);
+    yield* page.objects;
+    cursor = page.cursor;
+  } while (cursor);
 }
 
 export class StorageUnavailableError extends Error {
@@ -153,6 +180,19 @@ function localStorage(env: StorageEnv): ObjectStorage {
       await rm(file(key), { force: true });
     },
     publicUrl: (key) => `${base()}/${key}`,
+    async list(prefix) {
+      // Development and tests only: the whole listing in one page.
+      const objects: StoredObject[] = [];
+      const entries = await readdir(root, { recursive: true, withFileTypes: true }).catch(() => []);
+      for (const entry of entries) {
+        if (!entry.isFile()) continue;
+        const full = path.join(entry.parentPath, entry.name);
+        const key = path.relative(root, full).split(path.sep).join('/');
+        if (!key.startsWith(prefix) || !SAFE_KEY.test(key)) continue;
+        objects.push({ key, uploadedAt: (await stat(full)).mtime });
+      }
+      return { objects, cursor: null };
+    },
   };
 }
 
@@ -218,7 +258,40 @@ function s3Storage(env: StorageEnv): ObjectStorage {
       if (!res.ok && res.status !== 404) throw new Error(`Storage delete failed (${res.status})`);
     },
     publicUrl: (key) => `${env.STORAGE_PUBLIC_BASE_URL!.replace(/\/+$/, '')}/${key}`,
+    async list(prefix, cursor) {
+      const url = new URL(
+        `${env.STORAGE_S3_ENDPOINT!.replace(/\/+$/, '')}/${env.STORAGE_S3_BUCKET}`,
+      );
+      url.searchParams.set('list-type', '2');
+      url.searchParams.set('prefix', prefix);
+      url.searchParams.set('max-keys', '1000');
+      if (cursor) url.searchParams.set('continuation-token', cursor);
+      const res = await client.fetch(url.toString(), { method: 'GET' });
+      if (!res.ok) throw new Error(`Storage list failed (${res.status})`);
+      return parseListObjectsV2(await res.text());
+    },
   };
+}
+
+const xmlText = (s: string) =>
+  s
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&amp;', '&');
+
+/** The keys, dates and next token of an S3 ListObjectsV2 answer. */
+export function parseListObjectsV2(xml: string): ListPage {
+  const objects: StoredObject[] = [];
+  for (const [, body] of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+    const key = /<Key>([\s\S]*?)<\/Key>/.exec(body!)?.[1];
+    const modified = /<LastModified>([\s\S]*?)<\/LastModified>/.exec(body!)?.[1];
+    if (key && modified) objects.push({ key: xmlText(key), uploadedAt: new Date(modified) });
+  }
+  const truncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+  const next = /<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/.exec(xml)?.[1];
+  return { objects, cursor: truncated && next ? xmlText(next) : null };
 }
 
 // Vercel Blob ------------------------------------------------------------------------------
@@ -229,6 +302,20 @@ export interface BlobApi {
   presignUrl: typeof blobSdk.presignUrl;
   get: typeof blobSdk.get;
   del: typeof blobSdk.del;
+  list: typeof blobSdk.list;
+}
+
+async function blobListPage(
+  api: BlobApi,
+  prefix: string,
+  cursor: string | null | undefined,
+  token?: string,
+): Promise<ListPage> {
+  const page = await api.list({ prefix, limit: 1000, cursor: cursor ?? undefined, token });
+  return {
+    objects: page.blobs.map((b) => ({ key: b.pathname, uploadedAt: new Date(b.uploadedAt) })),
+    cursor: page.hasMore && page.cursor ? page.cursor : null,
+  };
 }
 
 export function vercelBlobStorage(
@@ -269,6 +356,7 @@ export function vercelBlobStorage(
       await api.del(key);
     },
     publicUrl: (key) => `${base}/${key}`,
+    list: (prefix, cursor) => blobListPage(api, prefix, cursor),
   };
 }
 
@@ -285,6 +373,7 @@ export interface PrivateStorage {
   delete(key: string): Promise<void>;
   /** A link that opens the object for `seconds`. */
   signedReadUrl(key: string, seconds: number): Promise<string>;
+  list(prefix: string, cursor?: string | null): Promise<ListPage>;
 }
 
 export function privateVercelBlobStorage(
@@ -326,6 +415,7 @@ export function privateVercelBlobStorage(
     async delete(key) {
       await api.del(key, { token });
     },
+    list: (prefix, cursor) => blobListPage(api, prefix, cursor, token),
     async signedReadUrl(key, seconds) {
       const validUntil = now() + seconds * 1000;
       const signed = await api.issueSignedToken({
@@ -361,6 +451,7 @@ export function getPrivateStorage(): PrivateStorage | null {
       presignPut: local.presignPut,
       read: local.read,
       delete: local.delete,
+      list: local.list,
       signedReadUrl: async (key) => local.publicUrl(key),
     };
   } else {
@@ -378,6 +469,7 @@ const disabledStorage: ObjectStorage = {
   read: () => Promise.reject(new StorageUnavailableError()),
   delete: () => Promise.reject(new StorageUnavailableError()),
   publicUrl: () => '',
+  list: () => Promise.reject(new StorageUnavailableError()),
 };
 
 let cached: ObjectStorage | undefined;

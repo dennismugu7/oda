@@ -29,6 +29,7 @@ const SERVER_WORDED = new Set([
   'WEAK_PASSWORD',
   'SAME_PASSWORD',
   'EMAIL_HAS_ACCOUNT',
+  'ACCOUNT_DELETED',
   'NO_CODE',
   'invalid', // input checks from our API (zod messages written for sellers)
 ]);

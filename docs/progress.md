@@ -2,22 +2,38 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-06, owner Step 82)
+## Handoff (keep current; updated 2026-10-06, owner Step 83)
 
 **Current state**
-- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. M8a CP1 + CP2 built and merged to `main` (`8aed5bd`, staging, migration 0006 applied); at 🛑 review stop A.**
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration **0006** (digest marks + web deletion link columns, expand only). New: settings APIs (`/api/me/details`, `/api/shop/profile`, `/api/payments` + accounts, `/api/shop/pause`, `/api/feedback`), Better Auth `/change-password`; the till badge is gone. Removing a review: **Actions → review-remove**. Demo Duka: **Actions → demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** + EAS Update `89ca7fc6` (same app code as `3ebfa826`; M8a: Settings, Your details, Change password, Share feedback, Shop profile, Payments; More rows). JS changes: `pnpm update:preview "…"`.
-- **Feedback screenshots:** private Vercel Blob store **`oda-staging-feedback`** (Private, fra1) created by the owner (Step 83) and connected with the prefix `FEEDBACK_BLOB`, Production + Preview (decision #74 b). Verified by name: `FEEDBACK_BLOB_READ_WRITE_TOKEN` (what the server reads), `FEEDBACK_BLOB_STORE_ID`, `FEEDBACK_BLOB_WEBHOOK_PUBLIC_KEY`. Staging picks them up with the redeploy after this merge; "Add screenshot" then shows in the app (no app change needed: `GET /api/feedback` says `screenshots: true`). Staging redeployed at `d28758f`.
+- **Milestones:** M0–M7 closed; latest tag **`m7-done`**. **M9 removed** (decision #72). **M8 approved (decision #74), split into M8a and M8b. Review stop A passed (Step 83, 11 items). M8a CP3 (deletion, purge, digest; decision #75) built and merged to `main` (staging); at 🛑 review stop B.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Migration 0006 applied. New in CP3: `/delete-account` (+ `/confirm`), `/api/me/delete`, `/api/cron/purge` (dry run), `/api/cron/digest`. Jobs: **Actions → cron-purge** (daily 03:43 Nairobi; manual = dry run by default), **cron-digest** (daily 08:11 Nairobi), **staging-backdate-deletion** (test tool), plus cron-expire-orders, review-remove, demo-seed-staging.
+- **App:** EAS preview build **0.3.0** + the CP3 EAS Update (Settings → Delete account). JS changes: `pnpm update:preview "…"`.
+- **Feedback screenshots:** private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, decision #74 b), working (stop A item 10).
 - **Owner rule (Step 83):** every change reaches `main` through a PR, docs-only commits included.
-- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own (not through `pnpm test:e2e` / `check:all`) reuses the last web build: `pnpm --filter @oda/web build` first. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
-**Next step:** owner: review stop A phone test (in the final message of Step 82; step 9 now with a screenshot). After the go-ahead: M8a CP3 (in-app + web account deletion, `/api/cron/purge`, `/api/cron/digest`, `staging-backdate-deletion.yml`).
+**Next step:** owner: review stop B phone test (final message of Step 83). After the go-ahead: the M8a gate (✅/❌ against `milestones.md`) → tag `m8a-done` → M8b (ask for the support WhatsApp number first).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
-- Carried-forward list: in the M7 gate entry below (M8a items now partly done: see the CP2 entry).
+- Carried-forward list: in the M7 gate entry below; M8a items done except the gate.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M8a CP3: account deletion, purge, support digest (owner Step 83; branch `m8a-cp3`)
+
+**Review stop A passed** (owner, Redmi, Step 83): no till badge, photos load, your details, change password wrong/right + email, shop profile incl. location and TikTok, change link with the old link redirecting, second payment account at checkout, pay-on-delivery-only and both-off refused, pause/unpause, feedback with a screenshot, offline read-only.
+
+**Built (decision #75)**
+- **Deletion:** `deleteAccount()` shared by the app (`POST /api/me/delete`, type "DELETE") and the web (`/delete-account` → emailed link `#token=` → `/delete-account/confirm` → one button). Shop and profile get `deleted_at`, sessions removed, push tokens dropped, `account_deleted` audit row. A deleted account can't sign in again (403 `ACCOUNT_DELETED`, after the right password only). Web: same answer for any email (work after the response), 1-hour single-use link stored as a hash, limits per IP and per email, same-origin check. Privacy page links to `/delete-account`.
+- **Purge** (`/api/cron/purge`): deleted accounts after 30 days (files from rows + prefix listings incl. the private feedback store, then the auth user; `account_purged` audit rows), soft-deleted products after 30 days (keeping order thumbnails), failed deletes retried, unreferenced `products/` `logos/` `reviews/` files over 24 h, sign-up attempts over 7 days. **Dry run** reports and removes nothing; every run writes `purge_run` / `purge_dry_run`. Demo shops never purged. `list(prefix)` added to every storage driver.
+- **Digest** (`/api/cron/digest`): reports, feedback (7-day screenshot links) and reported reviews not yet mailed, locked/mailed/marked in one transaction; nothing on a quiet day.
+- **Workflows:** `cron-purge.yml` (manual = dry run by default; summary lists counts and slugs), `cron-digest.yml`, `staging-backdate-deletion.yml` (only an already-deleted shop with a deleted owner, never `demo-duka`, one SQL statement).
+- **App:** Settings → Delete account (red row) → confirm screen (what happens, "type DELETE", danger button) → signed out → Welcome with "Your account is deleted".
+- **Tests:** `deletion.test.ts` (6: DELETE typed exactly, shop 404 + sessions gone + sign-in refused + audit; web same answer, link valid → used, expired/wrong/missing, double tap, limits + cross-site), `purge.test.ts` (6: dry run vs real with live / 29-day / 31-day shops, demo skipped, failed file queued and retried, soft-deleted product keeps the order thumbnail, unreferenced files + old sign-ups, route secret + actor), `digest.test.ts` (5: quiet day, once per item with every field and the screenshot link, failed send marks nothing, concurrent runs, route secret), `uploads.test.ts` (+2: private list, S3 list parsing), Playwright `delete-account.spec.ts` (2). The e2e shop helper now gives each shop a unique email (two parallel tests could get the same `shop-<ms>` address).
+
+**Compared with the designs:** delete account confirm (design-changes NEW) as described: "type DELETE", explains the 30-day removal; the web pages use the reset-password page's layout (no separate design). Settings now ends with Log out and a red Delete account row, as in 20b-settings.
+
+**Checks:** `pnpm check:all` green (shared 251, web 341, db 23, seller 97, Playwright 22).
 
 ## 2026-10-06 · M8a CP1 + CP2: badge gone, settings server and screens (owner Step 82; branch `m8a-cp1`)
 

@@ -2,6 +2,8 @@ import 'server-only';
 import { colors } from '@oda/ui-tokens';
 import {
   BUYER_CANCEL_LABELS,
+  clock24,
+  shortDate,
   formatKePhone,
   formatKes,
   OTP_TTL_SECONDS,
@@ -130,6 +132,183 @@ ${line}
 Thank you,
 The oda team`;
   return { kind: 'password-changed', to, subject: 'Your oda password was changed', html, text };
+}
+
+/** The web /delete-account confirm link (decision #72 c): 1 hour, single use. */
+export function deleteAccountLinkEmail(to: string, url: string): Email {
+  const safeUrl = escapeHtml(url);
+  const what =
+    'Someone asked to delete the oda account for this email. If it was you, open the link below to confirm. It works for 1 hour. Your shop closes at once, and your products, orders, customers and photos are removed after 30 days.';
+  const notYou = "If you didn't ask for this, ignore this email: nothing changes.";
+  const html = layout(
+    'Delete your oda account',
+    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Delete your oda account?</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">${escapeHtml(what)}</td></tr>
+<tr><td align="center" style="padding-bottom:24px;">
+<a href="${safeUrl}" style="display:inline-block;background:${colors.danger};color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;line-height:24px;padding:14px 32px;border-radius:999px;">Review and confirm</a>
+</td></tr>
+<tr><td style="font-size:13px;line-height:20px;color:${colors.textSecondary};padding-bottom:24px;">Or open this link: <a href="${safeUrl}" style="color:${colors.primary};word-break:break-all;">${safeUrl}</a></td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};">${escapeHtml(notYou)}</td></tr>`,
+  );
+  const text = `Delete your oda account?
+
+${what}
+
+${url}
+
+${notYou}
+
+Thank you,
+The oda team`;
+  return {
+    kind: 'delete-account-link',
+    to,
+    subject: 'Confirm deleting your oda account',
+    html,
+    text,
+  };
+}
+
+export interface DigestData {
+  reports: {
+    shopName: string;
+    shopUrl: string;
+    number: number;
+    message: string;
+    contactPhone: string | null;
+    at: Date;
+  }[];
+  feedback: {
+    shopName: string;
+    shopUrl: string;
+    kind: string;
+    message: string;
+    /** The shop's WhatsApp number when the seller asked for a reply there. */
+    replyOnWhatsapp: string | null;
+    screenshotUrl: string | null;
+    hasScreenshot: boolean;
+    at: Date;
+  }[];
+  reviews: {
+    shopName: string;
+    shopUrl: string;
+    number: number;
+    rating: number;
+    displayName: string;
+    text: string | null;
+    reason: string | null;
+    at: Date;
+  }[];
+}
+
+const FEEDBACK_KIND_LABELS: Record<string, string> = {
+  idea: 'An idea',
+  broken: "Something's broken",
+  confusing: "Something's confusing",
+  love: 'I love something',
+  problem: 'A problem',
+};
+
+/** The daily support digest to the oda team (decisions #72 b, #73 a): only sent with news. */
+export function supportDigestEmail(to: string, data: DigestData): Email {
+  const when = (at: Date) => `${shortDate(at)}, ${clock24(at)}`;
+  const counts = [
+    data.reports.length
+      ? `${data.reports.length} buyer report${data.reports.length === 1 ? '' : 's'}`
+      : '',
+    data.feedback.length ? `${data.feedback.length} feedback` : '',
+    data.reviews.length
+      ? `${data.reviews.length} reported review${data.reviews.length === 1 ? '' : 's'}`
+      : '',
+  ].filter(Boolean);
+  const subject = `oda support: ${counts.join(', ')}`;
+
+  type Item = { title: string; lines: [string, string][]; link?: { label: string; url: string } };
+  const all: { heading: string; items: Item[] }[] = [
+    {
+      heading: 'Buyer reports',
+      items: data.reports.map((x) => ({
+        title: `${x.shopName} · order #${x.number}`,
+        lines: [
+          ['When', when(x.at)],
+          ['Message', x.message],
+          ['Buyer phone', x.contactPhone ?? 'not given'],
+          ['Shop', x.shopUrl],
+        ],
+      })),
+    },
+    {
+      heading: 'Seller feedback',
+      items: data.feedback.map((x) => ({
+        title: `${x.shopName} · ${FEEDBACK_KIND_LABELS[x.kind] ?? x.kind}`,
+        lines: [
+          ['When', when(x.at)],
+          ['Message', x.message],
+          ['Reply on WhatsApp', x.replyOnWhatsapp ?? 'no'],
+          ['Shop', x.shopUrl],
+          ...(x.hasScreenshot && !x.screenshotUrl
+            ? [['Screenshot', 'stored, but no link could be made'] as [string, string]]
+            : []),
+        ],
+        link: x.screenshotUrl
+          ? { label: 'Open the screenshot (link works for 7 days)', url: x.screenshotUrl }
+          : undefined,
+      })),
+    },
+    {
+      heading: 'Reported reviews',
+      items: data.reviews.map((x) => ({
+        title: `${x.shopName} · order #${x.number} · ${'★'.repeat(x.rating)}`,
+        lines: [
+          ['Reported', when(x.at)],
+          ['By buyer', x.displayName],
+          ['Review', x.text ?? '(stars only)'],
+          ['Seller says', x.reason ?? '(no reason given)'],
+          ['To remove it', 'GitHub → Actions → review-remove'],
+        ],
+      })),
+    },
+  ];
+  const sections = all.filter((section) => section.items.length > 0);
+
+  const htmlItem = (item: Item) =>
+    `<tr><td style="padding:12px 0;border-top:1px solid ${colors.border};">
+<div style="font-size:15px;line-height:22px;font-weight:700;">${escapeHtml(item.title)}</div>
+${item.lines
+  .map(
+    ([label, value]) =>
+      `<div style="font-size:14px;line-height:21px;"><span style="color:${colors.textSecondary};">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`,
+  )
+  .join('\n')}
+${item.link ? `<div style="font-size:14px;line-height:21px;"><a href="${escapeHtml(item.link.url)}" style="color:${colors.primary};">${escapeHtml(item.link.label)}</a></div>` : ''}
+</td></tr>`;
+  const html = layout(
+    subject,
+    `<tr><td style="font-size:22px;line-height:30px;font-weight:700;padding-bottom:8px;">Support digest</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:16px;">New since the last digest: ${escapeHtml(counts.join(', '))}. Reply to sellers and buyers outside oda (email or WhatsApp).</td></tr>
+${sections
+  .map(
+    (section) =>
+      `<tr><td style="font-size:17px;line-height:26px;font-weight:700;padding-top:16px;">${escapeHtml(section.heading)}</td></tr>
+${section.items.map(htmlItem).join('\n')}`,
+  )
+  .join('\n')}`,
+  );
+  const text = [
+    'Support digest',
+    `New since the last digest: ${counts.join(', ')}.`,
+    ...sections.flatMap((section) => [
+      '',
+      section.heading.toUpperCase(),
+      ...section.items.flatMap((item) => [
+        '',
+        item.title,
+        ...item.lines.map(([label, value]) => `${label}: ${value}`),
+        ...(item.link ? [`${item.link.label}: ${item.link.url}`] : []),
+      ]),
+    ]),
+  ].join('\n');
+  return { kind: 'support-digest', to, subject, html, text };
 }
 
 export interface OrderEmailData {
