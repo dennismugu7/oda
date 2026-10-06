@@ -17,3 +17,4 @@ export * from './whatsapp';
 export * from './nairobiTime';
 export * from './sellerHome';
 export * from './push';
+export * from './reviews';

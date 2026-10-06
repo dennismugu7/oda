@@ -296,7 +296,11 @@ describe('seller actions', () => {
     res = await act(w, o.id, { type: 'markDelivered' });
     expect(res.json.order).toMatchObject({ status: 'delivered', actions: [] });
     expect(testOutbox.last()?.kind).toBe('order-delivered');
-    expect(testOutbox.last()!.text).toContain(`/o/${o.publicToken}`);
+    // M7: the delivered email and WhatsApp message link to the review page (decision #73).
+    expect(testOutbox.last()!.text).toContain(
+      `Rate your order: http://localhost:3000/o/${o.publicToken}/review`,
+    );
+    expect(res.json.whatsapp.text).toContain(`/o/${o.publicToken}/review`);
     const events = await db.select().from(t.orderEvents).where(eq(t.orderEvents.orderId, o.id));
     expect(events.filter((e) => e.actor === 'seller')).toHaveLength(4);
   });

@@ -187,7 +187,15 @@ describe('buyerTimeline', () => {
       'Rate your order',
     ]);
     expect(steps.slice(0, 4).every((s) => s.state === 'done' && s.at === t0)).toBe(true);
-    expect(steps[4]!.note).toBe('Reviews open soon');
+    expect(steps[4]).toMatchObject({ key: 'rate', state: 'current', note: null });
+  });
+
+  it('"Rate your order" is done once reviewed, and absent for manual orders (decision #73 i)', () => {
+    const delivered = { ...base, status: 'delivered' as const, deliveredAt: t0 };
+    const done = buyerTimeline(delivered, 'Demo Duka', { reviewable: true, reviewedAt: t0 });
+    expect(done[4]).toMatchObject({ state: 'done', at: t0 });
+    const manual = buyerTimeline(delivered, 'Demo Duka', { reviewable: false, reviewedAt: null });
+    expect(manual.map((s) => s.key)).toEqual(['placed', 'confirmed', 'sent', 'delivered']);
   });
 
   it('labels every cancel reason without the seller’s note', () => {

@@ -18,6 +18,8 @@ export const MAX_PUSH_TOKENS = 5;
 export interface PushData {
   type: string;
   orderId: string | null;
+  /** new_review pushes (M7): the review to open. */
+  reviewId?: string | null;
 }
 
 /** Where a tapped notification goes, or null when it has nowhere to go. */

@@ -87,6 +87,14 @@ async function ownerTokens(db: Db, shopId: string) {
   return row ?? null;
 }
 
+/** One push to the seller's phones: the same title and body as the notification row. */
+export interface SellerPush {
+  type: PushType | 'new_review';
+  title: string;
+  body: string;
+  data: PushData;
+}
+
 /**
  * Sends a push for each `push` side effect to the seller's phones. Never throws: a push
  * problem must not undo or fail an order change.
@@ -97,25 +105,42 @@ export async function sendOrderPushes(
   sideEffects: readonly SideEffect[],
 ): Promise<void> {
   const types = sideEffects.flatMap((e) => (e.kind === 'push' ? [e.type] : [])) as PushType[];
-  if (types.length === 0) return;
+  await sendSellerPushes(
+    db,
+    order.shopId,
+    types.map((type) => ({
+      type,
+      ...notificationText(order, type),
+      data: { type, orderId: order.id },
+    })),
+  );
+}
+
+/** Sends pushes to the shop owner's phones. Never throws; logs type and counts only. */
+export async function sendSellerPushes(
+  db: Db,
+  shopId: string,
+  pushes: readonly SellerPush[],
+): Promise<void> {
+  if (pushes.length === 0) return;
+  const types = pushes.map((p) => p.type);
   try {
-    const owner = await ownerTokens(db, order.shopId);
+    const owner = await ownerTokens(db, shopId);
     if (!owner || owner.tokens.length === 0) {
       console.info(`[push] ${types.join(',')} → no devices`);
       return;
     }
-    const messages: PushMessage[] = types.flatMap((type) => {
-      const { title, body } = notificationText(order, type);
-      return owner.tokens.map((to) => ({
+    const messages: PushMessage[] = pushes.flatMap(({ title, body, data }) =>
+      owner.tokens.map((to) => ({
         to,
         title,
         body,
-        data: { type, orderId: order.id },
+        data,
         sound: 'default' as const,
         priority: 'high' as const,
         channelId: 'orders' as const,
-      }));
-    });
+      })),
+    );
     const tickets = await send(messages);
     if (!tickets) return;
     const gone = new Set<string>();

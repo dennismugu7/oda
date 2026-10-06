@@ -224,9 +224,14 @@ export interface TimelineStep {
 /**
  * The buyer's "Order status" card (web 6, 05c): the shared stepper's four steps
  * (order-lifecycle.md → Stepper labels), with times, the step being waited on, and "Rate your
- * order" last (it unlocks at delivered; reviews are M7). Not for cancelled orders.
+ * order" last for orders that can be reviewed (buyer-placed, decision #73 i): it unlocks at
+ * delivered and is done once the review is written. Not for cancelled orders.
  */
-export function buyerTimeline(order: TimelineOrder, shopName: string): TimelineStep[] {
+export function buyerTimeline(
+  order: TimelineOrder,
+  shopName: string,
+  review: { reviewable: boolean; reviewedAt: Date | null } = { reviewable: true, reviewedAt: null },
+): TimelineStep[] {
   const steps = stepperSteps(order, order.fulfilment, shopName);
   const pod = order.paymentMethod === 'pay_on_delivery';
   const pickup = order.fulfilment === 'pickup';
@@ -258,12 +263,14 @@ export function buyerTimeline(order: TimelineOrder, shopName: string): TimelineS
     }
     return { key: keys[i]!, label, note, state, at: state === 'done' ? (at[i] ?? null) : null };
   });
+  if (!review.reviewable) return timeline;
+  const delivered = order.status === 'delivered';
   timeline.push({
     key: 'rate',
     label: 'Rate your order',
-    note: order.status === 'delivered' ? 'Reviews open soon' : 'Unlocks once it’s delivered',
-    state: 'todo',
-    at: null,
+    note: review.reviewedAt ? null : delivered ? null : 'Unlocks once it’s delivered',
+    state: review.reviewedAt ? 'done' : delivered ? 'current' : 'todo',
+    at: review.reviewedAt,
   });
   return timeline;
 }

@@ -1,13 +1,13 @@
 import 'server-only';
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { and, asc, eq, lte, ne } from 'drizzle-orm';
 import { EXPIRY_HOURS } from '@oda/shared';
 import { schema, type Db } from '@oda/db';
 import { afterOrderChange } from './afterOrder';
+import { assertBearer } from './authz';
 import type { Defer } from './checkout';
 import { getDb } from './db';
 import { serverEnv } from './env';
-import { HttpError, NotFoundError, toResponse } from './errors';
+import { HttpError, toResponse } from './errors';
 import { transitionOrder, type TransitionOutcome } from './orders';
 
 // Scheduled jobs (data-model.md → Where logic runs; decision #69), called by GitHub Actions
@@ -19,15 +19,9 @@ const t = schema;
 /** Batch size: the hourly run catches up over several runs if more are due. */
 export const EXPIRE_BATCH = 100;
 
-const digest = (value: string) => createHash('sha256').update(value).digest();
-
-/** Constant-time check of the Bearer secret (hashing first makes the lengths equal). */
+/** Constant-time check of the Bearer secret; 404 otherwise. */
 export function assertCronSecret(request: Request, secret = serverEnv().CRON_SECRET): void {
-  const header = request.headers.get('authorization') ?? '';
-  const given = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!secret || !given || !timingSafeEqual(digest(given), digest(secret))) {
-    throw new NotFoundError();
-  }
+  assertBearer(request, secret);
 }
 
 /**

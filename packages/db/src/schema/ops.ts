@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -137,3 +138,25 @@ export const storageDeletions = pgTable('storage_deletions', {
   objectKey: text('object_key').primaryKey(),
   createdAt: createdAt(),
 });
+
+/**
+ * Audit of manual ops workflows (decision #73 c–d), e.g. removing a review. `shop_id` has no
+ * foreign key so the record outlives a purged shop; `details` keeps a snapshot of what changed.
+ */
+export const opsEvents = pgTable(
+  'ops_events',
+  {
+    id: id(),
+    action: text('action').notNull(),
+    shopId: uuid('shop_id'),
+    targetId: uuid('target_id'),
+    reason: text('reason').notNull(),
+    /** The GitHub user who ran the workflow. */
+    actor: text('actor').notNull(),
+    details: jsonb('details')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ops_events_created_idx').on(t.createdAt.desc())],
+);
