@@ -5,6 +5,7 @@ import { getDb } from './db';
 import { NotFoundError, parseInput, toResponse, TooManyRequestsError } from './errors';
 import { clientIp, hitLimit } from './rateLimit';
 import { publicRepo, type PublicShop } from './repos/public';
+import { productReviews } from './repos/reviews';
 
 // Public storefront endpoints (M4, decision #59): no session. Both answer 404 for a shop that
 // doesn't exist, is suspended or deleted; an old link counts for the shop it now points to.
@@ -75,6 +76,35 @@ export async function postCartLookup(request: Request, { params }: Params): Prom
     const { productIds } = parseInput(cartLookupInput, await body(request));
     const products = await publicRepo(db).shop(shop).lookup(productIds);
     return Response.json({ products }, { headers: { 'cache-control': 'no-store' } });
+  } catch (error) {
+    return toResponse(error);
+  }
+}
+
+const cursorInput = z
+  .string()
+  .regex(/^\d{13}_[0-9a-f-]{36}$/)
+  .optional()
+  .catch(undefined);
+
+/** GET /api/shops/:slug/products/:id/reviews?cursor=… — the next page of a product's reviews. */
+export async function getProductReviews(
+  request: Request,
+  { params }: { params: Promise<{ slug: string; id: string }> },
+): Promise<Response> {
+  try {
+    const db = getDb();
+    if (
+      !(await hitLimit(db, `reviews-ip:${clientIp(request.headers)}`, { window: 60, max: 120 }))
+    ) {
+      throw new TooManyRequestsError('Too many requests.', 60);
+    }
+    const { slug, id } = await params;
+    const shop = await findShop(slug);
+    const cursor = cursorInput.parse(new URL(request.url).searchParams.get('cursor') ?? undefined);
+    return Response.json(await productReviews(db, shop.id, id, cursor), {
+      headers: { 'cache-control': 'no-store' },
+    });
   } catch (error) {
     return toResponse(error);
   }

@@ -3,6 +3,8 @@
 // shows the order status. What the buyer can do comes from the shared machine
 // (buyerActions); a cancelled order shows its reason as a label, never the seller's note
 // (decision #38 b); a deleted shop keeps the link with only "Report a problem" (#38 c).
+// Delivered buyer-placed orders get the "Rate your order" card (M7); manual orders can't be
+// reviewed and show no prompt (decision #73 i).
 // Opened only by the random token; noindex, no referrer, lookups rate-limited per IP.
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -12,6 +14,7 @@ import {
   BUYER_CANCEL_LABELS,
   buyerActions,
   buyerTimeline,
+  canReviewOrder,
   formatKePhone,
   formatKes,
   type CancelReason,
@@ -29,6 +32,7 @@ import { getDb } from '@/server/db';
 import { isDemoShop } from '@/server/demo';
 import { NotFoundError } from '@/server/errors';
 import { orderTokenRepo } from '@/server/repos/order-token';
+import { buyerReviewRepo } from '@/server/repos/reviews';
 import { publicUrl } from '@/server/uploads';
 
 export const dynamic = 'force-dynamic';
@@ -65,7 +69,18 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
     if (error instanceof NotFoundError) notFound();
     throw error;
   }
-  const [order, shop] = await Promise.all([orderTokenRepo(db, ctx).view(), orderShop(db, ctx)]);
+  const [order, shop, reviewStatus] = await Promise.all([
+    orderTokenRepo(db, ctx).view(),
+    orderShop(db, ctx),
+    buyerReviewRepo(db, ctx).status(),
+  ]);
+  const reviewedAt = reviewStatus?.reviewedAt ?? null;
+  /** Buyer-placed orders can be reviewed once delivered; manual ones never (decision #73 i). */
+  const reviewable = ctx.order.source !== 'manual';
+  const canReview = canReviewOrder(ctx.order);
+  const bookmark = reviewable
+    ? 'Bookmark this page. It’s how you track your order and leave a review.'
+    : 'Bookmark this page. It’s how you track your order.';
   const shopName = order.shop?.name ?? 'the shop';
   const actions = buyerActions(ctx.order, shop);
   const account = order.paymentAccount as PayAccount | null;
@@ -162,7 +177,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
           />
           {help}
           <p className="mt-5 flex gap-2 rounded-lg bg-peach p-4 text-body text-text-secondary">
-            Bookmark this page. It’s how you track your order and leave a review.
+            {bookmark}
           </p>
         </main>
       </>
@@ -173,7 +188,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const cancelled = order.status === 'cancelled';
   const expired = cancelled && order.cancelReason === 'expired';
   const pickup = order.fulfilment === 'pickup';
-  const timeline = cancelled ? [] : buyerTimeline(order, shopName);
+  const timeline = cancelled ? [] : buyerTimeline(order, shopName, { reviewable, reviewedAt });
 
   let hero: React.ReactNode = null;
   if (
@@ -248,31 +263,55 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             ) : null}
           </div>
         </div>
-        <section
-          aria-labelledby="rate-title"
-          className="mt-5 rounded-xl border-2 border-primary p-5 text-center"
-        >
-          <h2 id="rate-title" className="text-title text-navy">
-            How was your order?
-          </h2>
-          <p className="mt-1 text-body text-text-secondary">Help other buyers and {shopName}</p>
-          <p aria-hidden="true" className="mt-3 flex justify-center gap-3 text-border-strong">
-            {[0, 1, 2, 3, 4].map((n) => (
-              <svg key={n} viewBox="0 0 24 24" width="36" height="36">
-                <path
-                  d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"
-                  fill="currentColor"
-                />
-              </svg>
-            ))}
-          </p>
-          <p
-            aria-disabled="true"
-            className="mt-4 flex h-14 items-center justify-center rounded-pill bg-surface-muted text-button text-text-secondary"
+        {canReview && reviewedAt ? (
+          <section aria-labelledby="rate-title" className="mt-5 rounded-xl bg-background p-5">
+            <h2 id="rate-title" className="text-title text-navy">
+              Thanks for your review
+            </h2>
+            <p className="mt-1 text-body text-text-secondary">
+              It helps other buyers and {shopName}.
+            </p>
+            <Link
+              href={`/o/${order.token}/review`}
+              className="mt-4 flex h-12 items-center justify-center rounded-pill border border-primary text-button text-primary"
+            >
+              {reviewStatus?.editable ? 'Edit your review' : 'See your review'}
+            </Link>
+          </section>
+        ) : canReview ? (
+          <section
+            aria-labelledby="rate-title"
+            className="mt-5 rounded-xl border-2 border-primary p-5 text-center"
           >
-            Reviews open soon
-          </p>
-        </section>
+            <h2 id="rate-title" className="text-title text-navy">
+              How was your order?
+            </h2>
+            <p className="mt-1 text-body text-text-secondary">Help other buyers and {shopName}</p>
+            <p className="mt-3 flex justify-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Link
+                  key={n}
+                  href={`/o/${order.token}/review?stars=${n}`}
+                  aria-label={`Rate ${n} out of 5`}
+                  className="flex size-11 items-center justify-center text-border hover:text-star"
+                >
+                  <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
+                    <path
+                      d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </Link>
+              ))}
+            </p>
+            <Link
+              href={`/o/${order.token}/review`}
+              className="mt-4 flex h-14 items-center justify-center rounded-pill bg-primary text-button text-text-on-primary"
+            >
+              Rate your order
+            </Link>
+          </section>
+        ) : null}
       </>
     );
   } else if (cancelled) {
@@ -456,9 +495,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
 
         {help}
 
-        <p className="mt-5 rounded-lg bg-peach p-4 text-body text-text-secondary">
-          Bookmark this page. It’s how you track your order and leave a review.
-        </p>
+        <p className="mt-5 rounded-lg bg-peach p-4 text-body text-text-secondary">{bookmark}</p>
         {order.shop && !shop.closed ? (
           <Link
             href={`/${order.shop.slug}`}

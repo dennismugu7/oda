@@ -8,6 +8,9 @@ import { appHeaders, createVerifiedSeller, randomIp } from './outbox';
 
 const PASSWORD = 'kitenge2026';
 
+/** The seller's API headers per shop, for tests that act as the seller too (M7). */
+export const sellerHeaders = new Map<string, Record<string, string>>();
+
 export interface ShopOptions {
   /** A Till at onboarding step 5 (pay now); otherwise step 5 is skipped (pay on delivery). */
   till?: boolean;
@@ -56,6 +59,7 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
   };
 
   const slug = `e2e-${Date.now().toString(36)}`;
+  sellerHeaders.set(slug, headers);
   await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });
   await post('/api/onboarding/answers', { step: 2, skip: true });
   // Step 3 twice: going back to change the link leaves the first one in the slug history.

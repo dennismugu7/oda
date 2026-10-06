@@ -206,13 +206,13 @@ export function buyerReviewRepo(db: Db, ctx: OrderTokenCtx) {
       };
     },
 
-    /** The review's creation time, or null (the order page's timeline). */
-    async reviewedAt(): Promise<Date | null> {
+    /** When the review was written and whether it can still be edited (the order page). */
+    async status(now = new Date()): Promise<{ reviewedAt: Date; editable: boolean } | null> {
       const [row] = await db
-        .select({ createdAt: t.reviews.createdAt })
+        .select({ createdAt: t.reviews.createdAt, editableUntil: t.reviews.editableUntil })
         .from(t.reviews)
         .where(eq(t.reviews.orderId, order.id));
-      return row?.createdAt ?? null;
+      return row ? { reviewedAt: row.createdAt, editable: row.editableUntil > now } : null;
     },
 
     /**
