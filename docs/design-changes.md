@@ -6,9 +6,9 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 - **Domain:** every `oda.shop/…` becomes the configured base, for example `oda.mugu-labs.com/…`. Slugs are hyphenated (`amani-styles`, never `amanistyles`).
 - **Status bars / browser chrome** in the images are mockup decoration. Don't build them.
 - **Automated WhatsApp:** wherever a screen says oda will WhatsApp someone ("We'll WhatsApp your rating link", "We'll send her the reason", "Wanjiku gets a WhatsApp message"), v1 behaviour is: after the action saves, open the **seller's** WhatsApp with a pre-written message. Reword the copy to "Message Wanjiku on WhatsApp" (seller app) or remove it (buyer web).
-- **"Payment checked by oda"** (web 01, 02, 03, 04) is false under our payment model. Replace it with "Pay the seller directly on M-Pesa". Show the "M-Pesa till checked by oda" badge only when the till is verified.
+- **"Payment checked by oda"** (web 01, 02, 03, 04) is false under our payment model. Replace it with "Pay the seller directly on M-Pesa". **No "M-Pesa till checked by oda" badge anywhere** (decision #72: no till verification); M8 removes the existing badge and copy.
 - **Brand name in UI text:** always lowercase **oda** (never "Oda"), including where an image capitalises it.
-- **Till badge wording:** always **"M-Pesa till checked by oda"** (app, web, onboarding copy).
+- **Till badge:** dropped (decision #72). Onboarding step 5 and 20b-payments don't mention verification.
 - **Theme:** light only. Hide the Theme row in Settings.
 - **Brand:** primary orange-red (~#D94A27), dark navy (~#1C1B2E), green accent (~#1F7A4D), warm cream/peach backgrounds. **Poppins everywhere** and **brand colours everywhere**: screens that show other fonts (02–08, including the button on 02) or off-brand colours (08's tick) are mockup inconsistencies. Extract exact tokens from the images into `packages/ui-tokens` in Milestone 0.
 
@@ -24,7 +24,7 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 | 06-email-reset-password | Email template (reset) | Email template with a link to the web `/reset-password`. |
 | 07-reset-password-page | Reset password | **Web page** at `/reset-password` (apps/web). Include the rules (8+ chars, a number). |
 | 08-password-changed | Success | Web page after reset, plus an "Open oda app" button (deep link `oda://`). |
-| 09–13 onboarding | Onboarding steps | Progress bar: 6 segments, filled = step number (the images are inconsistent). Steps 1–2 **Skip** sets `business_type = other`, `channels = []`. 11: the domain changes. The shop name preview "Chat" is the WhatsApp button. 13: the "Skip" copy becomes "Skip for now · buyers can only pay on delivery until you add this"; the line about the badge reads "Your shop shows 'M-Pesa till checked by oda' once we confirm it". |
+| 09–13 onboarding | Onboarding steps | Progress bar: 6 segments, filled = step number (the images are inconsistent). Steps 1–2 **Skip** sets `business_type = other`, `channels = []`. 11: the domain changes. The shop name preview "Chat" is the WhatsApp button. 13: the "Skip" copy becomes "Skip for now · buyers can only pay on delivery until you add this"; no line about a badge or verification (decision #72; M8 removes the current one). |
 | 14-onboarding-shop-live | Shop is live | Checklist item "Send yourself a test message" → **"Test your WhatsApp link"**: opens `wa.me/<own number>` so they see what buyers see; ticks when tapped. No "checked" claim. The checklist follows the spec (**7 items**, "Add 4 more products"), not the image's "3 of 6" / "Add two more products"; 15 likewise. |
 | 15-home-empty, 16-home-populated | Home | Bell opens **NEW Notifications** screen. "To confirm / To send / New" as in the spec. |
 | 17-orders | Orders list | Group by lifecycle (see order-lifecycle.md). |

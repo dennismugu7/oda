@@ -2,23 +2,61 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-05, owner Step 77)
+## Handoff (keep current; updated 2026-10-06, owner Step 77)
 
 **Current state**
-- **Milestones:** M0–M5 closed (tag `m5-done`). **M6:** CP1–CP4 built and merged; **🛑 at review stop B** (CP3 + push on the Redmi with build 0.3.0). Then CP5 (wrap-up) and the M6 gate.
-- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers can now add delivery options, so their shops take orders. Demo Duka unchanged (its owner has no password; the phone test uses the owner's own shop).
-- **App:** EAS preview build **0.3.0** (`1f0323b4`, runtime 0.3.0) to install on the Redmi; EAS Updates from now on target runtime 0.3.0 (the 0.2.0 install stops getting updates).
-- **Git:** everything merged to `main` (PRs #30–#34); no open PRs.
-- **This laptop:** as before (`~/.wslconfig` 12 GB / 8 GB swap). If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`.
+- **Milestones:** M0–M6 closed; latest tag **`m6-done`** (on `main` after the gate PR). **M9 removed** (decision #72: no admin back office; its jobs moved to M8 and M10). **M7 plan proposed in `docs/m7-plan.md` — awaiting the owner's approval and answers to its six questions. M7 not started.**
+- **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers manage delivery, orders (every action, WhatsApp prefills, buyer emails), manual orders, Home and notifications; pushes go to the seller's phone (Expo, `EXPO_ACCESS_TOKEN` in Vercel); unpaid buyer orders expire after 48 h (hourly `cron-expire-orders`, `CRON_SECRET` in Vercel + GitHub). Demo Duka: **Actions → demo-seed-staging** remakes its sample orders (its owner has no password; phone tests use the owner's own shop).
+- **App:** EAS preview build **0.3.0** (`1f0323b4`, runtime 0.3.0) on the Redmi: push + `@sentry/react-native` 7.11.0 **inactive until M10** (decision #70). EAS Updates now target runtime 0.3.0 (`pnpm update:preview "…"`).
+- **Git:** everything merged and pushed; no open PRs.
+- **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Playwright resets the local `rate_limits` table before each run. A stale `apps/seller/.expo/types/router.d.ts` can fail typed routes locally: delete it (decision #66 i).
 
-**Next step:** wait for the owner's review stop B results. Then CP5: forbidden-transition tests per action, design comparison (15, 16, 17-*, 17b-*, 20b-delivery, notifications), accessibility pass → M6 gate.
+**Next step:** M7 plan awaiting approval (`docs/m7-plan.md`). After approval: CP1 (review server) per the plan.
 
 **Open items**
-- Owner: turn on Expo's enhanced push security before review stop B; delete the oda admin-SDK key from Downloads.
-- Sentry is installed but inactive until M10 (decision #70).
-- The hourly expire job is live from this merge: any staging order unpaid for 48 h (incl. a Demo Duka sample if it's that old) gets expired; the demo seed remakes the samples.
-- Carried-forward list: in the M5 gate entry below.
+- **Owner:** confirm Expo's "Enhanced security for push notifications" is **on** (expo.dev → project oda → Settings); delete the oda admin-SDK key file from Downloads.
+- Carried-forward list: in the M6 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-06 · M6 gate passed; M9 removed; M7 plan proposed (owner Step 77; branch `m6-gate`)
+
+**Review stop B passed** (owner, Redmi, build 0.3.0): A install + notification permission; B Home, To-do, sales, New order with link, fee override, notifications list; C push for new order / says paid / cancelled, tap opens the order, foreground banner, cold start, sign-out stops pushes, sign-in resumes; D backdate + cron expire with push and email, manual order refused. Review stop A passed in Step 75 (22 items).
+
+**CP5 (this branch):** server test that every seller action is refused where the machine forbids it, with the order and its events unchanged (`sellerOrders.test.ts` "forbidden transitions (M6 CP5)", 9 cases); accessibility pass on the M6 screens (New order quantity buttons 40 → 44 dp; the rest already had labels, roles, 44 dp targets or a hit slop, and AA text colours); design comparison below.
+
+**Gate (milestones.md M6 + definition of done)**
+- ✅ **Delivery first (20b-delivery):** areas, pickup with place and hours, free delivery over an amount; "Add delivery options" done with an area or pickup; no option → "Not taking orders yet" — `server/delivery.test.ts` (7, incl. authorization), shared `delivery.test.ts`, checklist test; review stop A items 1–6.
+- ✅ **Push and seller-triggered emails plug into M5's records:** notification rows → `sendOrderPushes()` with the same text; `sendOrderEmails()` covers confirmed / accepted / sent / delivered / cancelled by the seller / expired / refunded — `server/push.test.ts`, `server/sellerOrders.test.ts` (email kinds and texts); owner received every email at review stop A.
+- ✅ **Home To-do + sales card:** `GET /api/home`, Nairobi Mon–Sun buckets and last week's same stretch — `server/sellerHome.test.ts`; review stop B section B.
+- ✅ **Orders list/search, order detail with every action via the server:** one actions endpoint through `transitionOrder()`, 409 on a lost race — `sellerOrders.test.ts` (16 incl. race, search, pages, Needs attention); review stop A.
+- ✅ **WhatsApp prefill links:** shared templates (`whatsapp.test.ts`) returned with each action; review stop A (WhatsApp opened with the message).
+- ✅ **Manual order creation:** quote + create through `insertOrder()` — `sellerHome.test.ts`; review stop B (link, fee override).
+- ✅ **Push notifications (Expo):** token on sign-in / removed on sign-out, tap opens the order, dead tokens removed — `push.test.ts`, app `session.test.ts`; review stop B section C.
+- ✅ **In-app notifications:** list, unread, mark read — `sellerHome.test.ts`; review stop B item 10.
+- ✅ **Hourly auto-expire job:** `POST /api/cron/expire-orders` (Bearer `CRON_SECRET`, 404 otherwise), batches of 100, manual orders never — `push.test.ts`; workflow run by hand on staging (200, `expired: 0` then `1` at review stop B with push + email).
+- ✅ **Accept — lifecycle end to end, buyer on web + seller on the phone:** review stop A (pay now: not found → confirm → sent → delivered; pay on delivery with "collected"; cancels, refunds, claims).
+- ✅ **Accept — push arrives on a real device within 10 s of a web order:** owner's review stop B, section C item 11 (Redmi, build 0.3.0).
+- ✅ **Accept — forbidden transitions rejected by the server:** exhaustive machine test (`orderMachine.test.ts`), server test of every seller action in a forbidden state (CP5), DB status guard (`triggers.test.ts`), plus the race test (409).
+- ✅ **Definition of done:** `pnpm check:all` green on every branch (latest: shared 217, seller 86, db 23, web 289, Playwright 16) and CI green on PRs #30–#34 (#34 after GitHub's runner outage); new logic unit-tested; every new endpoint has authorization tests (other shop's rows 404, 401 signed out, 404 without a shop, secrets for jobs); no new buyer web pages in M6 (existing Playwright suite still green); screens compared with their designs (below) and checked on the Redmi at review stops A and B; staging deployed; app shipped as EAS Updates `a432ccde`, `58af2c8f`, `80063651` and build 0.3.0; decisions #65–#71; progress updated.
+
+**Design comparison (what differs from the images, all intended):** 20b-delivery — areas reordered from a hold menu (no drag), a warning while there's no delivery option; 17-orders — a fifth group "Needs attention" on top (#67), "See n more" after 3 rows; 17-order-detail — the buyer card shows the phone only (area and address are in the Delivery card), Cancel and Copy order link live in ⋮, a cancelled order shows a "Cancelled" pill instead of the stepper; 17b sheets — "Message {buyer} on WhatsApp" toggles (design-changes), cancel asks "Did you receive KSh x?" first after a claim, a private note field; 15/16 — the bell shows a count, quick Accept opens the order, "Finish your shop" folds once there are orders, Share instead of the eye button; 17-new-order — a Delivery section (pickup or an area + address) and three payment choices; notifications — new screen in the same style.
+
+**Tag `m6-done`** on `main` after this branch is merged.
+
+**M9 removed** (decision #72): badge dropped (M8), support digest (M8), self-serve web deletion (M8), suspend workflow + `ops_events` (M10), admin code clean-up (M10). `milestones.md`, `spec.md` §7, `data-model.md`, `design-changes.md`, CLAUDE.md updated.
+
+**M7 plan proposed** in `docs/m7-plan.md` (CP1 server, CP2 buyer web → review stop A, CP3 app → review stop B, CP4 gate; six questions; no schema change unless moderation needs a column). Not approved; not started.
+
+**Carried forward (all milestones so far)**
+- **M7** (`docs/m7-plan.md`, proposed): reviews and ratings; the delivered email and WhatsApp message switch from the order page to `/o/{token}/review`; the order page's "Reviews open soon" becomes "Rate your order"; uploads authorised by an order token; resizing photos in the browser.
+- **M8:** drop the till badge and verification copy (#72 a); daily support digest with `notified_at` on reports/feedback (#72 b); self-serve web deletion with `token_hash`/`expires_at`/`confirmed_at` (#72 c); `/api/cron/purge` — `signup_attempts` older than 7 days, leftover `storage_deletions`, unreferenced `products/`/`logos/` keys, deleted shops' data after 30 days; whether soft-deleted products are ever purged; Payments screen (accepts pay before / on delivery toggles — today a shop that entered a Till can't turn pay on delivery on); shop profile; the Shop tab's card shows the initial, not the logo (`/api/me` has no logo URL); "My status" from the Status button (owner to confirm); TikTok logo only with TikTok's written permission.
+- **M10:** suspend/unsuspend workflow with `OPS_SECRET` + `ops_events` (#72 d); remove `requireAdmin`/`adminRepo`/`is_admin` paths and the `admin@example.test` seed (#72 f); wire Sentry (installed, inactive, #70: add its plugin, DSN, source maps); poll Expo push **receipts** (M6 only reads tickets); automated UI tests for the app (jest-expo/Maestro); the checkout page bundles zod through `@oda/shared` (performance pass); orders paging sorts on `date_trunc('milliseconds', placed_at)`, which the `(shop_id, status, placed_at)` index doesn't serve — check with real volumes; `orders.idempotency_key` is unique across shops while lookups are per shop.
+- **M11:** Cloudflare R2 with a custom image domain (replacing Vercel Blob, #54); `armeabi-v7a`; production keystore and EAS environment (and `autoIncrement` versionCode — 0.3.0 kept versionCode 1); production Neon and Resend; Vercel Hobby is non-commercial (#10); `vercel logout` on the laptop; real privacy/terms text; a production Firebase/FCM key and `EXPO_ACCESS_TOKEN` per environment.
+- Not built: dragging products within a category (20b1); dragging delivery areas (hold menu instead).
+- `react-native-draggable-flatlist` 4.0.3 works with reanimated 4.5; re-check on every Expo SDK / reanimated upgrade. Categories screen: the drag list sits inside a ScrollView (dev-only warning).
+- Search filters are a panel of selects (accepted at M4 review stop B).
+- Blob usage: check the Hobby usage page.
+- eas-cli 24.8.0 on the laptop (24.10 available); EAS free-tier builds can queue for ~2 h.
 
 ## 2026-10-05 · M6 CP4: Firebase done, app 0.3.0 built (owner Steps 77; branch `m6-cp4-native`)
 

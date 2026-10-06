@@ -15,7 +15,7 @@ oda gives social sellers in Kenya a free shop link. A seller sets up a shop in t
 |---|---|---|
 | **Seller** | Android app (`apps/seller`) | Email + password, verified with a 6-digit email code (Better Auth) |
 | **Buyer** | Mobile web (`apps/web`) | None. Guest checkout with name and phone. Order access via a secret link. |
-| **oda admin** | Web back office (`apps/web` → `/admin`) | Email + password, `is_admin` flag |
+| **oda team** | No back office (decision #72): a daily support email digest, GitHub Actions workflows, Neon's console | — |
 
 ## 3. Market rules (apply everywhere)
 
@@ -117,12 +117,10 @@ Screens are in `design/web/`. The iPhone status bar and URL bar in the images ar
 | `/o/{token}` | Order: the pay page while `awaiting_payment` (pay now), otherwise the order status page |
 | `/o/{token}/review` | Review |
 | `/privacy`, `/terms`, `/delete-account`, `/reset-password` | Legal + account pages |
-| `/admin/...` | Back office |
 | `/api/...` | Server API |
 
 ### 6.1 Shop home (01) & search (07)
 - Header: logo/initials, name, rating + delivered count + location, share button (Web Share API, fallback copy).
-- "M-Pesa till checked by oda" badge only when an admin has verified the till.
 - Search box → search page (07): text search on name/description, filter chips (category, size, max price), sort Popular / Newest / Price.
 - Category chips (only non-empty, visible categories, in seller order).
 - Product grid: cover, name, rating, price, was-price, badges (**Bestseller** = top 3 by units sold with ≥3 sold; **New** = created in the last 14 days; **Sold out**). No stock-count badges.
@@ -130,7 +128,7 @@ Screens are in `design/web/`. The iPhone status bar and URL bar in the images ar
 - Favourites (heart) are saved **on this device only** (localStorage).
 - Sticky cart bar when the cart is not empty.
 - Seller WhatsApp "Chat" button (as in the seller's preview, 19b-preview).
-- States: shop paused ("taking a break, back soon", can browse, cannot order), shop not found (404 with oda branding), shop suspended by admin (same as not found).
+- States: shop paused ("taking a break, back soon", can browse, cannot order), shop not found (404 with oda branding), shop suspended by oda (same as not found).
 
 ### 6.2 Product (02)
 Photo carousel with a count, favourite, cart icon with count, badge, name, rating (links to reviews), price/was-price/"Save x%", colour swatches, size buttons (the sizes the seller listed), qty stepper, and **Add to cart · KES x**. Shows "{units_sold} sold" only when `units_sold` ≥ 5. No size guide. Delivery info card (cheapest area fee, pickup, free-delivery threshold). Payment info card: "Pay the seller directly with M-Pesa" / "or on delivery" according to settings. Product reviews list below.
@@ -163,20 +161,20 @@ Only when the order is delivered, one review per order (editable for 7 days). Ov
 ### 6.8 Buyer emails (only if the buyer gave an email)
 Exactly the "email" side effects listed in `order-lifecycle.md`. Every email includes the order link.
 
-## 7. Admin back office (`/admin`, desktop web, plain UI)
-- **Till verification queue:** seller, account type, number, name. The admin checks the registered name in M-Pesa and marks Verified or Rejected (with a note). Verified → the "M-Pesa till checked by oda" badge.
-- **Shops:** search, view, suspend/unsuspend (suspended = the public page returns 404).
-- **Reports** from buyers and **feedback** from sellers: list, status (new / in progress / closed), notes.
-- **Account deletion requests** from the web form.
-- Basic counts: shops created, live shops (≥1 product), orders per day.
+## 7. Operations (no admin back office; decision #72)
+- **No `/admin` and no till verification:** there is no "M-Pesa till checked by oda" badge anywhere.
+- **Support digest:** buyer reports and seller feedback are emailed daily to `support@mugu-labs.com` (only when something is new); the team replies outside oda.
+- **Account deletion:** in the app, or self-serve on the web (`/delete-account` → confirm link by email → the 30-day purge).
+- **Suspend / unsuspend a shop:** a manual GitHub Actions workflow calling a protected endpoint, logged (suspended = the public page returns 404).
+- **Counts** (shops, live shops, orders per day) are read in Neon's console when needed.
 
 ## 8. Non-functional requirements
-- **Security:** the database is reachable only from the server. Every request goes through the authorization layer described in `data-model.md` (seller scoping, order tokens, admin checks), with automated tests. Buyer actions go through server endpoints with zod validation and rate limits. Order links use a random 12-character token (unguessable). The order number (#1042) is only a display label, sequential **per shop**.
+- **Security:** the database is reachable only from the server. Every request goes through the authorization layer described in `data-model.md` (seller scoping, order tokens, secret-protected job endpoints), with automated tests. Buyer actions go through server endpoints with zod validation and rate limits. Order links use a random 12-character token (unguessable). The order number (#1042) is only a display label, sequential **per shop**.
 - **Abuse:** rate-limit order creation (per IP and per phone), honeypot field, max 20 open unpaid orders per phone per shop (open = `awaiting_payment`, `awaiting_acceptance` or `payment_claimed`, pay on delivery included; limits in decision #61). Flag an M-Pesa code already used on another order in the same shop ("This code was used on order #1031").
 - **Performance:** shop home < 2.5s LCP on mid-range Android over 4G. Grids use the ~400px thumbnails; detail pages use the full image. No paid image-transformation service.
 - **Reliability:** order creation is idempotent (client-generated idempotency key). All money maths is in one shared function and unit-tested.
 - **Observability:** Sentry in the web and the app. Structured server logs.
-- **Privacy:** buyer data is visible only to that shop's seller and to admins. Privacy policy + terms pages. Account deletion in-app and via the web form (a Google Play requirement). Kenya Data Protection Act: collect the minimum and allow deletion on request.
+- **Privacy:** buyer data is visible only to that shop's seller (and to the oda team through the database, for support and legal requests). Privacy policy + terms pages. Account deletion in-app and via the web form (a Google Play requirement). Kenya Data Protection Act: collect the minimum and allow deletion on request.
 - **Accessibility:** tap targets ≥ 44px, contrast AA, labels on inputs.
 - **Offline (seller app):** show cached data read-only with a clear "You're offline" bar. Queue nothing in v1.
 
