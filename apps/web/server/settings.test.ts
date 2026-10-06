@@ -423,7 +423,8 @@ describe('change password (Better Auth /change-password)', () => {
     });
     expect(blocked.status).toBe(429);
     expect(await signIn(s.email, 'kitenge2026')).toBe(200);
-  });
+    // 11 password hashes (and up to 16 s waiting for the window edge): more than the 5 s default.
+  }, 30_000);
 
   it('without a session: 401', async () => {
     const res = await change('not-a-token', { currentPassword: 'a', newPassword: 'shanga2027' });
