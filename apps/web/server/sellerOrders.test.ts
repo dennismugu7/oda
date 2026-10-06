@@ -422,6 +422,56 @@ describe('seller actions', () => {
   });
 });
 
+describe('forbidden transitions (M6 CP5)', () => {
+  it('every seller action is refused where the machine forbids it, changing nothing', async () => {
+    const w = await shopWorld();
+    // One order per state the cases need.
+    const awaiting = await w.order();
+    const claimed = await w.order();
+    await claim(claimed.publicToken);
+    const pod = await w.order({ kind: 'buyer_pay_on_delivery' });
+    const confirmed = await w.order({ kind: 'manual_paid' });
+    const delivered = await w.order({ kind: 'manual_paid' });
+    await act(w, delivered.id, { type: 'markSent', sentMethod: 'pickup' });
+    await act(w, delivered.id, { type: 'markDelivered' });
+
+    const cases: [string, { id: string }, Json][] = [
+      ['markPaid on a claimed payment', claimed, { type: 'markPaid' }],
+      ['confirmPayment before any claim', awaiting, { type: 'confirmPayment' }],
+      ['paymentNotFound before any claim', awaiting, { type: 'paymentNotFound' }],
+      ['accept on a pay-now order', awaiting, { type: 'accept' }],
+      ['markSent before accepting', pod, { type: 'markSent', sentMethod: 'rider' }],
+      ['markDelivered before sending', confirmed, { type: 'markDelivered' }],
+      ['sellerCancel after delivery', delivered, { type: 'sellerCancel', reason: 'other' }],
+      ['resolveClaim on an open order', confirmed, { type: 'resolveClaim', received: true }],
+      ['markRefundSent with no refund due', confirmed, { type: 'markRefundSent' }],
+    ];
+    for (const [label, order, action] of cases) {
+      const before = await db.select().from(t.orders).where(eq(t.orders.id, order.id));
+      const eventsBefore = await db
+        .select()
+        .from(t.orderEvents)
+        .where(eq(t.orderEvents.orderId, order.id));
+      const res = await act(w, order.id, action);
+      expect(res.status, label).toBe(422);
+      expect(res.json.error.code, label).toBe('forbidden_transition');
+      const after = await db.select().from(t.orders).where(eq(t.orders.id, order.id));
+      expect(after[0], label).toMatchObject({
+        status: before[0]!.status,
+        paymentStatus: before[0]!.paymentStatus,
+      });
+      const eventsAfter = await db
+        .select()
+        .from(t.orderEvents)
+        .where(eq(t.orderEvents.orderId, order.id));
+      expect(eventsAfter, label).toHaveLength(eventsBefore.length);
+    }
+    expect(
+      testOutbox.all().filter((e) => e.kind !== 'order-sent' && e.kind !== 'order-delivered'),
+    ).toHaveLength(0);
+  });
+});
+
 describe('authorization', () => {
   it("a seller never reaches another shop's orders (404)", async () => {
     const a = await shopWorld();

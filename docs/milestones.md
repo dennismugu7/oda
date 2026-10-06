@@ -73,6 +73,7 @@ Screens **20b-delivery first** (moved from M8, decision #61), 15, 16, 17-*, 17b-
 - **Accept:** the lifecycle can be driven end to end by a buyer on web + a seller on the phone; push arrives on a real device within 10s of a web order; forbidden transitions are rejected by the server.
 
 ## M7 · Reviews
+**Proposed plan: `docs/m7-plan.md`** (owner Step 77; awaiting approval).
 Web 05c, 5d; app 20b-reviews.
 - Review submission (delivered only, one per order, 7-day edit), photos, rating aggregates (shop + product), seller replies, reviews on the product page.
 - **Accept:** aggregates update correctly (tests), and a review cannot be posted on an undelivered order.
@@ -80,17 +81,18 @@ Web 05c, 5d; app 20b-reviews.
 ## M8 · Grow & manage
 Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-payments, 20b-settings, 20b-your-details, 20b-help, 21-*.
 - Share tools (share images rendered on device, QR, EN/SW captions), insights (Nairobi timezone, sale definition per order-lifecycle.md), customers, profile (slug change + history), payments accounts, settings (pause shop, delete account), help guides, feedback, in-app review.
-- Account deletion: in-app flow, the web `/delete-account` request form, and the daily `/api/cron/purge` job with its scheduler.
-- **Accept:** insights numbers match a SQL check on the seed data; pausing blocks new orders on the web; slug change keeps the old link working; a deleted shop 404s immediately and the purge job removes its data, photos and auth user after 30 days (tested with a backdated record).
+- Account deletion: in-app flow, the **self-serve** web `/delete-account` (confirm link by email, then the 30-day purge; no admin step, decision #72 c), and the daily `/api/cron/purge` job with its scheduler.
+- **Drop the "M-Pesa till checked by oda" badge** and every verification line (shop, product, checkout, pay page, onboarding step 5, 20b-payments; decision #72 a).
+- **Daily support digest:** `/api/cron/digest` emails new buyer reports and seller feedback to `support@mugu-labs.com` via Resend, only when there's something new (decision #72 b).
+- **Accept:** insights numbers match a SQL check on the seed data; pausing blocks new orders on the web; slug change keeps the old link working; a deleted shop 404s immediately and the purge job removes its data, photos and auth user after 30 days (tested with a backdated record); a web deletion request takes effect only after the emailed link is opened; the digest goes out once per new item and not at all on a quiet day (tests); no page shows the till badge.
 
-## M9 · Admin back office
-`/admin` in apps/web.
-- Till verification queue, shops (suspend), reports, feedback, deletion requests, basic counts.
-- **Accept:** a verified till shows the badge on the web; a suspended shop returns 404; non-admins get 404 on `/admin`.
+## M9 · Admin back office — removed
+Removed by decision #72 (owner Step 77): no `/admin`. Its jobs moved: the till badge is dropped (M8), buyer reports and seller feedback go out as a daily email digest (M8), web account deletion is self-serve (M8), suspending a shop is a manual GitHub Actions workflow (M10).
 
 ## M10 · Hardening
 - Security review (auth, authorization layer, endpoints, rate limits, secrets, dependency audit), all empty/error/offline states, accessibility pass, performance pass, Sentry wired in both apps, backup check, full end-to-end regression on staging with a real Android device.
-- **Accept:** a written review report in `docs/hardening-report.md` with every issue fixed or consciously deferred.
+- **Suspend / unsuspend a shop** through a manual GitHub Actions workflow calling a protected endpoint (`OPS_SECRET`), with an audit row in `ops_events` (decision #72 d); remove the unused admin code paths (#72 f).
+- **Accept:** a written review report in `docs/hardening-report.md` with every issue fixed or consciously deferred; a suspended shop returns 404 and unsuspending restores it, both logged (tests).
 
 ## M11 · Launch
 Production Neon + R2 + web on `oda.mugu-labs.com`, DNS + email domain records, production EAS build (AAB), Play Console listing, privacy policy URL, data safety form, closed testing track, then production. Guided step by step outside Claude Code where needed.
