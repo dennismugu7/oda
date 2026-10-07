@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 import { sellerHeaders, sellerShop } from './shop';
 
 // M8a settings as buyers see them: no "M-Pesa till checked" anywhere (decision #72 a), and a

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 import { appHeaders, createVerifiedSeller, lastEmailTo, randomIp } from './outbox';
 
 // Web reset pages 07 and 08, end to end: request a reset like the app does, open the
@@ -17,7 +17,7 @@ test('reset password from the emailed link', async ({ page, request }) => {
     headers: appHeaders(ip),
   });
   expect(ask.status()).toBe(200);
-  const reset = await lastEmailTo(email);
+  const reset = await lastEmailTo(email, (m) => m.subject === 'Reset your oda password');
   expect(reset.subject).toBe('Reset your oda password');
   // The token rides in the fragment, never in a URL a server logs (decision #45).
   const link = /https?:\/\/\S+\/reset-password#token=\S+/.exec(reset.text)?.[0];

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 import { placePayNowOrder, sellerShop } from './shop';
 
 // The buyer's order page (M5 CP3, CP5 acceptance; web 04b redesign, 05, 6): pay now end to end

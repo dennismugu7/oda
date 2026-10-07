@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 import { lastEmailTo } from './outbox';
 import { sellerEmails, sellerShop } from './shop';
 
@@ -25,7 +25,7 @@ test('delete-account: email → link → confirm → the shop 404s; the link wor
   await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('delete-account-sent-390x844.png') });
 
-  const mail = await lastEmailTo(email);
+  const mail = await lastEmailTo(email, (m) => m.text.includes('/delete-account/confirm'));
   const link = /(http\S+\/delete-account\/confirm#token=\S+)/.exec(mail.text)?.[1];
   expect(link).toBeTruthy();
   // The token is only in the fragment, never in the path or a query string.
