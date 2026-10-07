@@ -23,7 +23,7 @@ Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (state
 | S10 | Dependencies | `pnpm audit --prod`: 3 high (node-forge, braces, source-map-js), 3 moderate (esbuild, uuid, decode-uri-component). All are in the seller app's **build and dev tooling** (Expo CLI code signing, Metro, Expo's PostCSS, drizzle-kit's loader, the iOS `xcode` package): none runs in the web server, and none handles untrusted input in the app at runtime. node-forge and braces have no patched version yet. | high (tooling only) | **deferred** to CP5 | Re-run `pnpm audit --prod` after the Expo SDK 57 patch upgrade (CP5); upgrade or add overrides for anything with a patched version then. |
 | S11 | Database | The staging app very likely connects with Neon's owner role, which can drop tables. A least-privilege app role (DML only) with migrations run by the owner role is the safer setup. | medium | **deferred** to M11 | Production Neon is set up in M11: an `oda_app` role with `SELECT/INSERT/UPDATE/DELETE` only for the app, the owner role only in the `migrate` workflow. Owner steps written then. Staging stays as is (test data only). |
 | S12 | Database | `orders.idempotency_key` is unique across all shops while lookups are per shop: a key reused in another shop would answer 500 (and tell the caller the key exists). Keys are random client UUIDs. | low | **fixed** (CP3), contract in M11 | Per-shop unique in migration 0007; a clash is 409 (`orders.test.ts`); the global constraint is dropped in M11 (decision #84 a). |
-| P1 | Performance | The Orders tab and seller reviews sorted every row of the shop on each page (truncated time, no index): ~115 ms per page at 100,000 orders, ~240 ms deep. | medium | **fixed** (CP3) | Expression indexes + row-comparison cursor (migration 0007, #84 b): 8–13 ms per call. `scripts/perf-check.ts`. |
+| P1 | Performance | The Orders tab and seller reviews sorted every row of the shop on each page (truncated time, no index): ~115 ms per page at 100,000 orders, ~240 ms deep. | medium | **fixed** (CP3) | Expression indexes + row-comparison cursor (migration 0007, #84 b): 8–13 ms per call. `server/perf/run.ts`. |
 | P2 | Performance | The buyer pages shipped zod and every schema to the browser (#61): 247 KB of gzipped JavaScript on first load. | medium | **fixed** (CP3) | `@oda/shared` `sideEffects: false`: 152 KB (#84 d). |
 | A1 | Accessibility | `textMuted` (placeholders, "Optional") 3.39:1 and `warningText` 4.21:1: below AA. | medium | **fixed** (CP3) | Darker tokens (#84 c); `contrast.test.ts`. |
 | A2 | Accessibility | Brand orange: white on primary and primary text 4.23:1, primary on its tint 3.80:1; star yellow 2.19:1 as a graphic. | medium | **owner decision** (review stop B) | Listed in `contrast.test.ts` as pending; options in the stop B message. |
@@ -163,7 +163,7 @@ separated or given TalkBack actions, decorations hidden on Android. **TalkBack p
 Redmi: owner, review stop B.**
 
 **Performance** (local Docker Postgres 18, the seed shop grown to 99,542 orders / 121,974 items;
-`scripts/perf-check.ts`, local databases only; median of 5 runs):
+`server/perf/run.ts`, local databases only; median of 5 runs):
 
 | Call | ms |
 |---|---|

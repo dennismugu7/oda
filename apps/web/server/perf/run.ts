@@ -1,13 +1,13 @@
 // M10 CP3 performance check (decision #84): times the seller's hot reads against a large
 // local database. Never run against staging. Usage (a throwaway local database grown from the
 // seed, see docs/hardening-report.md → CP3):
-//   DATABASE_URL=postgres://…/oda_perf pnpm exec tsx --conditions=react-server scripts/perf-check.ts
+//   DATABASE_URL=postgres://…/oda_perf pnpm exec tsx --conditions=react-server server/perf/run.ts
 import { createDb, schema } from '@oda/db';
-import type { SellerCtx } from '../server/authz';
-import { insightsRepo } from '../server/repos/insights';
-import { sellerReviewsRepo } from '../server/repos/reviews';
-import { sellerHomeRepo } from '../server/repos/sellerHome';
-import { sellerOrdersRepo } from '../server/repos/sellerOrders';
+import type { SellerCtx } from '../authz';
+import { insightsRepo } from '../repos/insights';
+import { sellerReviewsRepo } from '../repos/reviews';
+import { sellerHomeRepo } from '../repos/sellerHome';
+import { sellerOrdersRepo } from '../repos/sellerOrders';
 
 const url = process.env.DATABASE_URL ?? '';
 if (!/localhost|127\.0\.0\.1/.test(url)) throw new Error('Local databases only.');
