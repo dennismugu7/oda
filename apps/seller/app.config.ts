@@ -10,8 +10,9 @@ const config: ExpoConfig = {
   scheme: 'oda',
   // 0.2.0: native modules for onboarding photos and later milestones (decision #53).
   // 0.3.0: push (expo-notifications + Firebase) and Sentry, inactive until M10 (decision #70).
+  // 0.3.1: Expo SDK 57 patch releases (decisions #80, #81 f).
   // Bump on every native change (decision #48).
-  version: '0.3.0',
+  version: '0.3.1',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   platforms: ['android'],
