@@ -1,4 +1,5 @@
 import { checkHealth, ConfigError } from '@/server/health';
+import { describeError } from '@/server/safeLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function GET() {
         { status: 503, headers: { 'cache-control': 'no-store' } },
       );
     }
-    console.error('[health] database check failed', error);
+    console.error(`[health] database check failed: ${describeError(error)}`);
     return Response.json(
       { ok: false, db: 'down', commit },
       { status: 503, headers: { 'cache-control': 'no-store' } },

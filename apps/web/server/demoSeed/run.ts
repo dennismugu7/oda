@@ -25,6 +25,7 @@ import {
 } from './data';
 import { placeholderPhoto } from './images';
 import { resetSampleOrders } from './orders';
+import { describeError } from '../safeLog';
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
 
@@ -243,6 +244,6 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((error: unknown) => {
-    console.error(`demo seed failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`demo seed failed: ${describeError(error)}`);
     process.exit(1);
   });

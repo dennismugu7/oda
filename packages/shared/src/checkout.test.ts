@@ -37,6 +37,15 @@ describe('checkoutInput', () => {
     });
   });
 
+  it('refuses a very long name quickly, before cleaning it (M10 CP1)', () => {
+    const name = 'a.'.repeat(200_000); // slow for the link pattern if it ever got there
+    const started = Date.now();
+    const result = checkoutInput.safeParse({ ...valid, buyer: { ...valid.buyer, name } });
+    expect(Date.now() - started).toBeLessThan(200);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe('Your name can be at most 60 characters.');
+  });
+
   it('refuses fields the client must not send (prices, totals per line, status)', () => {
     expect(
       checkoutInput.safeParse({ ...valid, lines: [{ ...valid.lines[0], unitPrice: 1 }] }).success,

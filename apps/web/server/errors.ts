@@ -1,5 +1,6 @@
 import 'server-only';
 import type { z } from 'zod';
+import { describeError } from './safeLog';
 
 // HTTP errors thrown by the authorization layer, repositories and transitionOrder().
 // Route handlers turn them into JSON with toResponse(); messages are shown to users as is.
@@ -177,7 +178,7 @@ export function toResponse(error: unknown): Response {
       { status: http.status },
     );
   }
-  console.error('[api] unexpected error', error);
+  console.error(`[api] unexpected error: ${describeError(error)}`);
   return Response.json(
     { error: { code: 'server_error', message: 'Something went wrong. Please try again.' } },
     { status: 500 },

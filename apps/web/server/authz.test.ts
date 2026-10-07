@@ -298,7 +298,6 @@ describe('1. seller isolation: A gets 404 on every one of B’s resources', () =
           accountRef: null,
         }),
       () => r.activatePaymentAccount(B.account.id),
-      () => r.deletePaymentAccount(B.account.id),
       () => r.updateDeliveryArea(B.area.id, { fee: 0 }),
       () => r.deleteDeliveryArea(B.area.id),
       () => r.markNotificationRead(B.notification.id),
@@ -311,6 +310,8 @@ describe('1. seller isolation: A gets 404 on every one of B’s resources', () =
       () => r.updateProduct(A.product.id, { categoryId: B.category.id }),
     ];
     for (const attempt of attempts) expect(await status(attempt)).toBe(404);
+    // A's repo can't delete B's account (removeAccount answers 404 first: settings.test.ts).
+    expect(await r.deleteInactivePaymentAccount(B.account.id)).toBe(false);
     expect(await snapshot(B.ctx.shopId)).toEqual(before);
   });
 

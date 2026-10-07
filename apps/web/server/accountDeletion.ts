@@ -105,6 +105,7 @@ const requestBody = z.strictObject({
   email: z
     .string()
     .trim()
+    .max(254, { error: 'Enter the email you sign in with, like you@example.com.' })
     .toLowerCase()
     .pipe(z.email({ error: 'Enter the email you sign in with, like you@example.com.' })),
 });

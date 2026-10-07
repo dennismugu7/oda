@@ -172,7 +172,11 @@ export type DeliverySettingsUpdate = z.infer<typeof deliverySettingsUpdate>;
 export const paymentAccountInput = z
   .strictObject({
     type: z.enum(PAYMENT_ACCOUNT_TYPES, { error: 'Pick Till, Pochi or Paybill.' }),
-    number: z.string().trim().min(1, { error: 'Enter the number.' }),
+    number: z
+      .string()
+      .trim()
+      .min(1, { error: 'Enter the number.' })
+      .max(32, { error: 'That number is too long.' }),
     accountName: requiredText(2, 60, 'The name on the account'),
     accountRefMode: z.enum(ACCOUNT_REF_MODES).nullable().default(null),
     accountRef: optionalText(30, 'Account number').default(null),
