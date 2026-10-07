@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { backupName, isBackupName, planRetention, type StoredBackup } from './retention';
+import {
+  backupName,
+  isBackupName,
+  newestBackup,
+  planRetention,
+  type StoredBackup,
+} from './retention';
 
 const NOW = new Date('2026-10-20T23:35:00Z');
 const daysAgo = (d: number, extraMinutes = 0) =>
@@ -47,5 +53,20 @@ describe('backup retention (14 days)', () => {
 
   it('handles an empty store', () => {
     expect(planRetention([], NOW, backupName(NOW))).toEqual({ keep: [], remove: [], ignored: [] });
+  });
+});
+
+describe('newest backup (weekly restore check)', () => {
+  it('picks the newest file named like a backup, or none', () => {
+    const at = (iso: string) => new Date(iso);
+    const stored: StoredBackup[] = [
+      { pathname: backupName(at('2026-10-05T23:30:00Z')), uploadedAt: at('2026-10-05T23:31:00Z') },
+      { pathname: 'staging/notes.txt', uploadedAt: at('2026-10-07T00:00:00Z') },
+      { pathname: backupName(at('2026-10-06T23:30:00Z')), uploadedAt: at('2026-10-06T23:31:00Z') },
+    ];
+    expect(newestBackup(stored)?.pathname).toBe('staging/oda-staging-20261006T2330Z.dump.gpg');
+    expect(newestBackup([{ pathname: 'staging/x', uploadedAt: at('2026-10-07T00:00:00Z') }])).toBe(
+      null,
+    );
   });
 });

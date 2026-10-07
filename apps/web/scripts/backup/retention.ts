@@ -43,3 +43,12 @@ export function planRetention(
   const ignored = stored.filter((b) => !isBackupName(b.pathname)).map((b) => b.pathname);
   return { keep, remove, ignored };
 }
+
+/** The newest file named like a backup, or null (the weekly restore check, decision #85). */
+export function newestBackup(stored: readonly StoredBackup[]): StoredBackup | null {
+  return (
+    stored
+      .filter((b) => isBackupName(b.pathname))
+      .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0] ?? null
+  );
+}

@@ -8,7 +8,7 @@ import { afterOrderChange } from './afterOrder';
 import { assertCronSecret, expireOrders, postExpireOrders } from './cron';
 import { getDb } from './db';
 import { insertOrder } from './orders';
-import { testPush } from './push';
+import { checkPushReceipts, testPush } from './push';
 import { deletePushToken, postPushToken } from './pushRoutes';
 
 // M6 CP4 (code before the 0.3.0 build): push tokens (registered on sign-in, removed on
@@ -162,6 +162,78 @@ describe('sending pushes', () => {
     });
     const { order: o, sideEffects } = await order();
     await expect(afterOrderChange(db, o, sideEffects)).resolves.toBeUndefined();
+  });
+});
+
+describe('delivery receipts (hourly job, decision #85)', () => {
+  const MINUTE = 60_000;
+
+  async function sentTo(tokens: string[]) {
+    const s = await newSeller();
+    const order = await shopWithProduct(s);
+    for (const token of tokens) await s.call(postPushToken, { body: { token } });
+    testPush.answerWith(async (messages) =>
+      messages.map((m) => ({ status: 'ok' as const, id: `ticket-${m.to.slice(18, 19)}` })),
+    );
+    const { order: o, sideEffects } = await order();
+    await afterOrderChange(db, o, sideEffects);
+    return s;
+  }
+  const tickets = () => db.select().from(t.pushTickets);
+
+  it('keeps each ticket, then removes the tokens Expo’s receipts say are dead', async () => {
+    const s = await sentTo([TOKEN_A, TOKEN_B]);
+    expect((await tickets()).map((r) => [r.ticketId, r.token]).sort()).toEqual([
+      ['ticket-a', TOKEN_A],
+      ['ticket-b', TOKEN_B],
+    ]);
+    const asked: string[][] = [];
+    testPush.receiptsWith(async (ids) => {
+      asked.push(ids);
+      return {
+        'ticket-a': { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } },
+        'ticket-b': { status: 'ok' },
+      };
+    });
+
+    // Too new: receipts aren't ready for 15 minutes.
+    expect(await checkPushReceipts(db)).toMatchObject({ checked: 0, removed: 0 });
+    expect(asked).toEqual([]);
+
+    const later = new Date(Date.now() + 20 * MINUTE);
+    expect(await checkPushReceipts(db, later)).toEqual({
+      checked: 2,
+      failed: 1,
+      removed: 1,
+      expired: 0,
+    });
+    expect(await tokensOf(s.userId)).toEqual([TOKEN_B]);
+    expect(await tickets()).toEqual([]);
+  });
+
+  it('a ticket without a receipt waits for the next hour; after a day it is dropped', async () => {
+    const s = await sentTo([TOKEN_A]);
+    testPush.receiptsWith(async () => ({}));
+    expect(await checkPushReceipts(db, new Date(Date.now() + 20 * MINUTE))).toMatchObject({
+      checked: 0,
+    });
+    expect(await tickets()).toHaveLength(1);
+    expect(await checkPushReceipts(db, new Date(Date.now() + 25 * 60 * MINUTE))).toMatchObject({
+      expired: 1,
+    });
+    expect(await tickets()).toEqual([]);
+    expect(await tokensOf(s.userId)).toEqual([TOKEN_A]);
+  });
+
+  it('never throws, even when Expo’s answer fails', async () => {
+    await sentTo([TOKEN_A]);
+    testPush.receiptsWith(async () => {
+      throw new Error('network');
+    });
+    await expect(checkPushReceipts(db, new Date(Date.now() + 20 * MINUTE))).resolves.toMatchObject({
+      checked: 0,
+    });
+    expect(await tickets()).toHaveLength(1);
   });
 });
 

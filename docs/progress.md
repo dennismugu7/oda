@@ -7,17 +7,29 @@ Newest entries at the top.
 **Current state**
 - **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). Now: CP3 → CP4 → CP5 → review stop B.
 - **Staging:** https://oda-eta.vercel.app = `main` (`78a8268`, M10 CP2); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `ec8679c3` (M10 CP2: suspended banner). Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `95806a61` (M10 CP3). The 0.3.1 branch (Expo SDK patches, `m10-cp5-expo`) waits for the owner-approved EAS build. Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M10 CP4 (Sentry with the owner step by step, push receipts, backup restore check), then CP5.
+**Next step:** owner: Sentry setup step 1 and the `@sentry/nextjs` download; meanwhile CP5 app UI tests.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 CP4 part 1: push receipts, restore check, Sentry privacy (owner Step 90; branch `m10-cp4`)
+
+**CP3 shipped:** PR #57 merged; EAS Update `95806a61` (runtime 0.3.0).
+
+**Decision #85:**
+- **Push receipts:** `push_tickets` (migration 0008); the hourly job checks Expo's receipts and removes dead tokens; counts in the job summary.
+- **`backup-restore-check.yml`** (weekly + manual): newest backup (fails if older than 36 h) → decrypt → restore into a throwaway Postgres 18 on the runner → tables, counts, migrations in the summary.
+- **Sentry privacy:** shared scrubber + test; app init (JavaScript only) waits for `EXPO_PUBLIC_SENTRY_DSN`; Help shows the app version and update (long press on staging = test error).
+- **CP5 groundwork:** eas-cli 24.11.0 on the laptop; the Expo SDK 57 patches with version 0.3.1 sit on branch `m10-cp5-expo` (online expo-doctor 21/21) until the owner approves the EAS build.
+
+**Waiting on the owner:** Sentry account and projects (step by step), the `@sentry/nextjs` download (size estimate in the chat).
 
 ## 2026-10-07 · M10 CP3: states, accessibility, performance (owner Step 90; branch `m10-cp3`)
 

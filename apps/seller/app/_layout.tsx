@@ -10,11 +10,13 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { initSentry, wrapRoot } from '@/sentry';
 import { colors } from '@/theme';
 
+initSentry();
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
@@ -40,3 +42,5 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default wrapRoot(RootLayout);

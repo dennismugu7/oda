@@ -17,6 +17,7 @@ import { Button } from '@/ui/auth';
 import { Card, Row, rowStyles, Section } from '@/ui/rows';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { colors, radii, spacing, text } from '@/theme';
+import { appVersion, canSendTestError, sendTestError } from '@/sentry';
 
 export default function HelpScreen() {
   const insets = useSafeAreaInsets();
@@ -25,6 +26,7 @@ export default function HelpScreen() {
   const [query, setQuery] = useState('');
   const guides = useMemo(() => searchGuides(GUIDES, query), [query]);
   const searching = query.trim().length > 0;
+  const version = appVersion();
 
   const email = () =>
     Linking.openURL(`mailto:${support.email}?subject=${encodeURIComponent('oda help')}`).catch(
@@ -124,6 +126,14 @@ export default function HelpScreen() {
             }
           />
         </Card>
+        {/* For support ("which version?"); on staging a long press sends a test error. */}
+        <Text
+          style={styles.version}
+          onLongPress={canSendTestError ? sendTestError : undefined}
+          selectable
+        >
+          App version {version.version} · update {version.update}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -132,6 +142,7 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { padding: spacing.lg, gap: spacing.md },
+  version: { ...text('small'), color: colors.textSecondary, textAlign: 'center' },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

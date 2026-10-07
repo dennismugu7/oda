@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (states, accessibility, performance) done.** CP4–CP6 add their sections.
+Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (states, accessibility, performance) done; CP4 in progress** (push receipts, restore check, Sentry privacy done; Sentry accounts and the web SDK with the owner). CP5–CP6 add their sections.
 
 ## Findings
 
@@ -176,3 +176,14 @@ Redmi: owner, review stop B.**
 Web, production build, cold first load at 390 × 844 (gzipped JavaScript): landing 149 KB, shop /
 product / search / cart / checkout 152–155 KB (was 247–250 KB), legal and account pages
 149–151 KB.
+
+## CP4 · Monitoring and recovery (in progress)
+
+- **Push receipts** (#85 a): `push.test.ts` (tickets kept, dead tokens removed from receipts,
+  too-new tickets wait, day-old ones dropped, a failing Expo answer never throws).
+- **Backup restore check** (#85 b): `backup-restore-check.yml`; first run after merge (see
+  progress); `retention.test.ts` covers picking the newest backup.
+- **Sentry privacy** (#85 c): `packages/shared/src/sentry.test.ts` builds an event with an email,
+  phones in three formats, an M-Pesa code, order and reset tokens, a session cookie, a bearer
+  header, a push token, a password, a name and an address, and checks none survives anywhere in
+  the scrubbed JSON; ids, releases, stack frames and the SDK block stay.
