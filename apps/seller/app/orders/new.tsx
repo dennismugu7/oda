@@ -74,17 +74,24 @@ export default function NewOrder() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<OrderDetail | null>(null);
 
-  const loadDelivery = useCallback(async () => {
-    const { data, error: failed } = await deliveryApi.get();
-    if (data) setDelivery(data);
-    setDeliveryError(data ? null : errorMessage(failed));
-  }, []);
+  // Each load (on open, and from its "Try again") shows its own error in place of a spinner.
+  const loadDelivery = useCallback(
+    () =>
+      deliveryApi.get().then(({ data, error: failed }) => {
+        if (data) setDelivery(data);
+        setDeliveryError(data ? null : errorMessage(failed));
+      }),
+    [],
+  );
 
-  const loadProducts = useCallback(async () => {
-    const { data, error: failed } = await catalogueApi.products();
-    if (data) setProducts(data.products);
-    setProductsError(data ? null : errorMessage(failed));
-  }, []);
+  const loadProducts = useCallback(
+    () =>
+      catalogueApi.products().then(({ data, error: failed }) => {
+        if (data) setProducts(data.products);
+        setProductsError(data ? null : errorMessage(failed));
+      }),
+    [],
+  );
 
   useEffect(() => {
     loadDelivery();
