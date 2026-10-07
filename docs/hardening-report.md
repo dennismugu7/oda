@@ -177,7 +177,7 @@ Web, production build, cold first load at 390 × 844 (gzipped JavaScript): landi
 product / search / cart / checkout 152–155 KB (was 247–250 KB), legal and account pages
 149–151 KB.
 
-## CP4 · Monitoring and recovery (in progress)
+## CP4 · Monitoring and recovery
 
 - **Push receipts** (#85 a): `push.test.ts` (tickets kept, dead tokens removed from receipts,
   too-new tickets wait, day-old ones dropped, a failing Expo answer never throws).
@@ -192,6 +192,12 @@ product / search / cart / checkout 152–155 KB (was 247–250 KB), legal and ac
 (`oda-staging-20261007T0238Z`, 6.2 h old, 4 stored) downloaded, decrypted and restored into a
 throwaway Postgres 18: 3 shops, 9 orders; 7 migrations in the backup against 9 in the
 repository, as expected (0007 and 0008 were merged after the 02:38 backup).
+
+- **Sentry, web** (#87): on only with `NEXT_PUBLIC_SENTRY_DSN`; `monitoring.test.ts` reports a
+  real database error (whose message holds a name, a phone, an email and an address) through
+  `toResponse()` and checks none of them reaches Sentry; the browser SDK loads after idle (first
+  view stays ~152 KB of JavaScript); the CSP allows only the DSN's ingest origin. End-to-end
+  test events (web and app) at review stop B.
 
 ## CP5 · App UI tests, eas-cli, Expo patches
 

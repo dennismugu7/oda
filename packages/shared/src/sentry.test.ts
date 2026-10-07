@@ -150,6 +150,19 @@ describe('scrubBreadcrumb and scrubString', () => {
     });
   });
 
+  it('drops the values a database error carries (query params, row details)', () => {
+    expect(
+      scrubString(
+        'Failed query: insert into "orders" ("buyer_name", "address_text") values ($1, $2)\nparams: Wanjiku Mwangi,Argwings Kodhek Rd',
+      ),
+    ).toBe(
+      'Failed query: insert into "orders" ("buyer_name", "address_text") values ($1, $2)\nparams: [removed]',
+    );
+    expect(scrubString('Key (shop_id, name)=(abc, Achieng Otieno) already exists.')).toBe(
+      'Key (shop_id, name)=[removed] already exists.',
+    );
+  });
+
   it('masks each kind', () => {
     expect(scrubString(`${SECRETS.email} ${SECRETS.phone07} ${SECRETS.mpesa}`)).toBe(
       '[email] [phone] [mpesa-code]',

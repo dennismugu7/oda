@@ -65,6 +65,17 @@ describe('Content-Security-Policy', () => {
     expect(directive(outbox, 'script-src')).toBe(directive(page, 'script-src'));
   });
 
+  it('the browser may report errors to Sentry’s ingest host, and nothing else new', () => {
+    const csp = contentSecurityPolicy('n', {
+      ...staging,
+      sentryIngest: 'https://o123.ingest.de.sentry.io',
+    });
+    expect(directive(csp, 'connect-src')).toBe(
+      "connect-src 'self' https://vercel.com https://o123.ingest.de.sentry.io",
+    );
+    expect(directive(csp, 'script-src')).toBe("script-src 'self' 'nonce-n' 'strict-dynamic'");
+  });
+
   it('a broken storage URL adds nothing', () => {
     const csp = contentSecurityPolicy('n', { storagePublicBaseUrl: 'not a url', dev: false });
     expect(directive(csp, 'img-src')).toBe("img-src 'self' data: blob:");

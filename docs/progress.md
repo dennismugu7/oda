@@ -7,17 +7,24 @@ Newest entries at the top.
 **Current state**
 - **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). Now: CP3 → CP4 → CP5 → review stop B.
 - **Staging:** https://oda-eta.vercel.app = `main` (`78a8268`, M10 CP2); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `95806a61` (M10 CP3). The 0.3.1 branch (Expo SDK patches, `m10-cp5-expo`) waits for the owner-approved EAS build. Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
+- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `055045ba` (M10 CP4–CP5). Build **0.3.1** (`da329ea4`, Expo SDK patches) is building on EAS; `m10-cp5-expo` merges after the owner installs it. Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** owner: Sentry setup step 1 and the `@sentry/nextjs` download; meanwhile CP5 app UI tests.
+**Next step:** owner: Sentry steps 2–4 and installing the 0.3.1 APK; then the 0.3.1 merge, Sentry test events, 🛑 review stop B.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 CP4 part 2: Sentry on the web; 0.3.1 build started (owner Step 91; branches `m10-cp4b`, `m10-cp5-expo`)
+
+- **Owner:** Sentry step 1 done (organisation `mugu-labs`, EU, Developer plan); `@sentry/nextjs` and the 0.3.1 EAS build approved; decision #83's refused switch approved.
+- **0.3.1 EAS build** `da329ea4` started from `m10-cp5-expo` (rebased on `main`, `check:all` green, online expo-doctor 21/21). The branch merges after the owner installs the APK.
+- **Decision #87:** web Sentry (`@sentry/nextjs` 11.4.0): shared privacy-first options, unexpected API errors reported without raw messages, the scrubber also cuts query params and row details, the browser SDK loads after idle, CSP allows the ingest origin, source maps only with `SENTRY_AUTH_TOKEN` on Vercel, **Actions → sentry-test**.
+- EAS Update `055045ba` (CP4–CP5 app changes) on runtime 0.3.0.
 
 ## 2026-10-07 · M10 CP5 part 1: app UI tests (owner Step 90; branch `m10-cp5-ui`)
 

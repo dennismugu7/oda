@@ -15,6 +15,8 @@ export interface CspConfig {
   s3Endpoint?: string;
   /** VERCEL_BLOB_API_URL, if set; otherwise Vercel Blob's own API. */
   vercelBlobApiUrl?: string;
+  /** Sentry's ingest origin, from NEXT_PUBLIC_SENTRY_DSN: where the browser reports errors. */
+  sentryIngest?: string | null;
   dev: boolean;
   /**
    * The local email outbox (/dev/outbox, 404 on Vercel) previews emails, which link the
@@ -57,7 +59,11 @@ export function uploadOrigins(config: CspConfig): string[] {
 export function contentSecurityPolicy(nonce: string, config: CspConfig): string {
   const storage = origin(config.storagePublicBaseUrl);
   const images = ["'self'", 'data:', 'blob:', ...(storage ? [storage] : [])];
-  const connect = ["'self'", ...uploadOrigins(config)];
+  const connect = [
+    "'self'",
+    ...uploadOrigins(config),
+    ...(config.sentryIngest ? [config.sentryIngest] : []),
+  ];
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${config.dev ? " 'unsafe-eval'" : ''}`,
