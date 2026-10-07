@@ -8,9 +8,11 @@ import { formatKes } from '@oda/shared';
 import { cartCount, MAX_QTY } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
 
-export function Gallery({ photos, name }: { photos: { url: string | null }[]; name: string }) {
+export function Gallery({ photos: all, name }: { photos: { url: string | null }[]; name: string }) {
   const [index, setIndex] = useState(0);
   const strip = useRef<HTMLDivElement>(null);
+  // A photo without a URL (not ready yet) is left out: never an empty src.
+  const photos = all.filter((p): p is { url: string } => !!p.url);
   if (photos.length === 0) return <div className="aspect-square rounded-xl bg-beige" />;
   return (
     <div className="relative">
@@ -21,14 +23,17 @@ export function Gallery({ photos, name }: { photos: { url: string | null }[]; na
           setIndex(Math.round(el.scrollLeft / el.clientWidth));
         }}
         className="flex aspect-square snap-x snap-mandatory overflow-x-auto rounded-xl bg-beige [scrollbar-width:none]"
+        role="region"
         aria-label={`${name}: ${photos.length} photo${photos.length === 1 ? '' : 's'}`}
+        // Focusable so the photos can be scrolled with the arrow keys.
+        tabIndex={photos.length > 1 ? 0 : undefined}
       >
         {photos.map((p, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- plain images (decision #59)
           <img
             key={i}
-            src={p.url ?? ''}
-            alt={i === 0 ? name : ''}
+            src={p.url}
+            alt={i === 0 ? name : `${name}, photo ${i + 1} of ${photos.length}`}
             width={1200}
             height={1200}
             loading={i === 0 ? 'eager' : 'lazy'}
@@ -157,8 +162,8 @@ export function ProductBuy({
                     setColour(c.name);
                     setHint(null);
                   }}
-                  className={`flex h-12 min-w-12 items-center justify-center rounded-pill border-2 px-1 ${
-                    on ? 'border-navy' : 'border-border'
+                  className={`relative flex h-12 min-w-12 items-center justify-center rounded-pill px-1 ${
+                    on ? 'border-[3px] border-navy' : 'border-2 border-border'
                   }`}
                 >
                   {c.hex ? (
@@ -169,6 +174,24 @@ export function ProductBuy({
                   ) : (
                     <span className="px-3 text-body-strong text-navy">{c.name}</span>
                   )}
+                  {/* Selected is shown by a tick too, not by colour alone. */}
+                  {on ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-pill bg-navy text-text-on-navy"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12">
+                        <path
+                          d="M5 12.5l4.5 4.5L19 7.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  ) : null}
                 </button>
               );
             })}

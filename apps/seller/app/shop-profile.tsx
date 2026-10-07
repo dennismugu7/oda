@@ -14,7 +14,7 @@ import { settingsApi, type ShopProfile } from '@/settings/api';
 import { handleLabel, profileChanges, type ProfileForm } from '@/settings/form';
 import { SettingsLayout } from '@/settings/SettingsLayout';
 import { memoryCache, useLoaded } from '@/settings/useLoaded';
-import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
+import { Button, Field, FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, Row, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
 import { colors, radii, spacing, text } from '@/theme';
@@ -242,22 +242,18 @@ function ProfileEditor({
           </View>
         </View>
         {form.logoPath && !logo ? (
-          <Text
-            accessibilityRole="button"
-            style={styles.removeLogo}
-            onPress={() => set({ logoPath: null })}
-          >
+          <LinkButton textStyle={styles.removeLogo} onPress={() => set({ logoPath: null })}>
             Remove logo
-          </Text>
+          </LinkButton>
         ) : null}
         <View style={styles.linkRow}>
           <Text style={styles.link} numberOfLines={1}>
             {data.linkPrefix}
             <Text style={styles.linkSlug}>{form.slug}</Text>
           </Text>
-          <Text accessibilityRole="button" style={styles.change} onPress={() => open('link')}>
+          <LinkButton textStyle={styles.change} onPress={() => open('link')}>
             Change link
-          </Text>
+          </LinkButton>
         </View>
         {form.slug !== data.slug ? (
           <Text style={styles.help}>

@@ -28,6 +28,7 @@ export default function GuideScreen() {
       loaded={!!guide}
       error={guide ? null : 'This guide isn’t here any more.'}
       onRetry={() => goBack('/help')}
+      retryLabel="Back"
       back={() => goBack('/help')}
     >
       {guide

@@ -24,7 +24,9 @@ import {
   Text,
   TextInput,
   View,
+  type StyleProp,
   type TextInputProps,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { passwordChecks } from '@oda/shared';
@@ -361,6 +363,33 @@ export function Link({ children, onPress }: { children: ReactNode; onPress: () =
 }
 
 /**
+ * A short text-only button or link on its own (e.g. "Edit", "Resend", "Mark all read"): the
+ * text keeps its look, the touch target is at least 44 dp.
+ */
+export function LinkButton({
+  children,
+  onPress,
+  textStyle,
+  role = 'button',
+}: {
+  children: ReactNode;
+  onPress: () => void;
+  textStyle: StyleProp<TextStyle>;
+  /** "link" when it opens another screen. */
+  role?: 'button' | 'link';
+}) {
+  return (
+    <Pressable
+      accessibilityRole={role}
+      onPress={onPress}
+      style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+    >
+      <Text style={textStyle}>{children}</Text>
+    </Pressable>
+  );
+}
+
+/**
  * A form-level message (wrong password, offline, too many tries…). It scrolls itself into
  * view whenever it appears or its text changes, and screen readers announce it (Step 49).
  * `revealKey` is what counts as a new message (defaults to string children).
@@ -522,6 +551,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   buttonText: text('button'),
 
+  linkButton: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
   link: {
     ...text('bodyStrong'),
     color: colors.navy,

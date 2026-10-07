@@ -35,7 +35,7 @@ function PasswordField(props: {
         {props.label}
       </label>
       <div
-        className={`mt-2 flex h-14 items-center rounded-md border bg-white pr-2 focus-within:border-2 focus-within:border-border-strong ${
+        className={`mt-2 flex h-14 items-center rounded-md border bg-white pr-2 focus-within:border-2 focus-within:border-border-strong focus-within:ring-2 focus-within:ring-navy/20 ${
           props.error ? 'border-danger' : 'border-border'
         }`}
       >

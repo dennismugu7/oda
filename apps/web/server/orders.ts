@@ -281,9 +281,16 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
   } catch (error) {
     if (error instanceof PricingError) throw new ValidationError(error.message);
     // Two requests with the same idempotency key at once: the loser returns the winner's order.
-    if (input.idempotencyKey && isUniqueViolation(error, 'orders_idempotency_key_unique')) {
+    // Keys are unique per shop (decision #84); until M11 drops the global constraint, a key
+    // another shop already used is a 409 (a fresh key from the client works), never a 500.
+    if (
+      input.idempotencyKey &&
+      (isUniqueViolation(error, 'orders_shop_idempotency_key') ||
+        isUniqueViolation(error, 'orders_idempotency_key_unique'))
+    ) {
       const existing = await findByIdempotencyKey(db, input.shopId, input.idempotencyKey);
       if (existing) return { order: existing, sideEffects: [], replayed: true };
+      throw new ConflictError('Please try again.', 'idempotency_key_taken');
     }
     throw error;
   }

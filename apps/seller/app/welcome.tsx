@@ -124,7 +124,12 @@ export default function Welcome() {
       </View>
 
       <View style={styles.illo}>
-        <View style={styles.board}>
+        {/* Decoration: screen readers skip the sample shop and order (the headline stays). */}
+        <View
+          style={styles.board}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           <Image
             source={require('../assets/welcome/dot.png')}
             resizeMode="repeat"

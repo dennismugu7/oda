@@ -289,6 +289,18 @@ describe('insertOrder', () => {
     expect(await db.select().from(t.orders)).toHaveLength(1);
   });
 
+  it('a key another shop used is a 409, never that shop’s order or a 500 (decision #84)', async () => {
+    const a = await world();
+    const b = await world();
+    const { order } = await insertOrder(db, newOrder(a, { idempotencyKey: 'shared-key-123456' }));
+    await expect(
+      insertOrder(db, newOrder(b, { idempotencyKey: 'shared-key-123456' })),
+    ).rejects.toMatchObject({ status: 409, code: 'idempotency_key_taken' });
+    const fresh = await insertOrder(db, newOrder(b, { idempotencyKey: 'fresh-key-1234567' }));
+    expect(fresh.order.shopId).toBe(b.shopId);
+    expect(fresh.order.id).not.toBe(order.id);
+  });
+
   it('order numbers are sequential per shop under concurrency', async () => {
     const a = await world();
     const b = await world();

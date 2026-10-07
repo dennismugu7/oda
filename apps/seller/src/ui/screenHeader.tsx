@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinkButton } from '@/ui/auth';
 import { colors, radii, spacing, text } from '@/theme';
 
 export function ScreenHeader({
@@ -19,8 +20,8 @@ export function ScreenHeader({
 }: {
   title: string;
   subtitle?: string | null;
-  /** A tappable link after the subtitle, e.g. "View in shop". */
-  link?: { label: string; onPress: () => void } | null;
+  /** A tappable link after the subtitle, e.g. "View in shop" (role link) or "Mark all read". */
+  link?: { label: string; onPress: () => void; role?: 'button' | 'link' } | null;
   onBack: () => void;
   onMenu?: () => void;
   menuIcon?: 'more-vertical' | 'search' | 'x';
@@ -46,15 +47,23 @@ export function ScreenHeader({
             {title}
           </Text>
           {subtitle || link ? (
-            <Text style={styles.headerSub}>
-              {subtitle}
-              {subtitle && link ? ' · ' : null}
-              {link ? (
-                <Text accessibilityRole="link" onPress={link.onPress} style={styles.headerLink}>
-                  {link.label}
+            <View style={styles.subRow}>
+              {subtitle ? (
+                <Text style={styles.headerSub}>
+                  {subtitle}
+                  {link ? ' · ' : null}
                 </Text>
               ) : null}
-            </Text>
+              {link ? (
+                <LinkButton
+                  role={link.role}
+                  onPress={link.onPress}
+                  textStyle={[styles.headerSub, styles.headerLink]}
+                >
+                  {link.label}
+                </LinkButton>
+              ) : null}
+            </View>
           ) : null}
         </View>
         {onMenu ? (
@@ -87,6 +96,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerText: { flex: 1 },
   headerTitle: { ...text('headline'), color: colors.textOnNavy },
+  subRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   headerSub: { ...text('body'), color: colors.toggleOff },
   headerLink: { color: colors.textOnNavy, textDecorationLine: 'underline' },
   headerSpacer: { width: 26 },

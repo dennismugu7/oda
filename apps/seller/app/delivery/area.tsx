@@ -42,6 +42,7 @@ export default function AreaScreen() {
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // Opened straight from a link (nothing cached): load the areas first.
   useEffect(() => {
@@ -57,7 +58,13 @@ export default function AreaScreen() {
       const found = id ? data.areas.find((a) => a.id === id) : null;
       if (found) setDraft(draftFromArea(found));
     });
-  }, [delivery, id]);
+  }, [delivery, id, attempt]);
+
+  function retry() {
+    setError(null);
+    setLoadFailed(false);
+    setAttempt((n) => n + 1);
+  }
 
   const set = (patch: Partial<AreaDraft>) => setDraft((d) => ({ ...d, ...patch }));
   const back = () => (router.canGoBack() ? router.back() : router.replace('/delivery'));
@@ -120,7 +127,12 @@ export default function AreaScreen() {
           {loadFailed || delivery ? (
             <>
               <FormMessage>{error ?? 'This delivery area was deleted.'}</FormMessage>
-              <Button title="Back to delivery" onPress={back} />
+              {loadFailed ? <Button title="Try again" onPress={retry} /> : null}
+              <Button
+                title="Back to delivery"
+                variant={loadFailed ? 'secondary' : 'primary'}
+                onPress={back}
+              />
             </>
           ) : (
             <ActivityIndicator style={styles.loading} color={colors.primary} />

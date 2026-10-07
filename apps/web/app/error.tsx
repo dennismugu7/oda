@@ -13,6 +13,7 @@ export default function ErrorPage({
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
       <p
+        role="img"
         aria-label="oda"
         className="text-[44px] leading-none font-bold tracking-[-2px] text-primary"
       >
@@ -29,7 +30,10 @@ export default function ErrorPage({
       >
         Try again
       </button>
-      <Link href="/" className="mt-4 text-body-strong text-navy underline">
+      <Link
+        href="/"
+        className="mt-2 inline-flex min-h-11 items-center text-body-strong text-navy underline"
+      >
         Go to oda
       </Link>
     </main>

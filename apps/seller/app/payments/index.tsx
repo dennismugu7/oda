@@ -11,7 +11,7 @@ import { paymentsCache, settingsApi, type PaymentAccount, type Payments } from '
 import { ACCOUNT_TITLES, buyersSeeLine, displayNumber, NUMBER_LABELS } from '@/settings/form';
 import { SettingsLayout } from '@/settings/SettingsLayout';
 import { useLoaded } from '@/settings/useLoaded';
-import { FormMessage, InfoNote } from '@/ui/auth';
+import { FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
 import { colors, radii, spacing, text } from '@/theme';
@@ -105,9 +105,9 @@ export default function PaymentsScreen() {
                 {data.accounts.length > 1 ? 'YOUR M-PESA ACCOUNTS' : 'YOUR M-PESA ACCOUNT'}
               </Text>
               {active && data.accounts.length === 1 ? (
-                <Text accessibilityRole="link" style={styles.link} onPress={() => edit(active)}>
+                <LinkButton role="link" textStyle={styles.link} onPress={() => edit(active)}>
                   Edit
-                </Text>
+                </LinkButton>
               ) : null}
             </View>
             {data.accounts.length === 0 ? (

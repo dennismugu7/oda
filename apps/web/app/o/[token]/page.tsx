@@ -233,11 +233,11 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   } else if (order.status === 'confirmed') {
     hero = (
       <div className="mt-5 rounded-xl bg-green-tint p-4">
-        <p className="text-title text-navy">
+        <h2 className="text-title text-navy">
           {order.paymentMethod === 'pay_on_delivery'
             ? `Accepted by ${shopName}`
             : 'Payment confirmed'}
-        </p>
+        </h2>
         <p className="mt-1 text-body text-text-secondary">
           {shopName} is getting your order ready.
         </p>
@@ -246,7 +246,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   } else if (order.status === 'sent') {
     hero = (
       <div className="mt-5 rounded-xl bg-green-tint p-4">
-        <p className="text-title text-navy">{pickup ? 'Ready for pickup' : 'Sent out'}</p>
+        <h2 className="text-title text-navy">{pickup ? 'Ready for pickup' : 'Sent out'}</h2>
         <p className="mt-1 text-body text-text-secondary">
           {pickup
             ? [order.shop?.pickupLocation, order.shop?.pickupHours].filter(Boolean).join(' · ') ||
@@ -273,7 +273,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             <Check />
           </span>
           <div>
-            <p className="text-headline text-navy">Delivered</p>
+            <h2 className="text-headline text-navy">Delivered</h2>
             {order.deliveredAt ? (
               <p className="text-body text-text-secondary">{orderDayTime(order.deliveredAt)}</p>
             ) : null}
@@ -309,7 +309,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
                   key={n}
                   href={`/o/${order.token}/review?stars=${n}`}
                   aria-label={`Rate ${n} out of 5`}
-                  className="flex size-11 items-center justify-center text-border hover:text-star"
+                  className="flex size-11 items-center justify-center text-text-muted hover:text-star"
                 >
                   <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
                     <path

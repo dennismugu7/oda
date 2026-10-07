@@ -1,18 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Account = { token: string; shopName: string | null; email: string };
 
 type State =
   | { kind: 'checking' }
-  | ({ kind: 'valid' } & Account)
+  // `error`: the last attempt to delete didn't reach oda (the button tries again).
+  | ({ kind: 'valid'; error?: string } & Account)
   | ({ kind: 'deleting' } & Account)
   | { kind: 'done' }
   | { kind: 'used' }
   | { kind: 'invalid' }
-  | { kind: 'error'; message: string };
+  // `account`: the check passed and deleting failed, so "Try again" deletes again.
+  | { kind: 'error'; message: string; account?: Account };
+
+const NO_CONNECTION = 'No connection. Check your internet and try again.';
 
 type Answer = {
   status?: string;
@@ -49,17 +53,20 @@ async function check(token: string): Promise<State> {
   } catch {
     return {
       kind: 'error',
-      message: "We couldn't check your link. Check your internet, then open it again.",
+      message: 'We couldn’t check your link. Check your internet and try again.',
     };
   }
 }
 
 export function DeleteConfirmFlow() {
   const [state, setState] = useState<State>({ kind: 'checking' });
+  // The token is gone from the address bar: keep it in memory for "Try again".
+  const token = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    check(takeTokenFromHash()).then((next) => {
+    token.current ??= takeTokenFromHash();
+    check(token.current).then((next) => {
       if (!cancelled) setState(next);
     });
     return () => {
@@ -67,18 +74,26 @@ export function DeleteConfirmFlow() {
     };
   }, []);
 
-  async function confirm() {
-    if (state.kind !== 'valid') return;
-    const account: Account = { token: state.token, shopName: state.shopName, email: state.email };
+  async function recheck() {
+    setState({ kind: 'checking' });
+    setState(await check(token.current ?? ''));
+  }
+
+  async function confirm(account: Account) {
     setState({ kind: 'deleting', ...account });
     try {
       const { status, body } = await post('/api/delete-account/confirm', account.token);
       if (status === 200) return setState({ kind: 'done' });
       if (body?.error?.code === 'link_used') return setState({ kind: 'used' });
       if (body?.error?.code === 'link_invalid') return setState({ kind: 'invalid' });
-      setState({ kind: 'error', message: body?.error?.message ?? 'Something went wrong.' });
+      setState({
+        kind: 'error',
+        message: body?.error?.message ?? 'Something went wrong. Please try again.',
+        account,
+      });
     } catch {
-      setState({ kind: 'valid', ...account });
+      // Nothing reached oda (or no answer came back): the same link can try again.
+      setState({ kind: 'valid', ...account, error: NO_CONNECTION });
     }
   }
 
@@ -109,13 +124,28 @@ export function DeleteConfirmFlow() {
             <li>Products, orders, customers, reviews and photos are removed after 30 days.</li>
             <li>This can&apos;t be undone.</li>
           </ul>
+          {state.kind === 'valid' && state.error ? (
+            <p
+              role="alert"
+              className="bg-warning-tint text-body text-warning-text-strong mt-6 rounded-lg p-4"
+            >
+              {state.error}
+            </p>
+          ) : null}
           <button
             type="button"
-            onClick={confirm}
+            onClick={() =>
+              state.kind === 'valid' &&
+              confirm({ token: state.token, shopName: state.shopName, email: state.email })
+            }
             disabled={state.kind === 'deleting'}
             className="rounded-pill bg-danger text-button mt-8 flex h-14 items-center justify-center text-white disabled:opacity-60"
           >
-            {state.kind === 'deleting' ? 'Deleting…' : 'Delete my account'}
+            {state.kind === 'deleting'
+              ? 'Deleting…'
+              : state.kind === 'valid' && state.error
+                ? 'Try again'
+                : 'Delete my account'}
           </button>
           <p className="text-small text-text-secondary mt-4 text-center">
             Changed your mind? Just close this page: nothing changes.
@@ -144,12 +174,30 @@ export function DeleteConfirmFlow() {
           link
         />
       );
-    case 'error':
-      return <Message title="Something went wrong" body={state.message} />;
+    case 'error': {
+      const { account } = state;
+      return (
+        <Message
+          title="Something went wrong"
+          body={state.message}
+          onRetry={account ? () => confirm(account) : recheck}
+        />
+      );
+    }
   }
 }
 
-function Message({ title, body, link }: { title: string; body: string; link?: boolean }) {
+function Message({
+  title,
+  body,
+  link,
+  onRetry,
+}: {
+  title: string;
+  body: string;
+  link?: boolean;
+  onRetry?: () => void;
+}) {
   return (
     <div className="flex flex-col items-center text-center" role="status">
       <h1 className="text-headline text-navy">{title}</h1>
@@ -161,6 +209,15 @@ function Message({ title, body, link }: { title: string; body: string; link?: bo
         >
           Ask for a new link
         </Link>
+      ) : null}
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="rounded-pill bg-primary text-button text-text-on-primary mt-8 flex h-14 w-full items-center justify-center"
+        >
+          Try again
+        </button>
       ) : null}
     </div>
   );

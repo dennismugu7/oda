@@ -28,7 +28,7 @@ import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderList, type OrderRow as Row } from '@/orders/api';
 import { OrderRow } from '@/orders/OrderRow';
 import { Button, FormMessage } from '@/ui/auth';
-import { OfflineBar } from '@/ui/offline';
+import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { colors, radii, spacing, text } from '@/theme';
 
 const TABS: { key: OrderTab; label: string }[] = [
@@ -59,6 +59,8 @@ export default function OrdersTab() {
   const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  /** The tab whose next page didn't load (its footer offers a retry). */
+  const [moreFailed, setMoreFailed] = useState<OrderTab | null>(null);
   const [expanded, setExpanded] = useState<Set<SellerTodoGroup>>(new Set());
   const [searching, setSearching] = useState(false);
   const [q, setQ] = useState('');
@@ -111,18 +113,23 @@ export default function OrdersTab() {
     setRefreshing(false);
   }
 
-  async function loadMore() {
+  /** `retry`: the seller tapped the footer (scrolling doesn't retry a failed page). */
+  async function loadMore(retry = false) {
     const current = lists[tab];
-    if (!current?.next || loadingMore) return;
+    if (!current?.next || loadingMore || (moreFailed === tab && !retry)) return;
+    const which = tab;
     setLoadingMore(true);
-    const { data } = await ordersApi.list(tab, { cursor: current.next });
+    setMoreFailed(null);
+    const { data } = await ordersApi.list(which, { cursor: current.next });
     setLoadingMore(false);
-    if (data) {
-      setLists((l) => ({
-        ...l,
-        [tab]: { ...data, orders: [...(l[tab]?.orders ?? []), ...data.orders] },
-      }));
+    if (!data) {
+      setMoreFailed(which);
+      return;
     }
+    setLists((l) => ({
+      ...l,
+      [which]: { ...data, orders: [...(l[which]?.orders ?? []), ...data.orders] },
+    }));
   }
 
   function closeSearch() {
@@ -145,7 +152,8 @@ export default function OrdersTab() {
             value={q}
             onChangeText={setQ}
             placeholder="Name, phone or order number"
-            placeholderTextColor={colors.textMuted}
+            // On the navy header: the light grey keeps 4.5:1 (M10 contrast test).
+            placeholderTextColor={colors.toggleOff}
             accessibilityLabel="Search orders"
             returnKeyType="search"
             style={styles.searchInput}
@@ -211,12 +219,14 @@ export default function OrdersTab() {
     </View>
   );
 
-  const banner =
+  // `saved`: false while nothing is shown under it (no list loaded yet).
+  const bannerFor = (saved: boolean) =>
     offline || error ? (
       <View style={styles.banner}>
-        {offline ? <OfflineBar /> : <FormMessage>{error}</FormMessage>}
+        {offline ? <OfflineBar saved={saved} /> : <FormMessage>{error}</FormMessage>}
       </View>
     ) : null;
+  const banner = bannerFor(true);
 
   if (searching) {
     const found = q.trim() ? results : null;
@@ -251,7 +261,7 @@ export default function OrdersTab() {
       <View style={styles.screen}>
         {header}
         <View style={styles.body}>
-          {banner}
+          {bannerFor(false)}
           {error ? (
             <Button title="Try again" onPress={() => load(tab)} />
           ) : (
@@ -325,7 +335,7 @@ export default function OrdersTab() {
         contentContainerStyle={styles.listBody}
         refreshControl={refreshControl}
         ListHeaderComponent={banner}
-        onEndReached={loadMore}
+        onEndReached={() => loadMore()}
         onEndReachedThreshold={0.5}
         renderItem={({ item, index }) => (
           <RowCard first={index === 0} last={index === list.orders.length - 1}>
@@ -334,7 +344,11 @@ export default function OrdersTab() {
         )}
         ListEmptyComponent={<Empty {...EMPTY[tab]} />}
         ListFooterComponent={
-          loadingMore ? <ActivityIndicator style={styles.loading} color={colors.primary} /> : null
+          loadingMore ? (
+            <ActivityIndicator style={styles.loading} color={colors.primary} />
+          ) : moreFailed === tab ? (
+            <LoadMoreFailed onRetry={() => loadMore(true)} />
+          ) : null
         }
       />
     </View>

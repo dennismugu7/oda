@@ -42,6 +42,7 @@ export const orders = pgTable(
     number: integer('number').notNull(),
     /** 12 random URL-safe characters: the only way a buyer reaches an order. */
     publicToken: text('public_token').notNull().unique(),
+    /** Global unique: dropped in M11 (contract, decision #84); per shop below. */
     idempotencyKey: text('idempotency_key').unique(),
     status: orderStatus('status').notNull(),
     paymentMethod: paymentMethod('payment_method').notNull(),
@@ -82,9 +83,18 @@ export const orders = pgTable(
   },
   (t) => [
     unique('orders_shop_number').on(t.shopId, t.number),
+    // Retries are matched per shop (M10 CP3, decision #84). The column's global unique
+    // constraint goes in M11 (contract); until then both hold.
+    unique('orders_shop_idempotency_key').on(t.shopId, t.idempotencyKey),
     // Lets claims, reviews and notifications reference (order_id, shop_id).
     uniqueIndex('orders_id_shop_id').on(t.id, t.shopId),
     index('orders_shop_status_idx').on(t.shopId, t.status, t.placedAt.desc()),
+    // The Orders tab's pages (decision #84): the same expression as msUtc() in the web repos.
+    index('orders_shop_placed_ms_idx').on(
+      t.shopId,
+      sql`date_trunc('milliseconds', ${t.placedAt} at time zone 'UTC') desc`,
+      sql`${t.id} desc`,
+    ),
     index('orders_shop_confirmed_idx').on(t.shopId, t.confirmedAt),
     index('orders_shop_buyer_phone_idx').on(t.shopId, t.buyerPhone),
     index('orders_expiry_idx')

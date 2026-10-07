@@ -126,7 +126,7 @@ export default async function Search({ params, searchParams }: Props) {
             <Link
               href={searchUrl(shop.slug, query, { q: undefined })}
               aria-label="Clear the search"
-              className="-mr-2 flex size-9 items-center justify-center rounded-pill bg-surface-muted text-navy"
+              className="-mr-2 flex size-11 items-center justify-center rounded-pill bg-surface-muted text-navy"
             >
               ×
             </Link>
@@ -212,7 +212,7 @@ export default async function Search({ params, searchParams }: Props) {
               <Link
                 href={c.url}
                 aria-label={`Remove filter ${c.label}`}
-                className="flex h-10 items-center gap-1.5 rounded-pill border border-primary bg-primary-tint px-4 text-body-strong text-primary"
+                className="flex h-11 items-center gap-1.5 rounded-pill border border-primary bg-primary-tint px-4 text-body-strong text-primary"
               >
                 {c.label} <span aria-hidden="true">×</span>
               </Link>

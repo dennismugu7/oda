@@ -35,7 +35,13 @@ export function BrandIcon({ brand, size = 26 }: { brand: Brand; size?: number })
 /** WhatsApp's Status ring, drawn by oda in WhatsApp green (not a logo). */
 export function StatusRing({ size = 26 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 26 26" accessibilityElementsHidden>
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 26 26"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <Circle
         cx={13}
         cy={13}

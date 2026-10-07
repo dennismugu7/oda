@@ -201,7 +201,9 @@ function Sharer({
             <Pressable
               key={k}
               accessibilityRole="radio"
-              accessibilityState={{ selected: k === kind }}
+              accessibilityState={{ checked: k === kind }}
+              accessibilityLabel={k === 'new' ? 'New in image' : 'Collection image'}
+              accessibilityHint={k === 'new' ? 'Your latest product' : 'All your products'}
               onPress={() => pickKind(k)}
               style={styles.imageChoice}
             >
@@ -262,6 +264,7 @@ function Sharer({
                   setLanguage(l);
                   setIndex(0);
                 }}
+                hitSlop={LANG_SLOP}
                 style={[styles.langOption, l === language && styles.langOn]}
               >
                 <Text style={[styles.langText, l === language && styles.langTextOn]}>
@@ -332,7 +335,12 @@ function Sharer({
       </View>
 
       {/* The full-size image, drawn off screen and captured when sharing. */}
-      <View style={styles.offscreen} pointerEvents="none" accessibilityElementsHidden>
+      <View
+        style={styles.offscreen}
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         {kind === 'new' && data.latest?.photoUrl ? (
           <NewInPoster
             ref={poster}
@@ -347,6 +355,9 @@ function Sharer({
     </>
   );
 }
+
+/** 36 dp pills reach 44 dp into the toggle's padding and border. */
+const LANG_SLOP = { top: 4, bottom: 4 };
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

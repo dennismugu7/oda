@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -48,6 +49,7 @@ export default function InsightsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   // The tab picked now: an answer for another tab is kept, but not shown.
   const picked = useRef<InsightPeriod>('week');
 
@@ -78,6 +80,12 @@ export default function InsightsScreen() {
     setData(saved.get(p) ?? null);
   }
 
+  async function refresh() {
+    setRefreshing(true);
+    await load(period);
+    setRefreshing(false);
+  }
+
   const shown = data?.period === period ? data : null;
   return (
     <View style={styles.screen}>
@@ -104,14 +112,21 @@ export default function InsightsScreen() {
       </ScreenHeader>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} colors={[colors.primary]} />
+        }
       >
-        {offline ? <OfflineBar /> : error && !shown ? <FormMessage>{error}</FormMessage> : null}
+        {offline ? (
+          <OfflineBar saved={!!shown} />
+        ) : error ? (
+          <FormMessage>{error}</FormMessage>
+        ) : null}
         {!shown ? (
-          error && !offline ? (
+          error && !loading ? (
             <Button title="Try again" onPress={() => load(period)} />
-          ) : loading || !error ? (
+          ) : (
             <ActivityIndicator style={styles.loading} color={colors.primary} />
-          ) : null
+          )
         ) : (
           <InsightsBody data={shown} />
         )}

@@ -52,6 +52,29 @@ function newKey(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** A request that hasn't answered in this long counts as no connection. */
+const TIMEOUT_MS = 20_000;
+
+/** fetch() that gives up after TIMEOUT_MS (and when `signal` aborts). */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const stop = () => controller.abort();
+  signal?.addEventListener('abort', stop);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', stop);
+  }
+}
+
+const QUOTE_FAILED = 'We couldn’t load the prices. Check your connection and try again.';
+
 const sameLine = (a: Pick<CartLine, 'productId' | 'size' | 'colour'>, b: typeof a) =>
   a.productId === b.productId && a.size === b.size && a.colour === b.colour;
 
@@ -64,6 +87,21 @@ const FIELD_OF: Record<string, keyof Errors> = {
   addressText: 'address',
   payment: 'payment',
 };
+
+/** The fields in page order, for focusing the first one with a problem. */
+const FIELDS: (keyof Errors)[] = ['name', 'phone', 'email', 'choice', 'address', 'payment'];
+
+/** Focuses a field; for a choice, the first radio (or the chosen one). */
+function focusField(k: keyof Errors) {
+  const el =
+    document.getElementById(`checkout-${k}`) ??
+    (k === 'choice' || k === 'payment'
+      ? document.querySelector<HTMLElement>(
+          `input[name="${k === 'choice' ? 'delivery' : 'payment'}"]:checked`,
+        )
+      : null);
+  el?.focus();
+}
 
 export function CheckoutForm({
   shopId,
@@ -83,7 +121,7 @@ export function CheckoutForm({
   payOnDelivery: boolean;
 }) {
   const router = useRouter();
-  const { lines, replace } = useCart(shopId);
+  const { lines, replace, hydrated } = useCart(shopId);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState(true);
@@ -102,6 +140,8 @@ export function CheckoutForm({
   const [formError, setFormError] = useState<{ message: string; toCart?: boolean } | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<{ message: string; toCart: boolean } | null>(null);
+  // Bumped by "Try again" (and by coming back online) to ask for the prices again.
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [placed, setPlaced] = useState(false);
   const key = useRef<string | null>(null);
@@ -124,18 +164,23 @@ export function CheckoutForm({
   useEffect(() => {
     if (placed || lines.length === 0) return;
     let cancelled = false;
-    fetch(`/api/shops/${slug}/quote`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        lines: lines.map((l) => ({
-          productId: l.productId,
-          qty: l.qty,
-          size: l.size,
-          colour: l.colour,
-        })),
-      }),
-    })
+    const controller = new AbortController();
+    fetchWithTimeout(
+      `/api/shops/${slug}/quote`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          lines: lines.map((l) => ({
+            productId: l.productId,
+            qty: l.qty,
+            size: l.size,
+            colour: l.colour,
+          })),
+        }),
+      },
+      controller.signal,
+    )
       .then(async (res) => {
         const body = await res.json().catch(() => null);
         if (cancelled) return;
@@ -152,24 +197,40 @@ export function CheckoutForm({
               ? 'Something in your cart is no longer available.'
               : toCart
                 ? (body?.error?.message ?? 'Something in your cart changed.')
-                : 'We couldn’t load the prices. Check your connection and try again.',
+                : QUOTE_FAILED,
           toCart,
         });
       })
       .catch(() => {
         if (!cancelled) {
-          setQuoteError({
-            message: 'We couldn’t load the prices. Check your connection and try again.',
-            toCart: false,
-          });
+          setQuoteError({ message: QUOTE_FAILED, toCart: false });
         }
       });
     return () => {
       cancelled = true;
+      controller.abort();
     };
     // linesKey stands for `lines`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linesKey, slug, placed]);
+  }, [linesKey, slug, placed, quoteAttempt]);
+
+  /** Asks for the prices again after a failed quote. */
+  function retryQuote() {
+    setQuoteError(null);
+    setQuoteAttempt((n) => n + 1);
+  }
+
+  // Back online after a failed quote: try again without waiting for a tap.
+  const quoteFailedOffline = !!quoteError && !quoteError.toCart;
+  useEffect(() => {
+    if (!quoteFailedOffline) return;
+    const onOnline = () => {
+      setQuoteError(null);
+      setQuoteAttempt((n) => n + 1);
+    };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [quoteFailedOffline]);
 
   // Lines whose price changed since the buyer added them (spec §6.3: block until resolved).
   const changed = useMemo(() => {
@@ -180,9 +241,10 @@ export function CheckoutForm({
     });
   }, [quote, lines]);
 
-  const option = quote?.options.find((o) =>
-    choice === 'pickup' ? o.kind === 'pickup' : o.areaId === choice,
-  );
+  // Nothing chosen means no option (a pickup option's areaId is null too).
+  const option = choice
+    ? quote?.options.find((o) => (choice === 'pickup' ? o.kind === 'pickup' : o.areaId === choice))
+    : undefined;
   const subtotal = quote?.subtotal ?? lines.reduce((n, l) => n + l.qty * l.price, 0);
   const count = cartCount(lines);
 
@@ -214,21 +276,25 @@ export function CheckoutForm({
 
   async function placeOrder(event: React.FormEvent) {
     event.preventDefault();
-    if (submitting || !quote || !option || changed.length) return;
+    if (submitting || inFlight.current) return;
+    // Check the fields first, so a tap with nothing chosen says what's missing.
     const found = validate();
+    // A chosen area the latest prices don't cover (the seller just removed it): choose again.
+    if (!found.choice && quote && !option) found.choice = 'Choose delivery or pickup.';
     setErrors(found);
     setFormError(null);
-    if (Object.keys(found).length) {
-      document.getElementById(`checkout-${Object.keys(found)[0]}`)?.focus();
+    const first = FIELDS.find((k) => found[k]);
+    if (first) {
+      focusField(first);
       return;
     }
-    if (inFlight.current) return;
+    if (!quote || !option || changed.length) return;
     inFlight.current = true;
     key.current ??= newKey();
     setSubmitting(true);
     let res: Response;
     try {
-      res = await fetch(`/api/shops/${slug}/orders`, {
+      res = await fetchWithTimeout(`/api/shops/${slug}/orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -256,7 +322,8 @@ export function CheckoutForm({
         }),
       });
     } catch {
-      // Keep the key: if the order did go through, trying again returns it.
+      // No answer (offline, or no reply in time). Keep the key: if the order did go through,
+      // trying again returns it.
       inFlight.current = false;
       setSubmitting(false);
       setFormError({ message: 'No connection. Check your internet and tap Place order again.' });
@@ -288,6 +355,8 @@ export function CheckoutForm({
         if (k) mapped[k] ??= message;
       }
       setErrors(mapped);
+      const first = FIELDS.find((k) => mapped[k]);
+      if (first) focusField(first);
     }
     setFormError({
       message: error?.message ?? 'Something went wrong. Please try again.',
@@ -302,6 +371,9 @@ export function CheckoutForm({
       </p>
     );
   }
+
+  // The cart lives on this device: until it's read, show a placeholder, not "empty".
+  if (!hydrated) return <CheckoutSkeleton />;
 
   if (lines.length === 0) {
     return (
@@ -324,7 +396,11 @@ export function CheckoutForm({
     }`;
   const fieldError = (id: keyof Errors) =>
     errors[id] ? (
-      <p id={`checkout-${id}-error`} className="mt-1 text-small font-semibold text-danger">
+      <p
+        id={`checkout-${id}-error`}
+        role="alert"
+        className="mt-1 text-small font-semibold text-danger"
+      >
         {errors[id]}
       </p>
     ) : null;
@@ -388,10 +464,21 @@ export function CheckoutForm({
         >
           <p>{quoteError.message}</p>
           {quoteError.toCart ? (
-            <Link href={`/${slug}/cart`} className="mt-2 inline-block font-semibold underline">
+            <Link
+              href={`/${slug}/cart`}
+              className="mt-1 inline-flex min-h-11 items-center font-semibold underline"
+            >
               Review your cart
             </Link>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onClick={retryQuote}
+              className="mt-1 inline-flex min-h-11 items-center font-semibold underline"
+            >
+              Try again
+            </button>
+          )}
         </div>
       ) : null}
 
@@ -529,9 +616,12 @@ export function CheckoutForm({
         </p>
       </section>
 
-      <fieldset className="mt-4 rounded-xl border border-border p-4" {...described('choice')}>
-        <legend className="sr-only">Delivery</legend>
-        <h2 aria-hidden="true" className="flex items-center gap-3 text-title text-navy">
+      <fieldset
+        aria-labelledby="delivery-title"
+        className="mt-4 rounded-xl border border-border p-4"
+        {...described('choice')}
+      >
+        <h2 id="delivery-title" className="flex items-center gap-3 text-title text-navy">
           <span className="flex size-8 items-center justify-center rounded-pill bg-navy text-body-strong text-text-on-navy">
             2
           </span>
@@ -599,9 +689,12 @@ export function CheckoutForm({
         ) : null}
       </fieldset>
 
-      <fieldset className="mt-4 rounded-xl border border-border p-4" {...described('payment')}>
-        <legend className="sr-only">Payment</legend>
-        <h2 aria-hidden="true" className="flex items-center gap-3 text-title text-navy">
+      <fieldset
+        aria-labelledby="payment-title"
+        className="mt-4 rounded-xl border border-border p-4"
+        {...described('payment')}
+      >
+        <h2 id="payment-title" className="flex items-center gap-3 text-title text-navy">
           <span className="flex size-8 items-center justify-center rounded-pill bg-navy text-body-strong text-text-on-navy">
             3
           </span>
@@ -678,7 +771,10 @@ export function CheckoutForm({
         >
           <p>{formError.message}</p>
           {formError.toCart ? (
-            <Link href={`/${slug}/cart`} className="mt-2 inline-block font-semibold underline">
+            <Link
+              href={`/${slug}/cart`}
+              className="mt-1 inline-flex min-h-11 items-center font-semibold underline"
+            >
               Review your cart
             </Link>
           ) : null}
@@ -747,5 +843,20 @@ function Choice({
       </span>
       {right ? <span className="text-body-strong text-navy">{right}</span> : null}
     </label>
+  );
+}
+
+/** Placeholder while the cart is read from this device (the server can't know it). */
+function CheckoutSkeleton() {
+  return (
+    <div className="mt-5 animate-pulse" aria-busy="true">
+      <p role="status" className="sr-only">
+        Loading…
+      </p>
+      <div className="h-14 rounded-xl bg-surface-muted" />
+      <div className="mt-4 h-72 rounded-xl bg-surface-muted" />
+      <div className="mt-4 h-44 rounded-xl bg-surface-muted" />
+      <div className="mt-4 h-32 rounded-xl bg-surface-muted" />
+    </div>
   );
 }

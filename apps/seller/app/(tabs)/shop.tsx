@@ -35,6 +35,7 @@ import { openBuyerView, shopPageUrl } from '@/catalogue/preview';
 import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { Button, FormMessage } from '@/ui/auth';
+import { OfflineBar } from '@/ui/offline';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, radii, spacing, text } from '@/theme';
@@ -51,6 +52,7 @@ export default function ShopTab() {
   const [products, setProducts] = useState<ProductSummary[] | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<ShopFilter>({ kind: 'all' });
   const [searching, setSearching] = useState(false);
@@ -63,8 +65,11 @@ export default function ShopTab() {
       setProducts(list.data.products);
       setCategories(cats.data);
       setError(null);
+      setOffline(false);
     } else {
-      setError(errorMessage(list.error ?? cats.error));
+      const failed = list.error ?? cats.error;
+      setOffline(failed?.code === 'OFFLINE');
+      setError(errorMessage(failed));
     }
   }, []);
 
@@ -256,7 +261,7 @@ export default function ShopTab() {
             ) : null}
             {error ? (
               <View style={styles.pad}>
-                <FormMessage>{error}</FormMessage>
+                {offline ? <OfflineBar saved={!!products} /> : <FormMessage>{error}</FormMessage>}
                 {!products ? <Button title="Try again" onPress={refresh} /> : null}
               </View>
             ) : null}

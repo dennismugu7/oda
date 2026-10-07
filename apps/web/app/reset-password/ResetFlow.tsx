@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { APP_SIGN_IN_URL } from '@/components/AuthShell';
 import { ResetForm } from './ResetForm';
 
 type State =
-  { kind: 'checking' } | { kind: 'valid'; token: string } | { kind: 'invalid' } | { kind: 'error' };
+  | { kind: 'checking' }
+  | { kind: 'valid'; token: string }
+  | { kind: 'invalid' }
+  | { kind: 'error'; offline: boolean };
 
 /** The token from `#token=…`, then removed from the address bar and history. */
 function takeTokenFromHash(): string {
@@ -27,17 +30,36 @@ async function checkToken(token: string): Promise<'valid' | 'invalid'> {
   return ((await res.json()) as { status: 'valid' | 'invalid' }).status;
 }
 
+/** Checks the token; `offline` when the request got no answer at all. */
+async function stateFor(token: string): Promise<State> {
+  try {
+    const status = await checkToken(token);
+    return status === 'valid' ? { kind: 'valid', token } : { kind: 'invalid' };
+  } catch (e) {
+    return { kind: 'error', offline: e instanceof TypeError };
+  }
+}
+
 export function ResetFlow() {
   const [state, setState] = useState<State>({ kind: 'checking' });
+  // The token is gone from the address bar: keep it in memory for "Try again".
+  const token = useRef<string | null>(null);
 
   useEffect(() => {
-    const token = takeTokenFromHash();
-    checkToken(token)
-      .then((status) =>
-        setState(status === 'valid' ? { kind: 'valid', token } : { kind: 'invalid' }),
-      )
-      .catch(() => setState({ kind: 'error' }));
+    let cancelled = false;
+    token.current ??= takeTokenFromHash();
+    stateFor(token.current).then((next) => {
+      if (!cancelled) setState(next);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  async function recheck() {
+    setState({ kind: 'checking' });
+    setState(await stateFor(token.current ?? ''));
+  }
 
   switch (state.kind) {
     case 'checking':
@@ -52,7 +74,12 @@ export function ResetFlow() {
       return (
         <Message
           title="Something went wrong"
-          body="We couldn't check your link. Check your internet, then open the link from the email again."
+          body={
+            state.offline
+              ? 'No connection. Check your internet and try again.'
+              : 'We couldn’t check your link. Please try again.'
+          }
+          onRetry={recheck}
         />
       );
     case 'invalid':
@@ -71,17 +98,43 @@ export function ResetFlow() {
   }
 }
 
-function Message({ title, body }: { title: string; body: React.ReactNode }) {
+function Message({
+  title,
+  body,
+  onRetry,
+}: {
+  title: string;
+  body: React.ReactNode;
+  onRetry?: () => void;
+}) {
   return (
     <div className="flex flex-col items-center text-center">
       <h1 className="text-headline text-navy">{title}</h1>
       <p className="text-body text-text-secondary mt-3">{body}</p>
-      <a
-        href={APP_SIGN_IN_URL}
-        className="rounded-pill bg-primary text-button text-text-on-primary mt-8 flex h-14 w-full items-center justify-center"
-      >
-        Open oda app
-      </a>
+      {onRetry ? (
+        <>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-pill bg-primary text-button text-text-on-primary mt-8 flex h-14 w-full items-center justify-center"
+          >
+            Try again
+          </button>
+          <a
+            href={APP_SIGN_IN_URL}
+            className="text-body-strong text-navy mt-4 inline-flex min-h-11 items-center underline"
+          >
+            Open oda app
+          </a>
+        </>
+      ) : (
+        <a
+          href={APP_SIGN_IN_URL}
+          className="rounded-pill bg-primary text-button text-text-on-primary mt-8 flex h-14 w-full items-center justify-center"
+        >
+          Open oda app
+        </a>
+      )}
     </div>
   );
 }

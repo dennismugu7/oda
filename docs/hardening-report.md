@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-07: **CP1 (security review) and CP2 (suspend / unsuspend) done.** CP3–CP6 add their sections.
+Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (states, accessibility, performance) done.** CP4–CP6 add their sections.
 
 ## Findings
 
@@ -22,7 +22,12 @@ Status on 2026-10-07: **CP1 (security review) and CP2 (suspend / unsuspend) done
 | S9 | Tests | Cross-shop route tests were missing for: manual-order quote with another shop's product, product create/update with another shop's category (and the list filter), the buyer quote with another shop's product. The code was already scoped. | low | **fixed** (CP1) | New tests in `sellerHome.test.ts`, `catalogue.test.ts`, `checkout.test.ts`. |
 | S10 | Dependencies | `pnpm audit --prod`: 3 high (node-forge, braces, source-map-js), 3 moderate (esbuild, uuid, decode-uri-component). All are in the seller app's **build and dev tooling** (Expo CLI code signing, Metro, Expo's PostCSS, drizzle-kit's loader, the iOS `xcode` package): none runs in the web server, and none handles untrusted input in the app at runtime. node-forge and braces have no patched version yet. | high (tooling only) | **deferred** to CP5 | Re-run `pnpm audit --prod` after the Expo SDK 57 patch upgrade (CP5); upgrade or add overrides for anything with a patched version then. |
 | S11 | Database | The staging app very likely connects with Neon's owner role, which can drop tables. A least-privilege app role (DML only) with migrations run by the owner role is the safer setup. | medium | **deferred** to M11 | Production Neon is set up in M11: an `oda_app` role with `SELECT/INSERT/UPDATE/DELETE` only for the app, the owner role only in the `migrate` workflow. Owner steps written then. Staging stays as is (test data only). |
-| S12 | Database | `orders.idempotency_key` is unique across all shops while lookups are per shop: a key reused in another shop would answer 500 (and tell the caller the key exists). Keys are random client UUIDs. | low | **deferred** to CP3 | Decision #81 e: per-shop unique index in CP3 (expand), drop the global one in M11. |
+| S12 | Database | `orders.idempotency_key` is unique across all shops while lookups are per shop: a key reused in another shop would answer 500 (and tell the caller the key exists). Keys are random client UUIDs. | low | **fixed** (CP3), contract in M11 | Per-shop unique in migration 0007; a clash is 409 (`orders.test.ts`); the global constraint is dropped in M11 (decision #84 a). |
+| P1 | Performance | The Orders tab and seller reviews sorted every row of the shop on each page (truncated time, no index): ~115 ms per page at 100,000 orders, ~240 ms deep. | medium | **fixed** (CP3) | Expression indexes + row-comparison cursor (migration 0007, #84 b): 8–13 ms per call. `scripts/perf-check.ts`. |
+| P2 | Performance | The buyer pages shipped zod and every schema to the browser (#61): 247 KB of gzipped JavaScript on first load. | medium | **fixed** (CP3) | `@oda/shared` `sideEffects: false`: 152 KB (#84 d). |
+| A1 | Accessibility | `textMuted` (placeholders, "Optional") 3.39:1 and `warningText` 4.21:1: below AA. | medium | **fixed** (CP3) | Darker tokens (#84 c); `contrast.test.ts`. |
+| A2 | Accessibility | Brand orange: white on primary and primary text 4.23:1, primary on its tint 3.80:1; star yellow 2.19:1 as a graphic. | medium | **owner decision** (review stop B) | Listed in `contrast.test.ts` as pending; options in the stop B message. |
+| A3 | States / a11y | Screen-by-screen audit: web 13 state gaps (incl. a checkout bug: with no pickup, "Place order" did nothing until a delivery area was chosen; a silent failure on the delete confirm) and ~25 a11y issues; app 14 state gaps (endless spinners, wrong offline wording, 404s with a useless retry) and ~15 a11y issues (nested buttons, small targets, iOS-only hiding). | medium | **fixed** (CP3) | #84 e; Playwright `a11y.spec.ts`; TalkBack pass on the Redmi at review stop B. |
 | S13 | Push | Any signed-in user who knows another phone's Expo push token can register it to their own account (the token moves). Tokens are not exposed anywhere. | low | **accepted** | Moving a token on sign-in is how a phone switches accounts (M6). Revisit if tokens ever become visible. |
 | S14 | Catalogue | When a photo is removed from a product, its file is deleted even if the same shop's other product uses the same key (only possible with a hand-crafted request by that seller). | low | **accepted** | Keys are chosen by the server per upload; the app never reuses one. A seller can only affect their own shop. |
 | S15 | Input | No cap on JSON body size before parsing (Vercel's platform limit is 4.5 MB). | low | **accepted** | With S1 fixed, every schema bounds its strings and arrays before any slow work; parsing 4.5 MB of JSON takes milliseconds. |
@@ -134,3 +139,40 @@ store; migrations are expand-only (CLAUDE.md). Role separation: S11.
   product photo uploads answer 403 `shop_suspended` with the support email, and nothing changes.
 - The purge leaves a suspended (not deleted) shop alone, even 90 days on.
 - `routeGuards.test.ts` lists the new route (`secret`).
+
+## CP3 · States, accessibility, performance
+
+**States audit** (code review of every screen; app screens share `SettingsLayout`, `useLoaded`,
+`OfflineBar`; web pages the root `error.tsx` / `not-found.tsx`):
+- **App (40 screens):** after the fixes every screen has a first-load indicator, an empty state
+  where a list can be empty, an error with "Try again" (or "Back" where retrying can't help);
+  offline it shows the saved copy with "You're offline · showing saved data", or "You're
+  offline. Connect to load this." when nothing is saved, with edits disabled; detail screens
+  answer a deleted order / product / review with a clear "no longer exists". Paged lists show a
+  retry footer when the next page fails.
+- **Web (16 pages):** skeleton `loading.tsx` for shop, product and order pages; `global-error`;
+  the cart waits for the saved cart before rendering (no false "empty"); every client request
+  (cart check, quote, order, review photo, delete confirm, reset check) shows progress, has a
+  timeout and a "Try again", and never double-submits.
+
+**Accessibility:** automated contrast test (21 text pairs at 4.5:1 or more, 3 graphic pairs at
+3:1 or more, brand pairs pending: A2); Playwright `a11y.spec.ts` (names, labels, alt text, 44 px
+buttons, `h1`, `lang` on 11 pages); a global `:focus-visible` outline; app labels checked screen
+by screen (every TextInput, icon button and Switch labelled), 44 dp targets, nested buttons
+separated or given TalkBack actions, decorations hidden on Android. **TalkBack pass on the
+Redmi: owner, review stop B.**
+
+**Performance** (local Docker Postgres 18, the seed shop grown to 99,542 orders / 121,974 items;
+`scripts/perf-check.ts`, local databases only; median of 5 runs):
+
+| Call | ms |
+|---|---|
+| Orders: all page 1 / page 2 / done / to do | 9.0 / 7.7 / 8.1 / 12.1 |
+| Orders: search name / phone | 8.5 / 13.4 |
+| Insights: today / week / month | 59 / 41 / 91 |
+| Customers: all / repeat / search | 161 / 165 / 293 (accepted, #84 g) |
+| More / Home / Reviews | 25 / 11 / 5 |
+
+Web, production build, cold first load at 390 × 844 (gzipped JavaScript): landing 149 KB, shop /
+product / search / cart / checkout 152–155 KB (was 247–250 KB), legal and account pages
+149–151 KB.

@@ -29,13 +29,13 @@ export const colors = {
   // Text
   text: '#1C1A2E',
   textSecondary: '#55536A',
-  textMuted: '#8B8A99', // placeholders, "Optional"
+  textMuted: '#717081', // placeholders, "Optional" (darkened in M10 for 4.5:1 contrast, decision #84)
   textOnPrimary: '#FFFFFF',
   textOnNavy: '#FFFFFF',
 
   // Status
   warningTint: '#FBF1DC', // "Says paid" chip, payment-claimed card, refund box
-  warningText: '#9A6A12',
+  warningText: '#936511', // darkened in M10 for 4.5:1 on warningTint (decision #84)
   warningTextStrong: '#6B4A0C',
   warningAccent: '#CC9B44', // stepper "in progress" ring
   danger: '#B3261E', // destructive button, "Delete account"

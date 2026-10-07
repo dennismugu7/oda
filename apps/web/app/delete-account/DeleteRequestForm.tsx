@@ -14,6 +14,7 @@ export function DeleteRequestForm() {
     event.preventDefault();
     if (!email.trim()) {
       setStatus({ kind: 'error', message: 'Enter the email you sign in with.' });
+      document.getElementById(id)?.focus();
       return;
     }
     setStatus({ kind: 'sending' });
@@ -76,11 +77,14 @@ export function DeleteRequestForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border-border text-subtitle focus:border-border-strong mt-2 h-14 w-full rounded-md border bg-white px-4 font-normal outline-none focus:border-2"
+          aria-invalid={status.kind === 'error' && !email.trim() ? true : undefined}
+          aria-describedby={status.kind === 'error' ? `${id}-error` : undefined}
+          className="border-border text-subtitle focus:border-border-strong focus-visible:ring-navy/20 mt-2 h-14 w-full rounded-md border bg-white px-4 font-normal outline-none focus:border-2 focus-visible:ring-2"
         />
       </div>
       {status.kind === 'error' ? (
         <p
+          id={`${id}-error`}
           role="alert"
           className="text-body bg-warning-tint text-warning-text-strong mt-6 rounded-md p-4"
         >

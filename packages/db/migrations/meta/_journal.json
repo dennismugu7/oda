@@ -50,6 +50,13 @@
       "when": 1791268482102,
       "tag": "0006_m8a_digest_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791359459223,
+      "tag": "0007_m10_order_indexes",
+      "breakpoints": true
     }
   ]
 }

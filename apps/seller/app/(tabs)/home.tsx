@@ -19,7 +19,16 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe } from '@/auth/useMe';
 import { SHOP_BASE_URL } from '@/config';
@@ -27,7 +36,7 @@ import { homeApi, homeCache, type HomeData } from '@/home/api';
 import { FinishCard } from '@/home/FinishCard';
 import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderList, type OrderRow } from '@/orders/api';
-import { FormMessage } from '@/ui/auth';
+import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, radii, spacing, text } from '@/theme';
@@ -159,7 +168,15 @@ export default function HomeTab() {
 
         <View style={styles.body}>
           {shop?.suspended ? <SuspendedBanner /> : null}
-          {offline ? <OfflineBar /> : error ? <FormMessage>{error}</FormMessage> : null}
+          {offline ? (
+            <OfflineBar saved={!!home} />
+          ) : error ? (
+            <FormMessage>{error}</FormMessage>
+          ) : null}
+          {error && (!offline || !home) ? <Button title="Try again" onPress={refresh} /> : null}
+          {!home && !error ? (
+            <ActivityIndicator style={styles.loading} color={colors.primary} />
+          ) : null}
           {home && !home.hasOrders ? (
             <>
               <FinishCard />
@@ -275,27 +292,30 @@ function TodoRow({ order, divider, now }: { order: OrderRow; divider: boolean; n
     action
       ? { pathname: '/orders/[id]', params: { id: order.id, action } }
       : { pathname: '/orders/[id]', params: { id: order.id } };
+  // The row and its quick action are siblings so TalkBack can reach each one.
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${order.buyerName}, ${chip}, order ${order.number}, ${formatKsh(order.total)}`}
-      onPress={() => router.push(detail())}
-      style={({ pressed }) => [styles.row, divider && styles.divider, pressed && styles.pressed]}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{order.buyerName.trim().charAt(0).toUpperCase()}</Text>
-      </View>
-      <View style={styles.flex}>
-        <View style={styles.nameRow}>
-          <Text style={styles.rowName} numberOfLines={1}>
-            {first(order.buyerName)}
-          </Text>
-          <Text style={styles.rowChip}>{chip}</Text>
+    <View style={[styles.row, divider && styles.divider]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${order.buyerName}, ${chip}, order ${order.number}, ${formatKsh(order.total)}`}
+        onPress={() => router.push(detail())}
+        style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}
+      >
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{order.buyerName.trim().charAt(0).toUpperCase()}</Text>
         </View>
-        <Text style={styles.rowLine} numberOfLines={1}>
-          #{order.number} · {formatKsh(order.total)} · {listTime(new Date(order.placedAt), now)}
-        </Text>
-      </View>
+        <View style={styles.flex}>
+          <View style={styles.nameRow}>
+            <Text style={styles.rowName} numberOfLines={1}>
+              {first(order.buyerName)}
+            </Text>
+            <Text style={styles.rowChip}>{chip}</Text>
+          </View>
+          <Text style={styles.rowLine} numberOfLines={1}>
+            #{order.number} · {formatKsh(order.total)} · {listTime(new Date(order.placedAt), now)}
+          </Text>
+        </View>
+      </Pressable>
       {quick ? (
         <Pressable
           accessibilityRole="button"
@@ -306,7 +326,7 @@ function TodoRow({ order, divider, now }: { order: OrderRow; divider: boolean; n
           <Text style={styles.quickText}>{quick.label}</Text>
         </Pressable>
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 
@@ -429,6 +449,7 @@ const styles = StyleSheet.create({
   },
   shareText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
   body: { padding: spacing.lg, gap: spacing.md },
+  loading: { marginTop: spacing.xl },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
@@ -484,6 +505,7 @@ const styles = StyleSheet.create({
   chipCountTextOn: { color: colors.textOnPrimary },
   none: { ...text('body'), color: colors.textSecondary, paddingVertical: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   divider: { borderTopWidth: 1, borderTopColor: colors.border },
   avatar: {
     width: 44,

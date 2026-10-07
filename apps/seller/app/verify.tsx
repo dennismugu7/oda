@@ -23,6 +23,7 @@ import {
   FormMessage,
   InfoNote,
   Link,
+  LinkButton,
   Subtitle,
   Title,
 } from '@/ui/auth';
@@ -149,16 +150,18 @@ export default function Verify() {
         <Text style={styles.email}>{email}</Text>
       </Subtitle>
 
-      <Pressable
-        accessibilityLabel={`Code, ${OTP_LENGTH} digits`}
-        onPress={() => input.current?.focus()}
-        style={styles.boxes}
-      >
+      {/* Not a screen-reader stop itself: TalkBack goes straight to the input inside. */}
+      <Pressable accessible={false} onPress={() => input.current?.focus()} style={styles.boxes}>
         {Array.from({ length: OTP_LENGTH }, (_, i) => {
           const filled = i < code.length;
           const current = i === code.length;
           return (
-            <View key={i} style={[styles.box, (filled || current) && styles.boxActive]}>
+            <View
+              key={i}
+              style={[styles.box, (filled || current) && styles.boxActive]}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
               <Text style={styles.digit}>{code[i] ?? ''}</Text>
               {current && !busy ? <View style={styles.caret} /> : null}
             </View>
@@ -176,7 +179,7 @@ export default function Verify() {
           autoFocus
           caretHidden
           style={styles.hiddenInput}
-          accessibilityLabel="Verification code"
+          accessibilityLabel={`Verification code, ${OTP_LENGTH} digits`}
         />
       </Pressable>
 
@@ -207,16 +210,16 @@ export default function Verify() {
       ) : null}
       {info ? <FormMessage tone="info">{info}</FormMessage> : null}
 
-      <Text style={styles.resend}>
-        Didn&apos;t receive a code?{' '}
+      <View style={styles.resendRow}>
+        <Text style={styles.resend}>Didn&apos;t receive a code?</Text>
         {wait > 0 ? (
           <Text style={styles.countdown}>Resend in {formatCountdown(wait)}</Text>
         ) : (
-          <Text accessibilityRole="button" style={styles.resendLink} onPress={() => void resend()}>
+          <LinkButton textStyle={styles.resendLink} onPress={() => void resend()}>
             Resend
-          </Text>
+          </LinkButton>
         )}
-      </Text>
+      </View>
     </AuthScreen>
   );
 }
@@ -254,12 +257,16 @@ const styles = StyleSheet.create({
     opacity: 0.01,
     color: 'transparent',
   },
-  resend: {
-    ...text('body'),
-    color: colors.textSecondary,
-    textAlign: 'center',
+  resendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    columnGap: spacing.xs,
+    minHeight: 44, // the same height while the countdown runs and once Resend shows
     marginTop: spacing.xl,
   },
+  resend: { ...text('body'), color: colors.textSecondary },
   resendLink: { ...text('bodyStrong'), color: colors.primary, textDecorationLine: 'underline' },
   countdown: { ...text('bodyStrong'), color: colors.textMuted },
 });

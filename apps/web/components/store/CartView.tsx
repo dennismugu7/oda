@@ -37,30 +37,62 @@ export function CartView({
   blockedReason: string;
   suggestions: Suggestion[];
 }) {
-  const { lines, add, changeQty, replace } = useCart(shopId);
-  const [current, setCurrent] = useState<Map<string, CurrentProduct> | null>(null);
-  const [checkFailed, setCheckFailed] = useState(false);
+  const { lines, add, changeQty, replace, hydrated } = useCart(shopId);
+  // The latest server check, and the products it was for.
+  const [result, setResult] = useState<{ ids: string; map: Map<string, CurrentProduct> } | null>(
+    null,
+  );
+  const [failedIds, setFailedIds] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const ids = useMemo(() => [...new Set(lines.map((l) => l.productId))].sort().join(','), [lines]);
+  const current = result?.map ?? null;
+  const checkFailed = !!ids && failedIds === ids;
+  const checking = !!ids && hydrated && result?.ids !== ids && !checkFailed;
 
   useEffect(() => {
     if (!ids) return;
     let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20_000);
     fetch(`/api/shops/${slug}/cart`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ productIds: ids.split(',') }),
+      signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
       .then((body: { products: CurrentProduct[] }) => {
         if (cancelled) return;
-        setCurrent(new Map(body.products.map((p) => [p.id, p])));
-        setCheckFailed(false);
+        setResult({ ids, map: new Map(body.products.map((p) => [p.id, p])) });
+        setFailedIds(null);
       })
-      .catch(() => !cancelled && setCheckFailed(true));
+      .catch(() => !cancelled && setFailedIds(ids))
+      .finally(() => clearTimeout(timer));
     return () => {
       cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
-  }, [ids, slug]);
+  }, [ids, slug, attempt]);
+
+  function retryCheck() {
+    setFailedIds(null);
+    setAttempt((n) => n + 1);
+  }
+
+  /**
+   * Changes a line's quantity; when that removes the line, focus moves to the next line's
+   * remove button (or the one before it), or to the page heading once the cart is empty.
+   */
+  function setLineQty(index: number, qty: number) {
+    changeQty(index, qty);
+    if (qty >= 1) return;
+    requestAnimationFrame(() => {
+      const buttons = document.querySelectorAll<HTMLElement>('[data-cart-remove]');
+      const next = buttons[Math.min(index, buttons.length - 1)];
+      (next ?? document.getElementById('cart-title'))?.focus();
+    });
+  }
 
   const checked = current ? reconcile(lines, current) : null;
   const problems = checked?.filter((c) => c.problem) ?? [];
@@ -80,6 +112,27 @@ export function CartView({
     .filter((s) => !lines.some((l) => l.productId === s.id))
     .filter((s) => !s.categoryId || !inCartCategories.has(s.categoryId))
     .slice(0, 2);
+
+  // The cart lives on this device: until it's read, show a placeholder, not "empty".
+  if (!hydrated) {
+    return (
+      <div className="mt-4 animate-pulse" aria-busy="true">
+        <p role="status" className="sr-only">
+          Loading…
+        </p>
+        {[0, 1].map((n) => (
+          <div key={n} className="flex gap-4 py-4">
+            <div className="size-24 shrink-0 rounded-xl bg-surface-muted" />
+            <div className="flex-1 space-y-3 pt-1">
+              <div className="h-5 w-3/4 rounded bg-surface-muted" />
+              <div className="h-4 w-1/3 rounded bg-surface-muted" />
+              <div className="h-11 rounded-pill bg-surface-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (count === 0) {
     return (
@@ -122,11 +175,22 @@ export function CartView({
       ) : null}
 
       {checkFailed ? (
-        <p
+        <div
           role="status"
           className="mt-4 rounded-lg bg-warning-tint p-3 text-body text-warning-text-strong"
         >
-          We couldn’t check the latest prices. They’ll be checked again at checkout.
+          <p>We couldn’t check the latest prices. They’ll be checked again at checkout.</p>
+          <button
+            type="button"
+            onClick={retryCheck}
+            className="inline-flex min-h-11 items-center font-semibold underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : checking ? (
+        <p role="status" className="mt-4 text-small text-text-secondary">
+          Checking prices…
         </p>
       ) : null}
 
@@ -138,6 +202,10 @@ export function CartView({
           >
             <Link
               href={`/${slug}/p/${c.line.productId}`}
+              // The product name next to it is the same link: one stop for keyboards and
+              // screen readers.
+              aria-hidden="true"
+              tabIndex={-1}
               className="size-24 shrink-0 overflow-hidden rounded-xl bg-beige"
             >
               {c.line.coverUrl ? (
@@ -157,7 +225,8 @@ export function CartView({
                 <button
                   type="button"
                   aria-label={`Remove ${c.line.name}`}
-                  onClick={() => changeQty(i, 0)}
+                  data-cart-remove=""
+                  onClick={() => setLineQty(i, 0)}
                   className="-mt-1 -mr-2 flex size-11 items-center justify-center text-text-secondary"
                 >
                   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -188,17 +257,20 @@ export function CartView({
                 <div className="flex h-11 items-center rounded-pill border border-border">
                   <button
                     type="button"
-                    aria-label="One less"
-                    onClick={() => changeQty(i, c.line.qty - 1)}
+                    aria-label={`One less ${c.line.name}`}
+                    onClick={() => setLineQty(i, c.line.qty - 1)}
                     className="size-11 text-title text-navy"
                   >
                     −
                   </button>
-                  <span className="w-6 text-center text-body-strong text-navy">{c.line.qty}</span>
+                  <span aria-live="polite" className="w-6 text-center text-body-strong text-navy">
+                    <span className="sr-only">Quantity </span>
+                    {c.line.qty}
+                  </span>
                   <button
                     type="button"
-                    aria-label="One more"
-                    onClick={() => changeQty(i, c.line.qty + 1)}
+                    aria-label={`One more ${c.line.name}`}
+                    onClick={() => setLineQty(i, c.line.qty + 1)}
                     className="size-11 text-title text-navy"
                   >
                     +
@@ -228,6 +300,7 @@ export function CartView({
               <li key={s.id} className="flex items-center gap-3 rounded-xl bg-background p-3">
                 <Link
                   href={`/${slug}/p/${s.id}`}
+                  aria-label={s.name}
                   className="size-16 shrink-0 overflow-hidden rounded-lg bg-beige"
                 >
                   {s.coverUrl ? (

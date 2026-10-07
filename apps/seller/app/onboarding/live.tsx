@@ -359,7 +359,11 @@ function Step({ state }: { state: OnboardingState }) {
 
           <View style={styles.card}>
             <View style={styles.postRow}>
-              <View style={styles.mini} accessibilityElementsHidden>
+              <View
+                style={styles.mini}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
                 <Text style={styles.miniShop} numberOfLines={1}>
                   {shop.name}
                 </Text>
@@ -406,6 +410,7 @@ function Step({ state }: { state: OnboardingState }) {
                     accessibilityState={{ selected: language === lang }}
                     accessibilityLabel={lang === 'en' ? 'English' : 'Swahili'}
                     onPress={() => lang !== language && changeTemplate(() => setLanguage(lang))}
+                    hitSlop={LANG_SLOP}
                     style={[styles.lang, language === lang && styles.langOn]}
                   >
                     <Text style={[styles.langText, language === lang && styles.langTextOn]}>
@@ -434,6 +439,9 @@ function Step({ state }: { state: OnboardingState }) {
     </SafeAreaView>
   );
 }
+
+/** 38 dp pills reach 44 dp into the toggle's padding. */
+const LANG_SLOP = { top: 3, bottom: 3 };
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },

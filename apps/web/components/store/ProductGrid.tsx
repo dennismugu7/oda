@@ -84,7 +84,7 @@ export function ProductGrid({
           </Link>
           {/* Beside the link, over the photo: links and buttons can't sit inside a link. */}
           <div className="pointer-events-none absolute inset-x-0 top-0 aspect-square [&>*]:pointer-events-auto">
-            <FavouriteButton shopId={shopId} productId={p.id} />
+            <FavouriteButton shopId={shopId} productId={p.id} productName={p.name} />
             <CardCartAction
               shopId={shopId}
               slug={slug}

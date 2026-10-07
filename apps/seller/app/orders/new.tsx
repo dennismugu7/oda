@@ -15,7 +15,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -64,22 +64,32 @@ export default function NewOrder() {
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [products, setProducts] = useState<ProductSummary[] | null>(null);
   const [quote, setQuote] = useState<ManualQuote | null>(null);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<OrderDetail | null>(null);
 
-  useEffect(() => {
-    deliveryApi.get().then(({ data, error: failed }) => {
-      if (data) setDelivery(data);
-      else setError(errorMessage(failed));
-    });
-    catalogueApi.products().then(({ data, error: failed }) => {
-      if (data) setProducts(data.products);
-      else setError(errorMessage(failed));
-    });
+  const loadDelivery = useCallback(async () => {
+    const { data, error: failed } = await deliveryApi.get();
+    if (data) setDelivery(data);
+    setDeliveryError(data ? null : errorMessage(failed));
   }, []);
+
+  const loadProducts = useCallback(async () => {
+    const { data, error: failed } = await catalogueApi.products();
+    if (data) setProducts(data.products);
+    setProductsError(data ? null : errorMessage(failed));
+  }, []);
+
+  useEffect(() => {
+    loadDelivery();
+    loadProducts();
+  }, [loadDelivery, loadProducts]);
 
   const override = feeText === null ? undefined : (parseShillings(feeText) ?? undefined);
   const quoteKey = JSON.stringify([
@@ -92,7 +102,7 @@ export default function NewOrder() {
     if (lines.length === 0) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const { data } = await ordersApi.quoteManual({
+      const { data, error: failed } = await ordersApi.quoteManual({
         lines: lines.map((l) => ({
           productId: l.productId,
           qty: l.qty,
@@ -101,7 +111,16 @@ export default function NewOrder() {
         })),
         ...(override !== undefined ? { deliveryFeeOverride: override } : {}),
       });
-      if (!cancelled && data) setQuote(data);
+      if (cancelled) return;
+      // No price shown (or Create offered) from an old quote that no longer matches.
+      setQuote(data);
+      setQuoteError(
+        data
+          ? null
+          : failed?.code === 'OFFLINE'
+            ? errorMessage(failed)
+            : 'Couldn’t price this order.',
+      );
     }, 300);
     return () => {
       cancelled = true;
@@ -109,7 +128,8 @@ export default function NewOrder() {
     };
     // quoteKey stands for lines + override.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quoteKey]);
+  }, [quoteKey, quoteAttempt]);
+  const unpriced = lines.length > 0 && !!quoteError;
 
   const option = useMemo(() => {
     if (!quote || !choice || lines.length === 0) return null;
@@ -272,7 +292,21 @@ export default function NewOrder() {
         <View style={styles.card}>
           <Text style={styles.overline}>DELIVERY</Text>
           {!delivery ? (
-            <ActivityIndicator color={colors.primary} />
+            deliveryError ? (
+              <>
+                <FormMessage>{deliveryError}</FormMessage>
+                <Button
+                  title="Try again"
+                  variant="secondary"
+                  onPress={() => {
+                    setDeliveryError(null);
+                    loadDelivery();
+                  }}
+                />
+              </>
+            ) : (
+              <ActivityIndicator color={colors.primary} />
+            )
           ) : (
             <View style={styles.chips}>
               <Chip
@@ -371,20 +405,36 @@ export default function NewOrder() {
           </Text>
         </View>
 
+        {unpriced ? (
+          <>
+            <FormMessage>{quoteError}</FormMessage>
+            <Button
+              title="Try again"
+              variant="secondary"
+              onPress={() => setQuoteAttempt((n) => n + 1)}
+            />
+          </>
+        ) : null}
         {error ? <FormMessage>{error}</FormMessage> : null}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <Button
-          title={option ? `Create order · ${formatKsh(option.total)}` : 'Create order'}
+          title={option && !unpriced ? `Create order · ${formatKsh(option.total)}` : 'Create order'}
           onPress={create}
           loading={busy}
+          disabled={unpriced}
         />
       </View>
 
       <ProductPicker
         visible={picking}
         products={products}
+        error={productsError}
+        onRetry={() => {
+          setProductsError(null);
+          loadProducts();
+        }}
         onClose={() => setPicking(false)}
         onPick={(line) => {
           setLines((ls) => addLine(ls, line));
@@ -433,11 +483,16 @@ function Stepper({
 function ProductPicker({
   visible,
   products,
+  error,
+  onRetry,
   onClose,
   onPick,
 }: {
   visible: boolean;
   products: ProductSummary[] | null;
+  /** Why the products didn't load (they're asked for once, when the screen opens). */
+  error: string | null;
+  onRetry: () => void;
   onClose: () => void;
   onPick: (line: DraftLine) => void;
 }) {
@@ -480,6 +535,7 @@ function ProductPicker({
     >
       <Pressable
         style={styles.backdrop}
+        accessibilityRole="button"
         accessibilityLabel="Close"
         onPress={() => {
           reset();
@@ -492,7 +548,14 @@ function ProductPicker({
           {product ? product.name : 'Add product'}
         </Text>
         {!products ? (
-          <ActivityIndicator color={colors.primary} />
+          error ? (
+            <View style={styles.sheetBody}>
+              <FormMessage>{error}</FormMessage>
+              <Button title="Try again" onPress={onRetry} />
+            </View>
+          ) : (
+            <ActivityIndicator color={colors.primary} />
+          )
         ) : product ? (
           <ScrollView contentContainerStyle={styles.sheetBody}>
             {product.sizes.length ? (
