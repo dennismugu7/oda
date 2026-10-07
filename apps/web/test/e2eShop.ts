@@ -71,3 +71,18 @@ export async function setProductPrice(slug: string, name: string, price: number)
     await pool.end();
   }
 }
+
+/** Suspends or unsuspends a shop directly (the ops endpoint needs OPS_SECRET; decision #83). */
+export async function setSuspended(slug: string, suspended: boolean): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  const { db, pool } = createDb(url);
+  try {
+    await db
+      .update(schema.shops)
+      .set({ suspendedAt: suspended ? new Date() : null })
+      .where(eq(schema.shops.slug, slug));
+  } finally {
+    await pool.end();
+  }
+}

@@ -5,19 +5,25 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-07, owner Step 87)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **🛑 review stop A** (phone + web test list in the CP2 entry). CP3 not started.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). Now: CP3 → CP4 → CP5 → review stop B.
 - **Staging:** https://oda-eta.vercel.app = `main` (`78a8268`, M10 CP2); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `ec8679c3` (M10 CP2: suspended banner). Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** owner runs review stop A; after the go-ahead, M10 CP3 (states, accessibility, performance).
+**Next step:** M10 CP3 (states, accessibility, performance, `idempotency_key`).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 review stop A passed; a suspended shop takes no payments (owner Step 90; branch `m10-suspend-pay`)
+
+**Review stop A passed** (owner, Redmi, staging `78a8268`, EAS Update `ec8679c3`): all items (headers don't break shop / cart / checkout; suspend → 404, amber banner, edits refused; an existing order accepted; order page without Continue shopping; the same action twice changes nothing; unsuspend restores the shop and edits; an unknown link name fails). Decision #82 approved with one fix.
+
+**Decision #83:** a suspended shop's orders still waiting for payment show no payment details, no code box, no "I've paid" or switch, only "This shop can't take payments right now. Don't send money. You can cancel this order." and Cancel; the server refuses claims and the switch (409 `shop_suspended`); the 48 h expiry still runs; existing claims and paid orders carry on; unsuspending restores the pay page. Shared `paymentsBlocked()`; tests in shared `checkout.test.ts`, `server/suspension.test.ts` (+3), Playwright `suspended-pay.spec.ts`. Web only (no app change).
 
 ## 2026-10-07 · M10 CP2: suspend / unsuspend, admin clean-up (owner Step 89; branch `m10-cp2`)
 

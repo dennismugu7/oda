@@ -165,16 +165,32 @@ export const BUYER_LIMITS = {
 
 export type BuyerAction = 'submitCode' | 'switchToPod' | 'cancel';
 
+/** What a buyer is told about an unpaid order of a suspended shop (decision #83). */
+export const SUSPENDED_PAY_MESSAGE =
+  'This shop can’t take payments right now. Don’t send money. You can cancel this order.';
+
+/**
+ * A suspended shop's pay-now order still waiting for payment (decision #83): no payment
+ * details, no "I've paid", no switch to pay on delivery; only cancelling (or the 48 h expiry).
+ * Claims already sent and paid orders carry on (#82).
+ */
+export function paymentsBlocked(order: OrderState, shop: { suspended?: boolean }): boolean {
+  return !!shop.suspended && order.status === 'awaiting_payment';
+}
+
 /**
  * What the buyer can do on their order page right now, asked of the machine itself so the
  * page never offers something the server would refuse. A closed (deleted) shop allows only
- * "Report a problem", which isn't a transition.
+ * "Report a problem", which isn't a transition; a suspended shop's unpaid order only "cancel".
  */
 export function buyerActions(
   order: OrderState,
-  shop: { acceptsPayOnDelivery: boolean; closed: boolean },
+  shop: { acceptsPayOnDelivery: boolean; closed: boolean; suspended?: boolean },
 ): BuyerAction[] {
   if (shop.closed) return [];
+  if (paymentsBlocked(order, shop)) {
+    return next(order, { type: 'buyerCancel' }, 'buyer').ok ? ['cancel'] : [];
+  }
   const actions: BuyerAction[] = [];
   if (next(order, { type: 'submitCode', code: 'X' }, 'buyer').ok) actions.push('submitCode');
   if (
