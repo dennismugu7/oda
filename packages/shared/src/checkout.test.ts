@@ -147,7 +147,7 @@ describe('buyerActions', () => {
     expect(paymentsBlocked(claimed, suspended)).toBe(false);
     expect(buyerActions(claimed, suspended)).toEqual(['cancel']);
     expect(paymentsBlocked(order({ status: 'confirmed' }), suspended)).toBe(false);
-    expect(paymentsBlocked(order({}), open)).toBe(false);
+    expect(paymentsBlocked(order({}), { ...open, suspended: false })).toBe(false);
   });
 });
 
