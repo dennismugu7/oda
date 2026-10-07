@@ -258,7 +258,7 @@ function Sharer({
               <Pressable
                 key={l}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: l === language }}
+                accessibilityState={{ checked: l === language }}
                 accessibilityLabel={l === 'en' ? 'English' : 'Swahili'}
                 onPress={() => {
                   setLanguage(l);

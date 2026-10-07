@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "doctor": "node scripts/expo-offline.mjs expo-doctor",
     "deps:check": "node scripts/expo-offline.mjs expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
-    "test": "vitest run",
+    "test": "vitest run && jest",
     "update:preview": "node scripts/eas-update.mjs",
     "eas-build-pre-install": "node scripts/public-urls.mjs"
   },
@@ -54,9 +54,15 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@jest/globals": "29.7.0",
+    "@react-native/jest-preset": "0.86.3",
+    "@testing-library/react-native": "^14.0.1",
     "@types/react": "~19.2.2",
     "eslint-config-expo": "~57.0.2",
     "expo-doctor": "1.20.4",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "test-renderer": "^1.3.0",
     "vitest": "5.0.3"
   }
 }

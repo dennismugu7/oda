@@ -187,3 +187,18 @@ product / search / cart / checkout 152–155 KB (was 247–250 KB), legal and ac
   phones in three formats, an M-Pesa code, order and reset tokens, a session cookie, a bearer
   header, a push token, a password, a name and an address, and checks none survives anywhere in
   the scrubbed JSON; ids, releases, stack frames and the SDK block stay.
+
+**Backup restore check, first run** (2026-10-07, manual): the newest backup
+(`oda-staging-20261007T0238Z`, 6.2 h old, 4 stored) downloaded, decrypted and restored into a
+throwaway Postgres 18: 3 shops, 9 orders; 7 migrations in the backup against 9 in the
+repository, as expected (0007 and 0008 were merged after the 02:38 backup).
+
+## CP5 · App UI tests, eas-cli, Expo patches
+
+- **UI tests** (decision #86): 36 Jest + Testing Library tests over sign-in, onboarding, order
+  detail, settings, Help, Share, New order and the suspended banner, in `check:all` and CI. They
+  found two radio controls that told screen readers "selected" instead of "checked" (fixed).
+- **eas-cli** 24.11.0 on the laptop; `eas.json` asks for at least 24.11.0 (on the 0.3.1 branch).
+- **Expo SDK 57 patches:** installed and checked (online expo-doctor 21/21) on branch
+  `m10-cp5-expo` with version 0.3.1; merged with the owner-approved EAS build (#85 e).
+- **Dependency audit:** re-run after the 0.3.1 merge (S10).

@@ -19,6 +19,12 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-07 · M10 CP5 part 1: app UI tests (owner Step 90; branch `m10-cp5-ui`)
+
+- **CP4 part 1 shipped:** PR #58 merged, staging `587d85e` (migrations 0007, 0008 applied). **Backup restore check** first run green (3 shops, 9 orders restored; 7 of 9 migrations in last night's backup, as expected).
+- **Decision #86:** `jest-expo` + Testing Library (approved download), 36 UI tests in `apps/seller/src/**/*.ui.test.tsx`, run by the app's `test` script (so `check:all` and CI); two radio controls fixed to report `checked`.
+- PageSpeed Insights' anonymous API quota was used up: the owner checks staging on pagespeed.web.dev at review stop B.
+
 ## 2026-10-07 · M10 CP4 part 1: push receipts, restore check, Sentry privacy (owner Step 90; branch `m10-cp4`)
 
 **CP3 shipped:** PR #57 merged; EAS Update `95806a61` (runtime 0.3.0).
