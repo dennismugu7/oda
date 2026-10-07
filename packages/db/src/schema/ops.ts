@@ -11,7 +11,7 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { shops } from './accounts';
+import { profiles, shops } from './accounts';
 import { createdAt, id, tstz, updatedAt } from './columns';
 import { orders } from './orders';
 import { feedbackKind, notificationType, orderSource, ticketStatus } from './enums';
@@ -169,4 +169,23 @@ export const opsEvents = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('ops_events_created_idx').on(t.createdAt.desc())],
+);
+
+/**
+ * Expo push tickets waiting for their receipt (M10 CP4, decision #85). Expo answers a send with
+ * a ticket; whether the phone really got it (or the token is dead: DeviceNotRegistered) comes
+ * later as a receipt. The hourly cron job reads the receipts, removes dead tokens from the
+ * profile and deletes the rows; Expo keeps receipts for about a day, so older rows are dropped.
+ */
+export const pushTickets = pgTable(
+  'push_tickets',
+  {
+    ticketId: text('ticket_id').primaryKey(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('push_tickets_created_idx').on(t.createdAt)],
 );

@@ -21,3 +21,4 @@ export * from './reviews';
 export * from './locations';
 export * from './insights';
 export * from './ops';
+export * from './sentry';

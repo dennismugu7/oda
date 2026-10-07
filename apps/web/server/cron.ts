@@ -9,6 +9,7 @@ import { getDb } from './db';
 import { serverEnv } from './env';
 import { HttpError, toResponse } from './errors';
 import { transitionOrder, type TransitionOutcome } from './orders';
+import { checkPushReceipts } from './push';
 
 // Scheduled jobs (data-model.md → Where logic runs; decision #69), called by GitHub Actions
 // with `Authorization: Bearer <CRON_SECRET>`. Anything else — no secret configured, no header,
@@ -69,9 +70,13 @@ export async function postExpireOrders(request: Request, defer: Defer): Promise<
     for (const { order, sideEffects } of expired) {
       defer(() => afterOrderChange(db, order, sideEffects));
     }
-    console.info(`[cron] expire-orders: ${expired.length} expired, ${skipped} skipped`);
+    // The same hourly run checks Expo's delivery receipts (decision #85).
+    const receipts = await checkPushReceipts(db);
+    console.info(
+      `[cron] expire-orders: ${expired.length} expired, ${skipped} skipped; push receipts: ${receipts.checked} checked, ${receipts.removed} dead tokens removed`,
+    );
     return Response.json(
-      { expired: expired.length, skipped, more },
+      { expired: expired.length, skipped, more, receipts },
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch (error) {

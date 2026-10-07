@@ -1,0 +1,120 @@
+name: backup-restore-check
+
+# Proves the staging backups can be restored (M10 CP4, decision #85). Weekly and by hand:
+# downloads the newest encrypted backup from the private backups store (fails if it is older
+# than 36 hours), decrypts it with BACKUP_PASSPHRASE, restores it into a throwaway Postgres 18
+# on the runner (never Neon), and checks the tables, the row counts and the migrations against
+# the repository. The summary lists the counts; no rows, names or contacts are printed. The
+# plain dump never leaves the runner and is deleted at the end.
+on:
+  schedule:
+    - cron: '13 1 * * 0' # Sundays 04:13 in Nairobi, after the 02:30 backup
+  workflow_dispatch:
+
+concurrency:
+  group: backup-restore-check
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    name: Restore the newest staging backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: restore
+          POSTGRES_PASSWORD: restore-check-only
+          POSTGRES_DB: restored
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore -d restored"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - name: Check the secrets are set
+        env:
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets.BACKUP_BLOB_READ_WRITE_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_BLOB_READ_WRITE_TOKEN" ]; then
+            echo "::error::Repository secret BACKUP_BLOB_READ_WRITE_TOKEN is not set."; exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 20 ]; then
+            echo "::error::Repository secret BACKUP_PASSPHRASE is missing or too short."; exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter "@oda/web..."
+
+      - name: Download the newest backup
+        env:
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets.BACKUP_BLOB_READ_WRITE_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/restore"
+          pnpm --filter @oda/web exec tsx scripts/backup/download.ts "$RUNNER_TEMP/restore/oda.dump.gpg" | tee "$RUNNER_TEMP/restore/download.log"
+
+      - name: Decrypt
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          cd "$RUNNER_TEMP/restore"
+          printf '%s' "$BACKUP_PASSPHRASE" > passphrase
+          gpg --batch --pinentry-mode loopback --passphrase-file passphrase \
+            --decrypt --output oda.dump oda.dump.gpg
+          rm -f passphrase oda.dump.gpg
+
+      - name: Restore into the throwaway Postgres 18
+        run: |
+          docker run --rm --network host -v "$RUNNER_TEMP/restore:/restore" -e PGPASSWORD=restore-check-only postgres:18 \
+            pg_restore --no-owner --no-acl --exit-on-error -h 127.0.0.1 -U restore -d restored /restore/oda.dump
+
+      - name: Check tables, counts and migrations
+        run: |
+          q() { docker run --rm --network host -e PGPASSWORD=restore-check-only postgres:18 \
+            psql -h 127.0.0.1 -U restore -d restored -tAc "$1"; }
+          fail=0
+          {
+            echo "### Restore check"
+            echo
+            echo "$(head -1 "$RUNNER_TEMP/restore/download.log")"
+            echo
+            echo "| Table | Rows |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for table in shops profiles products orders order_items reviews ops_events; do
+            n=$(q "select count(*) from public.$table") || { echo "::error::Table $table is missing."; fail=1; continue; }
+            echo "| $table | $n |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$table: $n"
+          done
+          shops=$(q "select count(*) from public.shops" || echo 0)
+          if [ "$shops" -lt 1 ]; then echo "::error::No shops restored (staging always has Demo Duka)."; fail=1; fi
+          restored=$(q "select count(*) from drizzle.__drizzle_migrations")
+          repo=$(node -e "console.log(require('./packages/db/migrations/meta/_journal.json').entries.length)")
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "Migrations: $restored in the backup, $repo in the repository." >> "$GITHUB_STEP_SUMMARY"
+          echo "Migrations: $restored in the backup, $repo in the repository."
+          if [ "$restored" -gt "$repo" ]; then
+            echo "::error::The backup has more migrations than the repository."; fail=1
+          elif [ "$restored" -lt "$repo" ]; then
+            echo "::warning::The backup predates the newest migration (it is taken nightly; a migration merged since then is expected)."
+          fi
+          exit $fail
+
+      - name: Remove local files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/restore"

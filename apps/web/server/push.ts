@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import { MAX_PUSH_TOKENS, type PushData, type PushType, type SideEffect } from '@oda/shared';
 import type { UserCtx } from './authz';
@@ -8,13 +8,15 @@ import { notificationText } from './notifications';
 
 // Push to the seller's phones (M6 CP4, spec §5.8, decision #65): the same text as the in-app
 // notification row, sent through Expo's push API after the response. Tapping one opens the
-// order (data.orderId). Tokens Expo reports as DeviceNotRegistered are removed. Logs carry the
-// type and a device count only: never a token, a buyer's name or an order's details.
+// order (data.orderId). Tokens Expo reports as DeviceNotRegistered are removed, from the send
+// answer (tickets) and later from the delivery receipts the hourly job checks (decision #85).
+// Logs carry the type and counts only: never a token, a buyer's name or an order's details.
 
 const t = schema;
 type OrderRow = typeof t.orders.$inferSelect;
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
 
 export interface PushMessage {
   to: string;
@@ -30,22 +32,40 @@ export type PushTicket =
   | { status: 'ok'; id: string }
   | { status: 'error'; message?: string; details?: { error?: string } };
 
+export type PushReceipt =
+  { status: 'ok' } | { status: 'error'; message?: string; details?: { error?: string } };
+
 type Sender = (messages: PushMessage[]) => Promise<PushTicket[]>;
+type ReceiptReader = (ids: string[]) => Promise<Record<string, PushReceipt>>;
 
 const sentInTests: PushMessage[] = [];
 let testSender: Sender | null = null;
+let testReceipts: ReceiptReader | null = null;
 
-/** Vitest only: what would have been pushed, and a fake Expo answer. */
+/** Vitest only: what would have been pushed, and fake Expo answers. */
 export const testPush = {
   sent: (): readonly PushMessage[] => sentInTests,
   answerWith: (sender: Sender | null) => {
     testSender = sender;
   },
+  receiptsWith: (reader: ReceiptReader | null) => {
+    testReceipts = reader;
+  },
   clear: () => {
     sentInTests.length = 0;
     testSender = null;
+    testReceipts = null;
   },
 };
+
+function expoHeaders(token: string) {
+  return {
+    accept: 'application/json',
+    'accept-encoding': 'gzip, deflate',
+    'content-type': 'application/json',
+    authorization: `Bearer ${token}`,
+  };
+}
 
 async function send(messages: PushMessage[]): Promise<PushTicket[] | null> {
   if (process.env.VITEST) {
@@ -60,12 +80,7 @@ async function send(messages: PushMessage[]): Promise<PushTicket[] | null> {
   }
   const res = await fetch(EXPO_PUSH_URL, {
     method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'accept-encoding': 'gzip, deflate',
-      'content-type': 'application/json',
-      authorization: `Bearer ${token}`,
-    },
+    headers: expoHeaders(token),
     body: JSON.stringify(messages),
     signal: AbortSignal.timeout(8000),
   });
@@ -144,20 +159,108 @@ export async function sendSellerPushes(
     const tickets = await send(messages);
     if (!tickets) return;
     const gone = new Set<string>();
+    const pending: { ticketId: string; profileId: string; token: string }[] = [];
     let failed = 0;
     tickets.forEach((ticket, i) => {
       if (ticket.status === 'error') {
         failed++;
         if (ticket.details?.error === 'DeviceNotRegistered') gone.add(messages[i]!.to);
+      } else if (ticket.id) {
+        pending.push({ ticketId: ticket.id, profileId: owner.profileId, token: messages[i]!.to });
       }
     });
     if (gone.size) await removeTokens(db, owner.profileId, [...gone]);
+    // Whether each push arrived is checked later (checkPushReceipts, from the hourly job).
+    if (pending.length) await db.insert(t.pushTickets).values(pending).onConflictDoNothing();
     console.info(
       `[push] ${types.join(',')} → ${messages.length - failed} sent, ${failed} failed${gone.size ? `, ${gone.size} removed` : ''}`,
     );
   } catch (error) {
     console.error('[push] failed', error instanceof Error ? error.name : 'unknown');
   }
+}
+
+/** Receipts are ready after a few minutes; Expo keeps them for about a day. */
+export const RECEIPT_AFTER_MINUTES = 15;
+export const RECEIPT_KEEP_HOURS = 24;
+const RECEIPT_BATCH = 1000; // Expo's limit per getReceipts call
+
+async function readReceipts(ids: string[]): Promise<Record<string, PushReceipt> | null> {
+  if (process.env.VITEST) return testReceipts ? testReceipts(ids) : {};
+  const token = serverEnv().EXPO_ACCESS_TOKEN;
+  if (!token) return null;
+  const res = await fetch(EXPO_RECEIPTS_URL, {
+    method: 'POST',
+    headers: expoHeaders(token),
+    body: JSON.stringify({ ids }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    console.error(`[push] receipts: Expo answered ${res.status}`);
+    return null;
+  }
+  const json = (await res.json().catch(() => null)) as {
+    data?: Record<string, PushReceipt>;
+  } | null;
+  return json?.data ?? null;
+}
+
+/**
+ * The hourly job's receipt check (decision #85): for tickets at least 15 minutes old, asks Expo
+ * whether each push arrived; a DeviceNotRegistered receipt removes that phone's token from the
+ * profile. Tickets with a receipt, and any older than a day, are deleted. Never throws.
+ */
+export async function checkPushReceipts(
+  db: Db,
+  now: Date = new Date(),
+): Promise<{ checked: number; failed: number; removed: number; expired: number }> {
+  const result = { checked: 0, failed: 0, removed: 0, expired: 0 };
+  try {
+    const stale = new Date(now.getTime() - RECEIPT_KEEP_HOURS * 3_600_000);
+    const expired = await db
+      .delete(t.pushTickets)
+      .where(lt(t.pushTickets.createdAt, stale))
+      .returning({ id: t.pushTickets.ticketId });
+    result.expired = expired.length;
+
+    const ready = new Date(now.getTime() - RECEIPT_AFTER_MINUTES * 60_000);
+    const due = await db
+      .select()
+      .from(t.pushTickets)
+      .where(lt(t.pushTickets.createdAt, ready))
+      .orderBy(t.pushTickets.createdAt)
+      .limit(RECEIPT_BATCH);
+    if (due.length === 0) return result;
+    const receipts = await readReceipts(due.map((d) => d.ticketId));
+    if (!receipts) return result;
+
+    const answered: string[] = [];
+    const gone = new Map<string, Set<string>>();
+    for (const ticket of due) {
+      const receipt = receipts[ticket.ticketId];
+      if (!receipt) continue; // not ready yet: the next hour
+      answered.push(ticket.ticketId);
+      if (receipt.status === 'error') {
+        result.failed++;
+        if (receipt.details?.error === 'DeviceNotRegistered') {
+          const set = gone.get(ticket.profileId) ?? new Set<string>();
+          set.add(ticket.token);
+          gone.set(ticket.profileId, set);
+        }
+      }
+    }
+    result.checked = answered.length;
+    for (const [profileId, tokens] of gone) {
+      await removeTokens(db, profileId, [...tokens]);
+      result.removed += tokens.size;
+    }
+    if (answered.length) {
+      await db.delete(t.pushTickets).where(inArray(t.pushTickets.ticketId, answered));
+    }
+  } catch (error) {
+    console.error('[push] receipts failed', error instanceof Error ? error.name : 'unknown');
+  }
+  return result;
 }
 
 async function removeTokens(db: Db, profileId: string, tokens: string[]) {
