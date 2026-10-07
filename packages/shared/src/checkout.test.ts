@@ -5,6 +5,7 @@ import {
   buyerTimeline,
   checkoutInput,
   codeInput,
+  paymentsBlocked,
   reportInput,
   stripLinks,
 } from './checkout';
@@ -136,6 +137,17 @@ describe('buyerActions', () => {
 
   it('a closed shop allows nothing but a report', () => {
     expect(buyerActions(order({}), { ...open, closed: true })).toEqual([]);
+  });
+
+  it('a suspended shop’s unpaid order: cancel only; claims and later steps carry on (#83)', () => {
+    const suspended = { ...open, suspended: true };
+    expect(paymentsBlocked(order({}), suspended)).toBe(true);
+    expect(buyerActions(order({}), suspended)).toEqual(['cancel']);
+    const claimed = order({ status: 'payment_claimed', paymentStatus: 'claimed' });
+    expect(paymentsBlocked(claimed, suspended)).toBe(false);
+    expect(buyerActions(claimed, suspended)).toEqual(['cancel']);
+    expect(paymentsBlocked(order({ status: 'confirmed' }), suspended)).toBe(false);
+    expect(paymentsBlocked(order({}), { ...open, suspended: false })).toBe(false);
   });
 });
 

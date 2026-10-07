@@ -6,7 +6,8 @@ import { newSeller, type Json, type Seller } from '@/test/sellerApi';
 import { POST as postUpload } from '@/app/api/uploads/route';
 import { GET as getMe } from '@/app/api/me/route';
 import { listProducts, createProduct, updateProduct } from './catalogueRoutes';
-import type { Defer } from './checkout';
+import { postBuyerCancel, postOrderCode, postSwitchToPod, type Defer } from './checkout';
+import { expireOrders } from './cron';
 import { getDb } from './db';
 import { createManualOrder, getOrder, listOrders, postOrderAction } from './orderRoutes';
 import { insertOrder } from './orders';
@@ -255,5 +256,92 @@ describe('a suspended seller', () => {
         .status,
     ).toBe(200);
     expect((await w.call(getMe as unknown as Handler)).json.shop.suspended).toBe(false);
+  });
+});
+
+describe('unpaid orders of a suspended shop (decision #83)', () => {
+  /** A pay-now order waiting for payment, on a shop with an active Till. */
+  async function payNow(w: Awaited<ReturnType<typeof world>>) {
+    await db
+      .insert(t.paymentAccounts)
+      .values({
+        shopId: w.shopId,
+        type: 'till',
+        number: '5123456',
+        accountName: 'AMANI STYLES',
+        isActive: true,
+      })
+      .onConflictDoNothing(); // one active Till per shop
+    const { order } = await insertOrder(db, {
+      shopId: w.shopId,
+      kind: 'buyer_pay_now',
+      source: 'tt',
+      buyer: { name: 'Achieng Odhiambo', phone: '0712 345 903' },
+      fulfilment: { kind: 'pickup' },
+      lines: [{ productId: w.product.id, qty: 1 }],
+    });
+    return order;
+  }
+
+  type BuyerHandler = typeof postOrderCode;
+  async function buyer(handler: BuyerHandler, token: string, payload: unknown = {}) {
+    const res = await handler(
+      new Request(`http://localhost:3000/api/o/${token}/x`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: 'http://localhost:3000' },
+        body: JSON.stringify(payload),
+      }),
+      { params: Promise.resolve({ token }) },
+      defer,
+    );
+    return { status: res.status, json: (await res.json()) as Json };
+  }
+  const SMS = 'SJK4X7PQ2M Confirmed. Ksh2,500.00 sent to AMANI STYLES 5123456.';
+  const statusOf = async (id: string) =>
+    (await db.query.orders.findFirst({ where: eq(t.orders.id, id) }))!.status;
+
+  it('refuses "I’ve paid" and the switch to pay on delivery; cancelling still works', async () => {
+    const w = await world();
+    const order = await payNow(w);
+    await suspend(w.slug);
+    for (const handler of [postOrderCode, postSwitchToPod] as BuyerHandler[]) {
+      const res = await buyer(handler, order.publicToken, { message: SMS });
+      expect(res.status).toBe(409);
+      expect(res.json.error).toEqual({
+        code: 'shop_suspended',
+        message:
+          'This shop can’t take payments right now. Don’t send money. You can cancel this order.',
+      });
+    }
+    expect(await statusOf(order.id)).toBe('awaiting_payment');
+    expect((await buyer(postBuyerCancel, order.publicToken)).status).toBe(200);
+    expect(await statusOf(order.id)).toBe('cancelled');
+  });
+
+  it('still expires after 48 hours; unsuspending takes payments again', async () => {
+    const w = await world();
+    const stale = await payNow(w);
+    const fresh = await payNow(w);
+    await db
+      .update(t.orders)
+      .set({ awaitingPaymentSince: new Date(Date.now() - 49 * 3_600_000) })
+      .where(eq(t.orders.id, stale.id));
+    await suspend(w.slug);
+    const { expired } = await expireOrders(db);
+    expect(expired.map((o) => o.order.id)).toEqual([stale.id]);
+    expect(await statusOf(stale.id)).toBe('cancelled');
+
+    await suspend(w.slug, 'unsuspend');
+    expect((await buyer(postOrderCode, fresh.publicToken, { message: SMS })).status).toBe(200);
+    expect(await statusOf(fresh.id)).toBe('payment_claimed');
+  });
+
+  it('a claim sent before the suspension carries on: the seller confirms it', async () => {
+    const w = await world();
+    const order = await payNow(w);
+    expect((await buyer(postOrderCode, order.publicToken, { message: SMS })).status).toBe(200);
+    await suspend(w.slug);
+    const res = await act(w, order.id, { type: 'confirmPayment' });
+    expect(res.json.order).toMatchObject({ status: 'confirmed', paymentStatus: 'paid' });
   });
 });

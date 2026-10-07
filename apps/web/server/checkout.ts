@@ -7,8 +7,10 @@ import {
   codeInput,
   MAX_OPEN_ORDERS_PER_PHONE,
   OPEN_ORDER_STATUSES,
+  paymentsBlocked,
   quoteInput,
   reportInput,
+  SUSPENDED_PAY_MESSAGE,
   visitSource,
 } from '@oda/shared';
 import { requireOrderToken, type OrderTokenCtx } from './authz';
@@ -204,6 +206,7 @@ export async function orderShop(db: Db, ctx: OrderTokenCtx) {
   const closed = !shop || !!shop.deletedAt;
   return {
     closed,
+    suspended: !closed && !!shop.suspendedAt,
     browsable: !closed && !shop.suspendedAt,
     acceptsPayOnDelivery: !!shop?.acceptsPayOnDelivery,
   };
@@ -230,7 +233,12 @@ async function buyerAction(
     assertSameOrigin(request);
     const db = getDb();
     const ctx = await openOrder(db, (await params).token, request.headers);
-    assertOpenShop(await orderShop(db, ctx));
+    const shop = await orderShop(db, ctx);
+    assertOpenShop(shop);
+    // A suspended shop takes no payments (decision #83): no claim, no switch; cancel only.
+    if (kind !== 'cancel' && paymentsBlocked(ctx.order, shop)) {
+      throw new ConflictError(SUSPENDED_PAY_MESSAGE, 'shop_suspended');
+    }
     const scope = { kind: 'buyer' as const, ctx };
     let outcome;
     if (kind === 'code') {

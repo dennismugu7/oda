@@ -17,6 +17,8 @@ import {
   canReviewOrder,
   formatKePhone,
   formatKes,
+  paymentsBlocked,
+  SUSPENDED_PAY_MESSAGE,
   type CancelReason,
 } from '@oda/shared';
 import {
@@ -104,6 +106,17 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
     </p>
   ) : null;
 
+  // A suspended shop takes no payments (decision #83): no pay details, no "I've paid".
+  const noPayments = paymentsBlocked(ctx.order, shop);
+  const suspendedBanner = noPayments ? (
+    <p
+      role="alert"
+      className="mt-4 rounded-lg bg-warning-tint p-4 text-body text-warning-text-strong"
+    >
+      <strong>{SUSPENDED_PAY_MESSAGE}</strong>
+    </p>
+  ) : null;
+
   const help = (
     <section aria-labelledby="help-title" className="mt-5 rounded-xl bg-background py-2">
       <h2 id="help-title" className="px-4 pt-3 pb-1 text-subtitle text-navy">
@@ -188,10 +201,13 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const cancelled = order.status === 'cancelled';
   const expired = cancelled && order.cancelReason === 'expired';
   const pickup = order.fulfilment === 'pickup';
-  const timeline = cancelled ? [] : buyerTimeline(order, shopName, { reviewable, reviewedAt });
+  const timeline =
+    cancelled || noPayments ? [] : buyerTimeline(order, shopName, { reviewable, reviewedAt });
 
   let hero: React.ReactNode = null;
-  if (
+  if (noPayments) {
+    hero = null; // the suspended banner says it all
+  } else if (
     order.status === 'awaiting_acceptance' ||
     order.status === 'payment_claimed' ||
     order.status === 'awaiting_payment'
@@ -353,6 +369,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
         <h1 className="text-headline text-navy">Order #{order.number}</h1>
         <p className="text-body text-text-secondary">{summary}</p>
         {closedBanner}
+        {suspendedBanner}
         {hero}
 
         {actions.includes('cancel') ? (
