@@ -158,7 +158,7 @@ export function ChoiceCard({
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ checked: selected }}
       accessibilityLabel={label.replace('\n', ' ')}
       onPress={onPress}
       style={({ pressed }) => [
