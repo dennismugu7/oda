@@ -92,7 +92,7 @@ Screens 19b-share, 20-more, 20b-insights, 20b-customers, 20b-shop-profile, 20b-p
 Removed by decision #72 (owner Step 77): no `/admin`. Its jobs moved: the till badge is dropped (M8), buyer reports and seller feedback go out as a daily email digest (M8), web account deletion is self-serve (M8), suspending a shop is a manual GitHub Actions workflow (M10).
 
 ## M10 · Hardening
-**Proposed plan: `docs/m10-plan.md`** (owner Step 87; awaiting approval). Output: `docs/hardening-report.md`.
+**Plan: `docs/m10-plan.md`** (approved in owner Step 89, decision #81). Output: `docs/hardening-report.md`.
 - Security review (auth, authorization layer, endpoints, rate limits, secrets, dependency audit), all empty/error/offline states, accessibility pass, performance pass, Sentry wired in both apps, Expo push receipts, backup check, automated UI tests for the app, eas-cli upgrade, full end-to-end regression on staging with a real Android device.
 - **Suspend / unsuspend a shop** through a manual GitHub Actions workflow calling a protected endpoint (`OPS_SECRET`), with an audit row in `ops_events` (decision #72 d); remove the unused admin code paths (#72 f).
 - **Accept:** a written review report in `docs/hardening-report.md` with every issue fixed or consciously deferred; a suspended shop returns 404 and unsuspending restores it, both logged (tests).
