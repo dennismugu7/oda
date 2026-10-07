@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { sentryIngestOrigin } from '@/lib/sentryOptions';
 import { contentSecurityPolicy, newNonce, type CspConfig } from '@/server/securityHeaders';
 import { storageDriver } from '@/server/storage';
 
@@ -22,6 +23,7 @@ function cspConfig(): CspConfig {
       storageDriver: driver,
       s3Endpoint: process.env.STORAGE_S3_ENDPOINT,
       vercelBlobApiUrl: process.env.VERCEL_BLOB_API_URL,
+      sentryIngest: sentryIngestOrigin(),
     };
   }
   return { ...cached, dev: process.env.NODE_ENV === 'development' };

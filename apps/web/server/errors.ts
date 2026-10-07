@@ -1,6 +1,7 @@
 import 'server-only';
 import type { z } from 'zod';
 import { suspendedMessage } from '@oda/shared';
+import { reportUnexpected } from './monitoring';
 import { describeError } from './safeLog';
 
 // HTTP errors thrown by the authorization layer, repositories and transitionOrder().
@@ -187,6 +188,7 @@ export function toResponse(error: unknown): Response {
     );
   }
   console.error(`[api] unexpected error: ${describeError(error)}`);
+  reportUnexpected(error);
   return Response.json(
     { error: { code: 'server_error', message: 'Something went wrong. Please try again.' } },
     { status: 500 },

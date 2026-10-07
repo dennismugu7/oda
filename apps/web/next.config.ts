@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
 import { staticSecurityHeaders } from './server/securityHeaders';
 
@@ -33,4 +34,18 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+// Sentry (decision #87): readable stack traces from source maps uploaded during the Vercel
+// build, only when SENTRY_AUTH_TOKEN is set there (never on the laptop); the maps are deleted
+// from the deployment after upload, so browsers never get them.
+export default withSentryConfig(config, {
+  org: 'mugu-labs',
+  project: 'oda-web',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI && !process.env.VERCEL,
+  telemetry: false,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+    deleteSourcemapsAfterUpload: true,
+  },
+  widenClientFileUpload: false,
+});

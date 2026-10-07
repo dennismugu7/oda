@@ -18,6 +18,11 @@ const FRAGMENT_TOKEN = /#token=[^\s"'&]+/g;
 // Long opaque strings: session tokens, push tokens, keys, hashes (UUIDs stay readable).
 const OPAQUE = /\b(?![0-9a-f]{8}-[0-9a-f]{4}-)[A-Za-z0-9_-]{24,}\b/g;
 const EXPO_TOKEN = /ExponentPushToken\[[^\]]+\]/g;
+// A database error's message lists the query's values ("params: Wanjiku,0712…,Rhapta Rd") and
+// Postgres repeats row values in its detail ("Key (email)=(…)"): names and addresses that no
+// pattern above would catch. Both go entirely.
+const QUERY_PARAMS = /\bparams:[^\n]*/gi;
+const KEY_DETAIL = /(\([^()]*\))=\([^()]*\)/g;
 
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 // Ids are set aside while masking (their digits would look like phone numbers), as private-use
@@ -28,6 +33,8 @@ const ID_SLOT = /\uE000(\d+)\uE001/g;
 export function scrubString(text: string): string {
   const ids: string[] = [];
   const masked = text
+    .replace(QUERY_PARAMS, 'params: [removed]')
+    .replace(KEY_DETAIL, '$1=[removed]')
     .replace(UUID, (id) => `\uE000${ids.push(id) - 1}\uE001`)
     .replace(FRAGMENT_TOKEN, '#token=[token]')
     .replace(ORDER_LINK, '/o/[token]')
