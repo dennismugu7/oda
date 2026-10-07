@@ -30,7 +30,7 @@ const SECRET = vi.hoisted(() => {
   return secret;
 });
 
-let deferred: Promise<void>[] = [];
+const deferred: Promise<void>[] = [];
 const defer: Defer = (work) => {
   deferred.push(work());
 };
