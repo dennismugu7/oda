@@ -150,7 +150,7 @@ store; migrations are expand-only (CLAUDE.md). Role separation: S11.
   offline. Connect to load this." when nothing is saved, with edits disabled; detail screens
   answer a deleted order / product / review with a clear "no longer exists". Paged lists show a
   retry footer when the next page fails.
-- **Web (16 pages):** skeleton `loading.tsx` for shop, product and order pages; `global-error`;
+- **Web (16 pages):** `global-error` (no `loading.tsx`: it turned 404s and redirects into 200s, #84 g);
   the cart waits for the saved cart before rendering (no false "empty"); every client request
   (cart check, quote, order, review photo, delete confirm, reset check) shows progress, has a
   timeout and a "Try again", and never double-submits.
@@ -170,7 +170,7 @@ Redmi: owner, review stop B.**
 | Orders: all page 1 / page 2 / done / to do | 9.0 / 7.7 / 8.1 / 12.1 |
 | Orders: search name / phone | 8.5 / 13.4 |
 | Insights: today / week / month | 59 / 41 / 91 |
-| Customers: all / repeat / search | 161 / 165 / 293 (accepted, #84 g) |
+| Customers: all / repeat / search | 161 / 165 / 293 (accepted, #84 h) |
 | More / Home / Reviews | 25 / 11 / 5 |
 
 Web, production build, cold first load at 390 × 844 (gzipped JavaScript): landing 149 KB, shop /
