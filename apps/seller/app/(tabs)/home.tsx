@@ -29,6 +29,7 @@ import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderList, type OrderRow } from '@/orders/api';
 import { FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
+import { SuspendedBanner } from '@/ui/suspended';
 import { colors, radii, spacing, text } from '@/theme';
 
 type TodoTab = 'confirm' | 'send' | 'new';
@@ -157,6 +158,7 @@ export default function HomeTab() {
         </View>
 
         <View style={styles.body}>
+          {shop?.suspended ? <SuspendedBanner /> : null}
           {offline ? <OfflineBar /> : error ? <FormMessage>{error}</FormMessage> : null}
           {home && !home.hasOrders ? (
             <>

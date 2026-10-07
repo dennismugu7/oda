@@ -50,6 +50,7 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
           onboardingCompletedAt: true,
           ratingAvg: true,
           ratingCount: true,
+          suspendedAt: true,
         },
         where: and(eq(schema.shops.ownerId, ctx.userId), isNull(schema.shops.deletedAt)),
       });
@@ -76,6 +77,8 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
               /** The More tab's Reviews row ("4.8 ★ · 38", M7). */
               ratingAvg: shop.ratingAvg === null ? null : Number(shop.ratingAvg),
               ratingCount: shop.ratingCount,
+              /** Suspended by oda: read-only except existing orders (decision #81 d). */
+              suspended: !!shop.suspendedAt,
             }
           : null,
       };

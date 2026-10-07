@@ -6,7 +6,7 @@ import { isOrderToken } from '@oda/shared';
 import { getAuth } from './auth';
 import { getDb } from './db';
 import { serverEnv } from './env';
-import { NotFoundError, UnauthorizedError } from './errors';
+import { NotFoundError, ShopSuspendedError, UnauthorizedError } from './errors';
 import { ensureProfile } from './profiles';
 
 // The authorization layer (docs/data-model.md → Authorization). Every route handler and
@@ -17,8 +17,8 @@ declare const authorized: unique symbol;
 type Branded<T, K extends string> = T & { readonly [authorized]: K };
 
 export type UserCtx = Branded<{ userId: string }, 'user'>;
-export type SellerCtx = Branded<{ userId: string; shopId: string }, 'seller'>;
-export type AdminCtx = Branded<{ userId: string }, 'admin'>;
+/** `suspended`: oda suspended the shop (decision #81 d); edits go through assertCanEditShop. */
+export type SellerCtx = Branded<{ userId: string; shopId: string; suspended?: boolean }, 'seller'>;
 export type OrderRow = typeof schema.orders.$inferSelect;
 export type OrderTokenCtx = Branded<{ order: OrderRow }, 'order-token'>;
 export type OpsCtx = Branded<{ ops: true }, 'ops'>;
@@ -53,24 +53,20 @@ export async function requireUser(req: HasHeaders, db: Db = getDb()): Promise<Us
 export async function requireSeller(req: HasHeaders, db: Db = getDb()): Promise<SellerCtx> {
   const { userId } = await requireUser(req, db);
   const shop = await db.query.shops.findFirst({
-    columns: { id: true },
+    columns: { id: true, suspendedAt: true },
     where: and(eq(schema.shops.ownerId, userId), isNull(schema.shops.deletedAt)),
   });
   if (!shop) throw new NotFoundError("You don't have a shop yet.");
-  return { userId, shopId: shop.id } as SellerCtx;
+  return { userId, shopId: shop.id, suspended: !!shop.suspendedAt } as SellerCtx;
 }
 
-/** Admins only. Everyone else, signed in or not, gets 404 so admin routes stay invisible. */
-export async function requireAdmin(req: HasHeaders, db: Db = getDb()): Promise<AdminCtx> {
-  const userId = await sessionUserId(req);
-  const profile = userId
-    ? await db.query.profiles.findFirst({
-        columns: { isAdmin: true, deletedAt: true },
-        where: eq(schema.profiles.id, userId),
-      })
-    : undefined;
-  if (!userId || !profile?.isAdmin || profile.deletedAt) throw new NotFoundError();
-  return { userId } as AdminCtx;
+/**
+ * A suspended shop (decision #81 d) can still finish its existing orders, read everything and
+ * change the seller's own account, but can't create orders or edit the shop or catalogue:
+ * 403 `shop_suspended` with the support email.
+ */
+export function assertCanEditShop(ctx: SellerCtx): void {
+  if (ctx.suspended) throw new ShopSuspendedError(serverEnv().ODA_SUPPORT_EMAIL);
 }
 
 /** Buyer order access: only the order's public token. Anything else is 404. */

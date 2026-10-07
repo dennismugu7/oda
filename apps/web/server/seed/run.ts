@@ -24,5 +24,5 @@ console.log(
     `${summary.reviews} reviews (rating ${summary.rating})`,
 );
 console.log('seed: order numbers', summary.orderNumbers);
-console.log('seed: sign in as amani@example.test or admin@example.test with SEED_PASSWORD');
+console.log('seed: sign in as amani@example.test with SEED_PASSWORD');
 process.exit(0);

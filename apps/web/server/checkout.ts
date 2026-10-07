@@ -187,13 +187,26 @@ export async function openOrder(db: Db, token: unknown, headers: Headers): Promi
   return requireOrderToken(token, db);
 }
 
-/** The order's shop as the buyer pages need it; `closed` = deleted (decision #38 c). */
+/**
+ * The order's shop as the buyer pages need it: `closed` = deleted (decision #38 c);
+ * `browsable` = its shop page is open (not deleted, not suspended). A suspended shop's orders
+ * carry on as usual: the seller finishes them (decision #81 d).
+ */
 export async function orderShop(db: Db, ctx: OrderTokenCtx) {
   const [shop] = await db
-    .select({ deletedAt: t.shops.deletedAt, acceptsPayOnDelivery: t.shops.acceptsPayOnDelivery })
+    .select({
+      deletedAt: t.shops.deletedAt,
+      suspendedAt: t.shops.suspendedAt,
+      acceptsPayOnDelivery: t.shops.acceptsPayOnDelivery,
+    })
     .from(t.shops)
     .where(eq(t.shops.id, ctx.order.shopId));
-  return { closed: !shop || !!shop.deletedAt, acceptsPayOnDelivery: !!shop?.acceptsPayOnDelivery };
+  const closed = !shop || !!shop.deletedAt;
+  return {
+    closed,
+    browsable: !closed && !shop.suspendedAt,
+    acceptsPayOnDelivery: !!shop?.acceptsPayOnDelivery,
+  };
 }
 
 function assertOpenShop(shop: { closed: boolean }) {

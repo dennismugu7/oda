@@ -165,7 +165,7 @@ Exactly the "email" side effects listed in `order-lifecycle.md`. Every email inc
 - **No `/admin` and no till verification:** there is no "M-Pesa till checked by oda" badge anywhere.
 - **Support digest:** buyer reports and seller feedback are emailed daily to `support@mugu-labs.com` (only when something is new); the team replies outside oda.
 - **Account deletion:** in the app, or self-serve on the web (`/delete-account` → confirm link by email → the 30-day purge).
-- **Suspend / unsuspend a shop:** a manual GitHub Actions workflow calling a protected endpoint, logged (suspended = the public page returns 404).
+- **Suspend / unsuspend a shop:** a manual GitHub Actions workflow (**Actions → shop-suspend**) calling a protected endpoint, logged in `ops_events` (decisions #72 d, #81 d, #82). Suspended = the shop page, products and checkout return 404; the seller stays signed in, sees "Your shop is suspended. Email support@mugu-labs.com" and can still finish existing orders, but can't create orders or edit the shop or catalogue. Buyers' order pages keep working.
 - **Counts** (shops, live shops, orders per day) are read in Neon's console when needed.
 
 ## 8. Non-functional requirements

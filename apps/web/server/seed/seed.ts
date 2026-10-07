@@ -9,7 +9,6 @@ import { insertOrder, transitionOrder, type TransitionAction } from '../orders';
 import { sellerRepo } from '../repos/seller';
 import { userRepo } from '../repos/user';
 import {
-  ADMIN,
   AREAS,
   CATEGORIES,
   OLD_PRODUCTS,
@@ -112,15 +111,11 @@ export async function seed(db: Db, opts: { password: string; now?: Date }): Prom
   const sellerSignUp = await auth.api.signUpEmail({
     body: { name: SELLER.name, email: SELLER.email, password: opts.password },
   });
-  const adminSignUp = await auth.api.signUpEmail({
-    body: { name: ADMIN.name, email: ADMIN.email, password: opts.password },
-  });
-  // Seed accounts skip the emailed code (decision #43): mark both emails verified.
+  // Seed accounts skip the emailed code (decision #43): mark the email verified.
   await db
     .update(t.authUser)
     .set({ emailVerified: true })
-    .where(inArray(t.authUser.id, [sellerSignUp.user.id, adminSignUp.user.id]));
-  await db.update(t.profiles).set({ isAdmin: true }).where(eq(t.profiles.id, adminSignUp.user.id));
+    .where(eq(t.authUser.id, sellerSignUp.user.id));
   const sellerUserId = sellerSignUp.user.id;
   const userCtx = { userId: sellerUserId } as Parameters<typeof userRepo>[1];
   await userRepo(db, userCtx).updateProfile(
@@ -168,17 +163,8 @@ export async function seed(db: Db, opts: { password: string; now?: Date }): Prom
     })
     .where(eq(t.shops.id, shop.id));
 
-  const account = await repo.createPaymentAccount(
-    parseInput(WRITE_SCHEMAS.paymentAccountInput, TILL),
-  );
-  await db
-    .update(t.paymentAccounts)
-    .set({
-      verificationStatus: 'verified',
-      verifiedBy: adminSignUp.user.id,
-      verifiedAt: new Date(now.getTime() - 128 * DAY),
-    })
-    .where(eq(t.paymentAccounts.id, account.id));
+  // Till verification is unused since decision #72 a.
+  await repo.createPaymentAccount(parseInput(WRITE_SCHEMAS.paymentAccountInput, TILL));
 
   const areas = {} as Record<AreaKey, string>;
   let position = 0;

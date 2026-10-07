@@ -496,7 +496,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
         {help}
 
         <p className="mt-5 rounded-lg bg-peach p-4 text-body text-text-secondary">{bookmark}</p>
-        {order.shop && !shop.closed ? (
+        {order.shop && shop.browsable ? (
           <Link
             href={`/${order.shop.slug}`}
             className="mt-5 flex h-14 items-center justify-center rounded-pill bg-primary-tint text-button text-primary"

@@ -5,7 +5,7 @@ import {
   deliveryAreaUpdate,
   deliverySettingsUpdate,
 } from '@oda/shared';
-import { requireSeller } from './authz';
+import { assertCanEditShop, requireSeller } from './authz';
 import { getDb } from './db';
 import { parseInput } from './errors';
 import { deliveryRepo } from './repos/delivery';
@@ -18,7 +18,10 @@ import { body, handle } from './routeHandler';
 
 async function repo(request: Request) {
   const db = getDb();
-  return deliveryRepo(db, await requireSeller(request, db));
+  const ctx = await requireSeller(request, db);
+  // A suspended shop can still read its catalogue but not change it (decision #81 d).
+  if (request.method !== 'GET') assertCanEditShop(ctx);
+  return deliveryRepo(db, ctx);
 }
 
 /** GET /api/delivery: areas (in order), pickup, free delivery, and whether orders can come in. */

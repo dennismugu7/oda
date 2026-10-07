@@ -17,6 +17,8 @@ export interface Me {
     /** The shop's rating for the More tab's Reviews row (M7). */
     ratingAvg?: number | null;
     ratingCount?: number;
+    /** Suspended by oda: read-only except open orders (decision #81 d). */
+    suspended?: boolean;
   } | null;
 }
 

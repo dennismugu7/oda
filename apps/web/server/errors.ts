@@ -1,5 +1,6 @@
 import 'server-only';
 import type { z } from 'zod';
+import { suspendedMessage } from '@oda/shared';
 import { describeError } from './safeLog';
 
 // HTTP errors thrown by the authorization layer, repositories and transitionOrder().
@@ -30,6 +31,13 @@ export class UnauthorizedError extends HttpError {
 export class ForbiddenError extends HttpError {
   constructor(message = "You can't do that.") {
     super(403, message, 'forbidden');
+  }
+}
+
+/** A suspended shop's edits (decision #81 d). */
+export class ShopSuspendedError extends HttpError {
+  constructor(supportEmail: string) {
+    super(403, suspendedMessage(supportEmail), 'shop_suspended');
   }
 }
 
