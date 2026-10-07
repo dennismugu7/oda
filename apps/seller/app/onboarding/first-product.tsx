@@ -231,17 +231,23 @@ function Step({ state }: { state: OnboardingState }) {
       {more.length ? (
         <View style={styles.thumbs}>
           {more.map((slot) => (
-            <PhotoTile key={slot.id} slot={slot} onRetry={() => upload(slot)}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Remove photo"
-                hitSlop={8}
-                onPress={() => remove(slot.id)}
-                style={styles.removeBadge}
-              >
-                <Feather name="x" size={12} color={colors.textOnNavy} />
-              </Pressable>
-            </PhotoTile>
+            <PhotoTile
+              key={slot.id}
+              slot={slot}
+              onRetry={() => upload(slot)}
+              action={
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove photo"
+                  onPress={() => remove(slot.id)}
+                  style={styles.removeTarget}
+                >
+                  <View style={styles.removeBadge}>
+                    <Feather name="x" size={12} color={colors.textOnNavy} />
+                  </View>
+                </Pressable>
+              }
+            />
           ))}
         </View>
       ) : null}
@@ -315,16 +321,19 @@ function PhotoTile({
   big = false,
   onRetry,
   onPress,
+  action,
   children,
 }: {
   slot: Slot;
   big?: boolean;
   onRetry: () => void;
   onPress?: () => void;
+  /** A button on the tile (Remove): a sibling of the tile so TalkBack reaches both. */
+  action?: ReactNode;
   children?: ReactNode;
 }) {
   const failed = slot.status === 'failed';
-  return (
+  const tile = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={
@@ -354,6 +363,13 @@ function PhotoTile({
       ) : null}
       {children}
     </Pressable>
+  );
+  if (!action) return tile;
+  return (
+    <View>
+      {tile}
+      {action}
+    </View>
   );
 }
 
@@ -432,10 +448,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.beige,
     overflow: 'visible',
   },
-  removeBadge: {
+  // A 44 dp target centred on the badge at the tile's corner.
+  removeTarget: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -17,
+    right: -17,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeBadge: {
     width: 22,
     height: 22,
     borderRadius: 11,

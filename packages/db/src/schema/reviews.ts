@@ -40,6 +40,12 @@ export const reviews = pgTable(
   },
   (t) => [
     index('reviews_shop_id_idx').on(t.shopId, t.createdAt.desc()),
+    // The seller's review pages (decision #84): the same expression as msUtc() in the web repos.
+    index('reviews_shop_created_ms_idx').on(
+      t.shopId,
+      sql`date_trunc('milliseconds', ${t.createdAt} at time zone 'UTC') desc`,
+      sql`${t.id} desc`,
+    ),
     // Lets notifications reference (review_id, shop_id).
     uniqueIndex('reviews_id_shop_id').on(t.id, t.shopId),
     check('reviews_rating', sql`${t.rating} between 1 and 5`),

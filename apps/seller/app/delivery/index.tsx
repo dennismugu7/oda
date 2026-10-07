@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -30,6 +31,7 @@ import { parseShillings } from '@/delivery/form';
 import { move } from '@/catalogue/form';
 import { errorMessage } from '@/onboarding/labels';
 import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
+import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, radii, spacing, text } from '@/theme';
@@ -48,6 +50,9 @@ export default function DeliveryScreen() {
   const insets = useSafeAreaInsets();
   const [delivery, setDelivery] = useState<Delivery | null>(deliveryCache.get());
   const [error, setError] = useState<string | null>(null);
+  // Offline: the saved copy, read-only (spec §8): nothing to edit until it's back.
+  const [offline, setOffline] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<'pickup' | 'free' | null>(null);
   const [location, setLocation] = useState('');
@@ -66,8 +71,18 @@ export default function DeliveryScreen() {
     if (data) {
       keep(data);
       setError(null);
-    } else setError(errorMessage(failed));
+      setOffline(false);
+    } else {
+      setOffline(failed?.code === 'OFFLINE');
+      setError(errorMessage(failed));
+    }
   }, [keep]);
+
+  async function refresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   // Fresh whenever the screen shows (e.g. back from adding an area).
   useFocusEffect(
@@ -197,7 +212,7 @@ export default function DeliveryScreen() {
         <View style={styles.body}>
           {error ? (
             <>
-              <FormMessage>{error}</FormMessage>
+              {offline ? <OfflineBar saved={false} /> : <FormMessage>{error}</FormMessage>}
               <Button title="Try again" onPress={load} />
             </>
           ) : (
@@ -216,7 +231,11 @@ export default function DeliveryScreen() {
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} colors={[colors.primary]} />
+        }
       >
+        {offline ? <OfflineBar /> : null}
         {!delivery.hasDeliveryOption ? (
           <View style={styles.warning} accessibilityRole="alert">
             <Feather name="alert-triangle" size={18} color={colors.warningTextStrong} />
@@ -225,7 +244,7 @@ export default function DeliveryScreen() {
             </Text>
           </View>
         ) : null}
-        {error ? <FormMessage>{error}</FormMessage> : null}
+        {error && !offline ? <FormMessage>{error}</FormMessage> : null}
 
         <View style={styles.card}>
           <View style={styles.cardHead}>
@@ -246,6 +265,8 @@ export default function DeliveryScreen() {
               onPress={() => router.push({ pathname: '/delivery/area', params: { id: a.id } })}
               onLongPress={() => setHeld(a)}
               delayLongPress={300}
+              disabled={offline}
+              accessibilityState={{ disabled: offline }}
               style={({ pressed }) => [styles.row, styles.rowDivider, pressed && styles.pressed]}
             >
               <IconTile icon={METHOD_ICON[a.method]} />
@@ -262,8 +283,14 @@ export default function DeliveryScreen() {
           ))}
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: offline }}
+            disabled={offline}
             onPress={() => router.push('/delivery/area')}
-            style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.addButton,
+              offline && styles.disabled,
+              pressed && styles.pressed,
+            ]}
           >
             <Feather name="plus" size={20} color={colors.navy} />
             <Text style={styles.addText}>Add delivery area</Text>
@@ -282,8 +309,8 @@ export default function DeliveryScreen() {
             }
             value={delivery.pickupEnabled}
             onToggle={togglePickup}
-            onPress={delivery.pickupEnabled ? editPickup : undefined}
-            disabled={busy}
+            onPress={delivery.pickupEnabled && !offline ? editPickup : undefined}
+            disabled={busy || offline}
           />
           {editing === 'pickup' ? (
             <View style={styles.editor}>
@@ -322,8 +349,8 @@ export default function DeliveryScreen() {
             }
             value={delivery.freeDeliveryThreshold !== null}
             onToggle={toggleFree}
-            onPress={delivery.freeDeliveryThreshold !== null ? editFree : undefined}
-            disabled={busy}
+            onPress={delivery.freeDeliveryThreshold !== null && !offline ? editFree : undefined}
+            disabled={busy || offline}
           />
           {editing === 'free' ? (
             <View style={styles.editor}>
@@ -553,4 +580,5 @@ const styles = StyleSheet.create({
   },
   warningText: { ...text('bodyStrong'), color: colors.warningTextStrong, flex: 1 },
   pressed: { opacity: 0.85 },
+  disabled: { opacity: 0.5 },
 });

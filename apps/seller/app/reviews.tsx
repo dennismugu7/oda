@@ -26,7 +26,7 @@ import { reviewsApi, type ReviewList, type SellerReview } from '@/reviews/api';
 import { replaceReview, reviewsCache } from '@/reviews/cache';
 import { avatarFor, emptyText, histogramBars, REVIEW_TABS, reviewLabel } from '@/reviews/view';
 import { Button, Field, FormMessage } from '@/ui/auth';
-import { OfflineBar } from '@/ui/offline';
+import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
 import { colors, radii, spacing, text } from '@/theme';
 
@@ -197,10 +197,14 @@ export default function ReviewsScreen() {
   const [tab, setTab] = useState<ReviewTab>('all');
   const [list, setList] = useState<ReviewList | null>(reviewsCache.list('all'));
   const [focused, setFocused] = useState<SellerReview | null>(null);
+  /** The notification's review was removed (decision #73) before the seller opened it. */
+  const [focusGone, setFocusGone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  /** The tab whose next page didn't load (its footer offers a retry). */
+  const [moreFailed, setMoreFailed] = useState<ReviewTab | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [replying, setReplying] = useState<SellerReview | null>(null);
   const [reply, setReply] = useState('');
@@ -233,8 +237,12 @@ export default function ReviewsScreen() {
   const focusId = typeof params.review === 'string' ? params.review : null;
   const loadFocused = useCallback(async () => {
     if (!focusId) return;
-    const { data } = await reviewsApi.get(focusId);
+    const { data, error: failed } = await reviewsApi.get(focusId);
     if (data) setFocused(data);
+    if (failed?.status === 404) {
+      setFocused(null);
+      setFocusGone(true);
+    }
   }, [focusId]);
 
   useFocusEffect(
@@ -251,13 +259,19 @@ export default function ReviewsScreen() {
     load(next);
   }
 
-  async function more() {
-    if (!list?.next || loadingMore) return;
+  /** `retry`: the seller tapped the footer (scrolling doesn't retry a failed page). */
+  async function more(retry = false) {
+    if (!list?.next || loadingMore || (moreFailed === tab && !retry)) return;
     setLoadingMore(true);
+    setMoreFailed(null);
     const which = tab;
     const { data } = await reviewsApi.list(which, list.next);
     setLoadingMore(false);
-    if (!data || tabRef.current !== which) return;
+    if (tabRef.current !== which) return;
+    if (!data) {
+      setMoreFailed(which);
+      return;
+    }
     const merged = {
       ...data,
       reviews: [
@@ -359,7 +373,7 @@ export default function ReviewsScreen() {
   const banner =
     offline || error ? (
       <View style={styles.banner}>
-        {offline ? <OfflineBar /> : <FormMessage>{error}</FormMessage>}
+        {offline ? <OfflineBar saved={!!list} /> : <FormMessage>{error}</FormMessage>}
       </View>
     ) : null;
 
@@ -390,7 +404,7 @@ export default function ReviewsScreen() {
           data={reviews}
           keyExtractor={(r) => r.id}
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
-          onEndReached={more}
+          onEndReached={() => more()}
           onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl
@@ -407,6 +421,7 @@ export default function ReviewsScreen() {
             <View style={styles.headerGap}>
               {banner}
               {list.summary.count ? <Summary summary={list.summary} /> : null}
+              {focusGone ? <FormMessage tone="info">That review was removed.</FormMessage> : null}
               {focused ? card(focused, true) : null}
             </View>
           }
@@ -422,7 +437,11 @@ export default function ReviewsScreen() {
           }
           ListFooterComponent={
             <>
-              {loadingMore ? <ActivityIndicator color={colors.primary} /> : null}
+              {loadingMore ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : moreFailed === tab ? (
+                <LoadMoreFailed onRetry={() => more(true)} />
+              ) : null}
               {note}
             </>
           }

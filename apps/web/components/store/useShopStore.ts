@@ -55,6 +55,20 @@ function snapshot<T>(key: string, parse: (raw: string | null) => T): T {
 
 const EMPTY: never[] = [];
 
+const noSubscribe = () => () => {};
+
+/**
+ * False on the server and during hydration, true once the page runs in the browser. The cart
+ * is only known on this device: render a placeholder until then, never "Your cart is empty".
+ */
+export function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
+}
+
 export function useCart(shopId: string) {
   const key = cartKey(shopId);
   const lines = useSyncExternalStore(
@@ -71,7 +85,8 @@ export function useCart(shopId: string) {
     [key],
   );
   const replace = useCallback((next: CartLine[]) => write(key, next), [key]);
-  return { lines, add, changeQty, replace };
+  const hydrated = useHydrated();
+  return { lines, add, changeQty, replace, hydrated };
 }
 
 export function useFavourites(shopId: string) {

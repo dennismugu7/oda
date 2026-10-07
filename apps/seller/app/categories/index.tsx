@@ -26,6 +26,9 @@ import { ScreenHeader } from '@/ui/screenHeader';
 import { DragBoundary } from '@/ui/dragBoundary';
 import { colors, radii, spacing, text } from '@/theme';
 
+/** How far each move arrow's target reaches into the row's padding. */
+const ARROW_SLOP = spacing.md;
+
 function Thumbs({ urls }: { urls: string[] }) {
   if (urls.length === 0) return <View style={[styles.thumb, styles.thumbEmpty]} />;
   return (
@@ -89,26 +92,46 @@ export default function Categories() {
     await load();
   }
 
+  const canMove = (index: number, by: number) =>
+    !!categories && index + by >= 0 && index + by < categories.length;
+  const moveBy = (index: number, by: number) => {
+    if (categories && canMove(index, by)) reorder(move(categories, index, index + by));
+  };
+
   const row = (c: Category, index: number, drag?: () => void, active = false) => (
     <Pressable
       key={c.id}
       accessibilityRole="button"
       accessibilityLabel={`${c.name}, ${c.productCount} products${c.isVisible ? '' : ', hidden'}`}
+      // The arrows sit inside this row, where TalkBack can't reach them: the same moves as
+      // actions on the row (swipe up or down, or the actions menu).
+      accessibilityActions={[
+        ...(canMove(index, -1) ? [{ name: 'moveUp', label: 'Move up' }] : []),
+        ...(canMove(index, 1) ? [{ name: 'moveDown', label: 'Move down' }] : []),
+      ]}
+      onAccessibilityAction={(e) => moveBy(index, e.nativeEvent.actionName === 'moveUp' ? -1 : 1)}
       onPress={() => router.push({ pathname: '/categories/[id]', params: { id: c.id } })}
       onLongPress={drag}
       delayLongPress={200}
       style={[styles.row, index > 0 && styles.rowDivider, active && styles.rowActive]}
     >
       {drag ? (
-        <Feather name="menu" size={20} color={colors.textMuted} accessibilityElementsHidden />
+        <Feather
+          name="menu"
+          size={20}
+          color={colors.textMuted}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
       ) : (
         <View style={styles.arrows}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Move ${c.name} up`}
             disabled={index === 0}
-            hitSlop={6}
-            onPress={() => categories && reorder(move(categories, index, index - 1))}
+            hitSlop={{ top: ARROW_SLOP }}
+            style={styles.arrow}
+            onPress={() => moveBy(index, -1)}
           >
             <Feather
               name="chevron-up"
@@ -120,8 +143,9 @@ export default function Categories() {
             accessibilityRole="button"
             accessibilityLabel={`Move ${c.name} down`}
             disabled={!categories || index === categories.length - 1}
-            hitSlop={6}
-            onPress={() => categories && reorder(move(categories, index, index + 1))}
+            hitSlop={{ bottom: ARROW_SLOP }}
+            style={styles.arrow}
+            onPress={() => moveBy(index, 1)}
           >
             <Feather
               name="chevron-down"
@@ -255,7 +279,9 @@ const styles = StyleSheet.create({
   },
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
   rowActive: { opacity: 0.9 },
-  arrows: { gap: 2 },
+  arrows: {},
+  // Each arrow is 44 wide and, with its slop into the row's padding, 44 tall.
+  arrow: { width: 44, height: 44 - ARROW_SLOP, alignItems: 'center', justifyContent: 'center' },
   thumbs: { flexDirection: 'row' },
   thumb: {
     width: 44,

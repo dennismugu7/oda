@@ -69,6 +69,8 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** The product was deleted (on another phone, or before a notification was tapped). */
+  const [gone, setGone] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       const prod = productId ? await catalogueApi.product(productId) : null;
       if (cancelled) return;
       if (!cats.data || (prod && !prod.data)) {
+        setGone(!!cats.data && prod?.error?.status === 404);
         setLoadError(errorMessage(cats.error ?? prod?.error));
         return;
       }
@@ -92,7 +95,15 @@ export function ProductForm({ productId }: { productId?: string }) {
   if (!categories || (productId && !product)) {
     return (
       <Shell title={productId ? 'Edit product' : 'New product'}>
-        {loadError ? (
+        {gone ? (
+          <View style={styles.status}>
+            <FormMessage>This product no longer exists.</FormMessage>
+            <Button
+              title="Back to Shop"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/shop'))}
+            />
+          </View>
+        ) : loadError ? (
           <View style={styles.status}>
             <FormMessage>{loadError}</FormMessage>
             <Button
@@ -375,6 +386,7 @@ function Editor({
             product && shopSlug
               ? {
                   label: 'View in shop',
+                  role: 'link',
                   onPress: () => openBuyerView(shopPageUrl(shopSlug, product.id)),
                 }
               : null

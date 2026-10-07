@@ -14,7 +14,7 @@ import { nativePhotoDeps, pickPhotos } from '@/onboarding/nativePhotos';
 import { uploadLogo, type Picked } from '@/onboarding/photos';
 import { ONBOARDING_ROUTES } from '@/onboarding/steps';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
-import { Button, Field, FormMessage, Link } from '@/ui/auth';
+import { Button, Field, FormMessage, Link, LinkButton } from '@/ui/auth';
 import { onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
 
@@ -248,7 +248,11 @@ function Step({ state }: { state: OnboardingState }) {
           error={phoneError ?? fields.whatsappPhone}
           left={
             <>
-              <View style={styles.flag} accessibilityElementsHidden>
+              <View
+                style={styles.flag}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
                 <View style={[styles.flagBand, { backgroundColor: colors.text }]} />
                 <View style={[styles.flagBand, { backgroundColor: colors.danger }]} />
                 <View style={[styles.flagBand, { backgroundColor: colors.green }]} />
@@ -311,9 +315,9 @@ function LinkStatus({
           <Text style={styles.linkStrong}>{shown}</Text> is yours
         </Text>
         {editing ? null : (
-          <Text accessibilityRole="button" onPress={onEdit} style={styles.edit}>
+          <LinkButton onPress={onEdit} textStyle={styles.edit}>
             Edit
-          </Text>
+          </LinkButton>
         )}
       </View>
     );
@@ -325,16 +329,16 @@ function LinkStatus({
         <View style={styles.suggestions}>
           <Text style={styles.linkMuted}>Try:</Text>
           {result.suggestions.slice(0, 3).map((s) => (
-            <Text key={s} accessibilityRole="button" onPress={() => onPick(s)} style={styles.edit}>
+            <LinkButton key={s} onPress={() => onPick(s)} textStyle={styles.edit}>
               {s}
-            </Text>
+            </LinkButton>
           ))}
         </View>
       ) : null}
       {editing ? null : (
-        <Text accessibilityRole="button" onPress={onEdit} style={styles.edit}>
+        <LinkButton onPress={onEdit} textStyle={styles.edit}>
           Edit the link
-        </Text>
+        </LinkButton>
       )}
     </View>
   );

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { formatKes } from '@oda/shared';
 import { cartCount, cartTotal, inCart, writeSource } from '@/lib/store/cart';
-import { useCart, useFavourites } from './useShopStore';
+import { useCart, useFavourites, useHydrated } from './useShopStore';
 
 export interface CardProduct {
   id: string;
@@ -31,13 +31,21 @@ function HeartIcon({ filled }: { filled: boolean }) {
   );
 }
 
-export function FavouriteButton({ shopId, productId }: { shopId: string; productId: string }) {
+export function FavouriteButton({
+  shopId,
+  productId,
+  productName,
+}: {
+  shopId: string;
+  productId: string;
+  productName: string;
+}) {
   const { ids, toggle } = useFavourites(shopId);
   const on = ids.includes(productId);
   return (
     <button
       type="button"
-      aria-label={on ? 'Remove from favourites' : 'Add to favourites'}
+      aria-label={on ? `Remove ${productName} from favourites` : `Add ${productName} to favourites`}
       aria-pressed={on}
       onClick={(e) => {
         e.preventDefault();
@@ -69,6 +77,7 @@ export function CardCartAction({
   if (inCart(lines, product.id)) {
     return (
       <span
+        role="img"
         aria-label="In your cart"
         className="absolute right-2.5 bottom-2.5 flex size-11 items-center justify-center rounded-pill bg-green text-text-on-primary"
       >
@@ -119,6 +128,9 @@ export function CardCartAction({
           name: product.name,
           coverUrl: product.coverUrl,
         });
+        // This button turns into the green tick: keep focus on the cart bar's link instead
+        // (the bar announces "Added to cart").
+        requestAnimationFrame(() => document.getElementById('cart-bar-link')?.focus());
       }}
       className={style}
     >
@@ -129,10 +141,33 @@ export function CardCartAction({
 
 export function CartBar({ shopId, slug }: { shopId: string; slug: string }) {
   const { lines } = useCart(shopId);
+  const hydrated = useHydrated();
   const count = cartCount(lines);
-  if (count === 0) return null;
+  // "Added to cart" for screen readers when the count goes up on this page (not when the
+  // saved cart is first read). Adjusted while rendering, React's pattern for derived state.
+  const [seen, setSeen] = useState<{ count: number | null; message: string }>({
+    count: null,
+    message: '',
+  });
+  if (hydrated && seen.count !== count) {
+    setSeen({
+      count,
+      message:
+        seen.count !== null && count > seen.count
+          ? `Added to cart. ${count} ${count === 1 ? 'item' : 'items'} in your cart.`
+          : '',
+    });
+  }
+  // The live region stays on the page so the message is read when it changes.
+  const live = (
+    <p aria-live="polite" className="sr-only">
+      {seen.message}
+    </p>
+  );
+  if (count === 0) return live;
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-4 pb-4">
+      {live}
       <div className="flex items-center gap-3 rounded-sheet bg-navy p-2.5 pl-3 text-text-on-navy shadow-lg">
         <span className="relative flex size-12 items-center justify-center rounded-pill bg-navy-raised">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -155,6 +190,7 @@ export function CartBar({ shopId, slug }: { shopId: string; slug: string }) {
           <span className="block text-title">{formatKes(cartTotal(lines))}</span>
         </span>
         <Link
+          id="cart-bar-link"
           href={`/${slug}/cart`}
           className="flex h-12 items-center gap-2 rounded-pill bg-primary px-5 text-button text-text-on-primary"
         >
@@ -185,23 +221,31 @@ export function ShareButton({ url, title }: { url: string; title: string }) {
     }
   }
   return (
-    <button
-      type="button"
-      onClick={share}
-      aria-label={copied ? 'Link copied' : 'Share this shop'}
-      className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
-    >
-      {copied ? (
-        <span className="text-small font-semibold">Copied</span>
-      ) : (
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1" stroke="currentColor" strokeWidth="1.8" />
-        </svg>
-      )}
-    </button>
+    <>
+      {/* Read out when the link is copied (the button's name stays the same). */}
+      <span aria-live="polite" className="sr-only">
+        {copied ? 'Link copied' : ''}
+      </span>
+      <button
+        type="button"
+        onClick={share}
+        aria-label="Share this shop"
+        className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
+      >
+        {copied ? (
+          <span aria-hidden="true" className="text-small font-semibold">
+            Copied
+          </span>
+        ) : (
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+        )}
+      </button>
+    </>
   );
 }
 

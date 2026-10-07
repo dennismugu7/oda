@@ -29,6 +29,7 @@ export function SettingsLayout({
   error,
   offline,
   onRetry,
+  retryLabel = 'Try again',
   back = () => goBack(),
   overlay,
   header,
@@ -41,6 +42,8 @@ export function SettingsLayout({
   error?: string | null;
   offline?: boolean;
   onRetry?: () => void;
+  /** The error button's label: "Back" when the thing no longer exists. */
+  retryLabel?: string;
   back?: () => void;
   /** Sheets and modals, outside the scroll view. */
   overlay?: ReactNode;
@@ -56,8 +59,8 @@ export function SettingsLayout({
         <View style={styles.body}>
           {error ? (
             <>
-              {offline ? <OfflineBar /> : <FormMessage>{error}</FormMessage>}
-              {onRetry ? <Button title="Try again" onPress={onRetry} /> : null}
+              {offline ? <OfflineBar saved={false} /> : <FormMessage>{error}</FormMessage>}
+              {onRetry ? <Button title={retryLabel} onPress={onRetry} /> : null}
             </>
           ) : (
             <ActivityIndicator style={styles.loading} color={colors.primary} />
@@ -78,7 +81,7 @@ export function SettingsLayout({
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"
       >
-        {offline ? <OfflineBar /> : null}
+        {offline ? <OfflineBar /> : error ? <FormMessage>{error}</FormMessage> : null}
         {children}
       </ScrollView>
       {overlay}

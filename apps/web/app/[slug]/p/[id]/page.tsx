@@ -100,7 +100,7 @@ export default async function ProductPage(props: Props) {
           </svg>
         </Link>
         <div className="absolute top-3 right-3 flex gap-2 [&>button]:static">
-          <FavouriteButton shopId={shop.id} productId={product.id} />
+          <FavouriteButton shopId={shop.id} productId={product.id} productName={product.name} />
           <CartIcon shopId={shop.id} slug={shop.slug} />
         </div>
         {badge ? (

@@ -79,13 +79,8 @@ export default function MoreTab() {
 
   return (
     <TabScreen title="More" header={card}>
-      {offline ? <OfflineBar /> : null}
-      {error && !data && !offline ? (
-        <>
-          <FormMessage>{error}</FormMessage>
-          <Button title="Try again" onPress={reload} />
-        </>
-      ) : null}
+      {offline ? <OfflineBar saved={!!data} /> : error ? <FormMessage>{error}</FormMessage> : null}
+      {error && !data ? <Button title="Try again" onPress={reload} /> : null}
       <Section title="YOUR BUSINESS">
         <Card>{rows(business)}</Card>
       </Section>

@@ -64,6 +64,7 @@ export default function AccountScreen() {
       loaded={!missing}
       error={missing ? 'This account is no longer here.' : null}
       onRetry={back}
+      retryLabel="Back"
       back={back}
     >
       {error ? <FormMessage>{error}</FormMessage> : null}

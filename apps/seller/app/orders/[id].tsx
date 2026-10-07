@@ -58,6 +58,8 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState<OrderDetail | null>(() => ordersCache.detail(id));
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
+  /** The server says this order doesn't exist (or isn't this shop's). */
+  const [gone, setGone] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
@@ -77,8 +79,10 @@ export default function OrderDetailScreen() {
       keep(data);
       setError(null);
       setOffline(false);
+      setGone(false);
     } else {
       setOffline(failed?.code === 'OFFLINE');
+      setGone(failed?.status === 404);
       setError(errorMessage(failed));
     }
   }, [id, keep]);
@@ -164,9 +168,14 @@ export default function OrderDetailScreen() {
           <BackButton onPress={back} />
         </View>
         <View style={styles.body}>
-          {error ? (
+          {gone ? (
             <>
-              {offline ? <OfflineBar /> : <FormMessage>{error}</FormMessage>}
+              <FormMessage>This order no longer exists.</FormMessage>
+              <Button title="Back to orders" onPress={() => router.replace('/orders')} />
+            </>
+          ) : error ? (
+            <>
+              {offline ? <OfflineBar saved={false} /> : <FormMessage>{error}</FormMessage>}
               <Button title="Try again" onPress={load} />
             </>
           ) : (

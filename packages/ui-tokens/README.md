@@ -34,9 +34,9 @@ A test fails if `theme.css` is out of date.
 | track             | `#ECECF1`             | 16 progress track @650,1692                                                           |
 | toggleOff         | `#D9D8E0`             | 20b-settings toggle @790,882                                                          |
 | textSecondary     | `#55536A`             | 09 subtitle; 16 "#1042 · KSh 2,500"; tab labels                                       |
-| textMuted         | `#8B8A99`             | 12 "Optional"; 17b-mark-sent placeholder                                              |
+| textMuted         | `#717081` (M10, #84)  | 12 "Optional"; 17b-mark-sent placeholder                                              |
 | warningTint       | `#FBF1DC`             | 16 "Says paid" chip; 17 payment card @450,420; 17b refund box                         |
-| warningText       | `#9A6A12`             | 16 "Says paid" text                                                                   |
+| warningText       | `#936511` (M10, #84)  | 16 "Says paid" text                                                                   |
 | warningTextStrong | `#6B4A0C`             | 17 "Wanjiku says she paid" heading                                                    |
 | warningAccent     | `#CC9B44`             | 17 stepper ring @350,238                                                              |
 | danger            | `#B3261E`             | 17b "Cancel order" @450,1760                                                          |

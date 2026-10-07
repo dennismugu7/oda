@@ -37,9 +37,24 @@ interface ItemState {
   photoUrl: string | null;
   uploading: boolean;
   error: string | null;
+  /** Read out by screen readers ("Photo added"). */
+  notice: string;
 }
 
 const MAX_SIDE = 1280;
+/** The signed-URL request and the upload each give up after this long. */
+const UPLOAD_TIMEOUT_MS = 30_000;
+
+/** fetch() that gives up after UPLOAD_TIMEOUT_MS (an AbortError). */
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 const STAR_PATH = 'M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z';
 
 /** Resizes a photo to at most 1280 px and re-encodes it as JPEG (drops EXIF/location). */
@@ -96,7 +111,7 @@ function StarButtons({
           <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
             <path
               d={STAR_PATH}
-              className={value !== null && n <= value ? 'fill-star' : 'fill-none stroke-border'}
+              className={value !== null && n <= value ? 'fill-star' : 'fill-none stroke-text-muted'}
               strokeWidth="1.6"
               strokeLinejoin="round"
             />
@@ -144,6 +159,7 @@ export function ReviewForm({
             photoUrl: e?.photoUrl ?? null,
             uploading: false,
             error: null,
+            notice: '',
           },
         ];
       }),
@@ -157,10 +173,10 @@ export function ReviewForm({
     setState((s) => ({ ...s, [id]: { ...s[id]!, ...change } }));
 
   async function addPhoto(id: string, file: File) {
-    patch(id, { uploading: true, error: null });
+    patch(id, { uploading: true, error: null, notice: '' });
     try {
       const blob = await resizePhoto(file);
-      const signed = await fetch(`/api/o/${token}/uploads`, {
+      const signed = await fetchWithTimeout(`/api/o/${token}/uploads`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ contentType: 'image/jpeg', size: blob.size }),
@@ -171,14 +187,29 @@ export function ReviewForm({
         url: string;
         headers: Record<string, string>;
       };
-      const put = await fetch(upload.url, { method: 'PUT', headers: upload.headers, body: blob });
+      const put = await fetchWithTimeout(upload.url, {
+        method: 'PUT',
+        headers: upload.headers,
+        body: blob,
+      });
       if (!put.ok) throw new Error('The photo didn’t upload. Check your connection and try again.');
-      patch(id, { photoKey: upload.key, photoUrl: URL.createObjectURL(blob), uploading: false });
+      patch(id, {
+        photoKey: upload.key,
+        photoUrl: URL.createObjectURL(blob),
+        uploading: false,
+        notice: 'Photo added',
+      });
+      // The "Add photo" button is gone: keep focus on the photo's remove button.
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-photo-remove="${id}"]`)?.focus(),
+      );
     } catch (e) {
       const message =
-        e instanceof TypeError
-          ? 'No connection. Check your internet and try again.'
-          : (e as Error).message;
+        e instanceof DOMException && e.name === 'AbortError'
+          ? 'The photo is taking too long to upload. Check your connection and try again.'
+          : e instanceof TypeError
+            ? 'No connection. Check your internet and try again.'
+            : (e as Error).message;
       patch(id, { uploading: false, error: message });
     }
   }
@@ -346,7 +377,7 @@ export function ReviewForm({
                       rows={3}
                       placeholder="What did you think? (optional)"
                       onChange={(e) => patch(item.orderItemId, { text: e.target.value })}
-                      className="min-h-24 flex-1 rounded-lg border border-border p-3 text-body text-navy focus:border-primary focus:outline-none"
+                      className="min-h-24 flex-1 rounded-lg border border-border p-3 text-body text-navy outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
                     />
                     {s.photoUrl ? (
                       <div className="relative size-24 shrink-0">
@@ -359,8 +390,9 @@ export function ReviewForm({
                         <button
                           type="button"
                           aria-label={`Remove the photo of ${item.name}`}
+                          data-photo-remove={item.orderItemId}
                           onClick={() =>
-                            patch(item.orderItemId, { photoKey: null, photoUrl: null })
+                            patch(item.orderItemId, { photoKey: null, photoUrl: null, notice: '' })
                           }
                           className="absolute -top-2 -right-2 flex size-11 items-center justify-center"
                         >
@@ -413,6 +445,9 @@ export function ReviewForm({
                       {s.error}
                     </p>
                   ) : null}
+                  <p aria-live="polite" className="sr-only">
+                    {s.notice}
+                  </p>
                 </li>
               );
             })}

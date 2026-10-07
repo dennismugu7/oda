@@ -1,18 +1,5 @@
 import 'server-only';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  lt,
-  lte,
-  or,
-  sql,
-  type SQL,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, lte, sql, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import {
   canReviewOrder,
@@ -35,7 +22,7 @@ import {
 } from '../errors';
 import { hitLimit, secondsLeftInWindow } from '../rateLimit';
 import { checkStoredBytes, flushDeletions, publicUrl, queueDeletions } from '../uploads';
-import { checkId } from './util';
+import { beforeCursor, checkId, msUtc } from './util';
 
 // Reviews (M7, docs/m7-plan.md, decision #73). The buyer writes and edits their order's
 // review through the order token; the seller reads, replies to and reports their shop's
@@ -49,13 +36,11 @@ export const REVIEW_PAGE_SIZE = 20;
 const DAY_MS = 86_400_000;
 
 // Pages are keyed by (created time in ms, id), compared on the time truncated to milliseconds.
-const createdMs = sql<Date>`date_trunc('milliseconds', ${t.reviews.createdAt})`;
+const createdMs = msUtc(t.reviews.createdAt);
 const cursorOf = (r: { createdAt: Date; id: string }) => `${r.createdAt.getTime()}_${r.id}`;
 function afterCursor(cursor: string | undefined): SQL | undefined {
   if (!cursor) return undefined;
-  const [ms, id] = cursor.split('_') as [string, string];
-  const at = new Date(Number(ms));
-  return or(lt(createdMs, at), and(eq(createdMs, at), lt(t.reviews.id, checkId(id, 'page'))));
+  return beforeCursor(t.reviews.createdAt, t.reviews.id, cursor);
 }
 
 /** The notification row and push text for a new review (decision #73 h). */

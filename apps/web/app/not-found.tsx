@@ -4,7 +4,11 @@ import Link from 'next/link';
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
-      <p aria-label="oda" className="text-[44px] leading-none font-bold tracking-[-2px] text-navy">
+      <p
+        role="img"
+        aria-label="oda"
+        className="text-[44px] leading-none font-bold tracking-[-2px] text-navy"
+      >
         oda<span className="text-green-bright">.</span>
       </p>
       <h1 className="mt-8 text-headline text-navy">This page isn&apos;t here</h1>

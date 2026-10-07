@@ -106,7 +106,7 @@ export default function NotificationsScreen() {
         <View style={styles.body}>
           {error ? (
             <>
-              {offline ? <OfflineBar /> : <FormMessage>{error}</FormMessage>}
+              {offline ? <OfflineBar saved={false} /> : <FormMessage>{error}</FormMessage>}
               <Button title="Try again" onPress={load} />
             </>
           ) : (

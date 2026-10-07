@@ -12,12 +12,22 @@ Newest entries at the top.
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M10 CP3 (states, accessibility, performance, `idempotency_key`).
+**Next step:** M10 CP4 (Sentry with the owner step by step, push receipts, backup restore check), then CP5.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 CP3: states, accessibility, performance (owner Step 90; branch `m10-cp3`)
+
+**Decision #84** (details in `docs/hardening-report.md` → CP3):
+- **`idempotency_key`** confirmed mismatched: migration 0007 adds the per-shop unique (expand); another shop's key → 409, never a 500; the global constraint goes in M11.
+- **Paging:** Orders tab and seller reviews sorted every row of the shop on each page (~115 ms at 100,000 orders); migration 0007 adds expression indexes on the UTC millisecond time, and the cursor is one row comparison: 8–13 ms per call. Measured with `apps/web/server/perf/run.ts` on a local throwaway database grown from the seed (99,542 orders).
+- **Bundle:** `@oda/shared` `sideEffects: false`: buyer shop pages 247 → 152 KB of gzipped JavaScript (zod no longer shipped).
+- **Contrast:** test over the used token pairs; `textMuted` → #717081, `warningText` → #936511; **brand orange and star yellow pending the owner** (review stop B).
+- **States and accessibility:** two screen-by-screen audits (40 app screens, 16 web pages) and their fixes (a checkout bug with no pickup, a silent failure on the delete confirm, endless spinners on New order, offline wording, 404s, retries and timeouts, 44 px / dp targets, names, focus, TalkBack). Playwright `a11y.spec.ts` (11 pages) and `contrast.test.ts` keep them.
+- **Checks:** see the PR.
 
 ## 2026-10-07 · M10 review stop A passed; a suspended shop takes no payments (owner Step 90; branch `m10-suspend-pay`)
 

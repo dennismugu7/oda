@@ -1,0 +1,3 @@
+CREATE INDEX "orders_shop_placed_ms_idx" ON "orders" USING btree ("shop_id",date_trunc('milliseconds', "placed_at" at time zone 'UTC') desc,"id" desc);--> statement-breakpoint
+CREATE INDEX "reviews_shop_created_ms_idx" ON "reviews" USING btree ("shop_id",date_trunc('milliseconds', "created_at" at time zone 'UTC') desc,"id" desc);--> statement-breakpoint
+ALTER TABLE "orders" ADD CONSTRAINT "orders_shop_idempotency_key" UNIQUE("shop_id","idempotency_key");

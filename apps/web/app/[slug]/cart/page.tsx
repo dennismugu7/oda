@@ -43,8 +43,13 @@ export default async function Cart({ params, searchParams }: Props) {
             />
           </svg>
         </Link>
-        <h1 className="flex-1 text-headline text-navy">Your cart</h1>
-        <Link href={`/${shop.slug}`} className="text-body-strong text-primary">
+        <h1 id="cart-title" tabIndex={-1} className="flex-1 text-headline text-navy">
+          Your cart
+        </h1>
+        <Link
+          href={`/${shop.slug}`}
+          className="inline-flex min-h-11 items-center text-body-strong text-primary"
+        >
           Keep shopping
         </Link>
       </div>

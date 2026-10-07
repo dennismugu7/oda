@@ -149,12 +149,13 @@ export default function CustomersScreen() {
         }}
         ListHeaderComponent={
           <View style={styles.listHead}>
-            {offline ? <OfflineBar /> : null}
-            {error && !offline ? (
-              <>
-                <FormMessage>{error}</FormMessage>
-                <Button title="Try again" onPress={() => load()} />
-              </>
+            {offline ? (
+              <OfflineBar saved={!!page} />
+            ) : error ? (
+              <FormMessage>{error}</FormMessage>
+            ) : null}
+            {error && (!offline || !page) ? (
+              <Button title="Try again" onPress={() => load()} />
             ) : null}
             {rows.length ? <Text style={styles.sorted}>Sorted by most recent order</Text> : null}
           </View>

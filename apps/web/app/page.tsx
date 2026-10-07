@@ -44,6 +44,7 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-10 pb-8">
       <p
+        role="img"
         aria-label="oda"
         className="text-[44px] leading-none font-bold tracking-[-2px] text-primary"
       >
@@ -89,15 +90,24 @@ export default function Home() {
       <footer className="mt-auto pt-12 text-center text-small text-text-secondary">
         <p>
           Questions?{' '}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-navy underline">
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="inline-flex min-h-11 items-center font-semibold text-navy underline"
+          >
             {SUPPORT_EMAIL}
           </a>
         </p>
-        <p className="mt-2 flex justify-center gap-4">
-          <Link href="/privacy" className="underline">
+        <p className="flex justify-center gap-4">
+          <Link
+            href="/privacy"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center underline"
+          >
             Privacy
           </Link>
-          <Link href="/terms" className="underline">
+          <Link
+            href="/terms"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center underline"
+          >
             Terms
           </Link>
         </p>

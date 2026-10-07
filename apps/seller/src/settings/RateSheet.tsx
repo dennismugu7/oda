@@ -45,7 +45,12 @@ export function RateSheet({ visible, onClose }: { visible: boolean; onClose: () 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Close" />
+      <Pressable
+        style={styles.backdrop}
+        onPress={close}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+      />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.handle} />
         <Pressable

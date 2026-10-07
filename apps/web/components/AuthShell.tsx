@@ -4,6 +4,7 @@
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <p
+      role="img"
       aria-label="oda"
       className={`text-primary leading-none font-bold tracking-[-3px] ${className}`}
     >

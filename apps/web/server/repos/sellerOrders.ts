@@ -1,19 +1,5 @@
 import 'server-only';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  like,
-  lt,
-  ne,
-  or,
-  sql,
-  type SQL,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, like, ne, or, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import {
   DONE_STATUSES,
@@ -29,7 +15,7 @@ import {
 import type { SellerCtx } from '../authz';
 import { orderLink } from '../orderLink';
 import { publicUrl } from '../uploads';
-import { checkId, one } from './util';
+import { beforeCursor, checkId, msUtc, one } from './util';
 
 // The seller's orders (M6 CP2, spec §5.4): the Orders tab (To do / All / Done, search, pages)
 // and the order detail. Every query is scoped to the seller's shop, so another shop's order is
@@ -41,7 +27,7 @@ type OrderRow = typeof t.orders.$inferSelect;
 const TODO_LIMIT = 200;
 // Pages are keyed by (placed time in ms, id): the cursor carries milliseconds, so compare and
 // sort on the time truncated to them (Postgres keeps microseconds).
-const placedMs = sql<Date>`date_trunc('milliseconds', ${t.orders.placedAt})`;
+const placedMs = msUtc(t.orders.placedAt);
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (m) => `\\${m}`);
 
 export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
@@ -104,11 +90,7 @@ export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
       }
       const paged = query.tab !== 'todo';
       if (paged && query.cursor) {
-        const [ms, id] = query.cursor.split('_') as [string, string];
-        const at = new Date(Number(ms));
-        conditions.push(
-          or(lt(placedMs, at), and(eq(placedMs, at), lt(t.orders.id, checkId(id, 'page')))),
-        );
+        conditions.push(beforeCursor(t.orders.placedAt, t.orders.id, query.cursor));
       }
       const limit = paged ? ORDER_PAGE_SIZE : TODO_LIMIT;
       const rows = await db

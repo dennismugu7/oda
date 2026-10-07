@@ -5,7 +5,7 @@
 // instead, Cancel order), the cancel card (6), and Report a problem. Every action goes to
 // /api/o/:token/* (transitionOrder() on the server); the page then reloads its data.
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { extractMpesaCode, formatKePhone, formatKes } from '@oda/shared';
 
 type Result = { ok: true } | { ok: false; message: string };
@@ -28,25 +28,32 @@ async function post(path: string, body: unknown = {}): Promise<Result> {
   }
 }
 
-/** Runs an order action, then reloads the page's data from the server. */
+/**
+ * Runs an order action, then reloads the page's data from the server. `busy` stays set until
+ * the reload has finished, so a button can't be tapped twice in between.
+ */
 function useAction(token: string) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  // A double tap lands before React re-renders the disabled button.
+  const inFlight = useRef(false);
   async function run(action: 'code' | 'switch-to-pod' | 'cancel', body?: unknown) {
-    if (busy) return false;
+    if (inFlight.current) return false;
+    inFlight.current = true;
     setBusy(action);
     setError(null);
     const result = await post(`/api/o/${token}/${action}`, body);
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.message);
-      // Someone else (the seller) may have changed the order: show its current state.
+    if (!result.ok) setError(result.message);
+    // On failure too: someone else (the seller) may have changed the order. Clearing `busy`
+    // inside the transition shows it only together with the refreshed page.
+    startTransition(() => {
+      setBusy(null);
       router.refresh();
-      return false;
-    }
-    router.refresh();
-    return true;
+    });
+    inFlight.current = false;
+    return result.ok;
   }
   return { busy, error, run };
 }
@@ -212,7 +219,7 @@ export function PayPanel({
           type="button"
           disabled={!!busy}
           onClick={() => run('switch-to-pod')}
-          className="mt-3 flex h-14 w-full items-center justify-center rounded-pill bg-primary-tint text-button text-primary"
+          className="mt-3 flex h-14 w-full items-center justify-center rounded-pill bg-primary-tint text-button text-primary disabled:bg-surface-muted disabled:text-text-secondary"
         >
           {busy === 'switch-to-pod' ? 'Switching…' : 'Pay on delivery instead'}
         </button>
@@ -224,8 +231,9 @@ export function PayPanel({
             <div className="mt-3 flex gap-3">
               <button
                 type="button"
+                disabled={!!busy}
                 onClick={() => setConfirmCancel(false)}
-                className="h-12 flex-1 rounded-pill border border-border text-body-strong text-navy"
+                className="h-12 flex-1 rounded-pill border border-border text-body-strong text-navy disabled:text-text-secondary"
               >
                 Keep it
               </button>
@@ -233,7 +241,7 @@ export function PayPanel({
                 type="button"
                 disabled={!!busy}
                 onClick={() => run('cancel')}
-                className="h-12 flex-1 rounded-pill bg-danger text-body-strong text-text-on-primary"
+                className="h-12 flex-1 rounded-pill bg-danger text-body-strong text-text-on-primary disabled:opacity-60"
               >
                 {busy === 'cancel' ? 'Cancelling…' : 'Yes, cancel'}
               </button>
@@ -297,8 +305,9 @@ export function CancelCard({
         <div className="mt-3 flex gap-3">
           <button
             type="button"
+            disabled={!!busy}
             onClick={() => setConfirm(false)}
-            className="h-12 flex-1 rounded-pill border border-border bg-surface text-body-strong text-navy"
+            className="h-12 flex-1 rounded-pill border border-border bg-surface text-body-strong text-navy disabled:text-text-secondary"
           >
             Keep my order
           </button>
@@ -306,7 +315,7 @@ export function CancelCard({
             type="button"
             disabled={!!busy}
             onClick={() => run('cancel')}
-            className="h-12 flex-1 rounded-pill bg-danger text-body-strong text-text-on-primary"
+            className="h-12 flex-1 rounded-pill bg-danger text-body-strong text-text-on-primary disabled:opacity-60"
           >
             {busy ? 'Cancelling…' : 'Yes, cancel it'}
           </button>
@@ -402,6 +411,8 @@ export function ReportProblem({ token }: { token: string }) {
         maxLength={1000}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        aria-invalid={error && message.trim().length < 5 ? true : undefined}
+        aria-describedby={error ? 'report-error' : undefined}
         className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-body text-text outline-none focus:border-navy focus:ring-2 focus:ring-navy/20"
       />
       <label htmlFor="report-phone" className="mt-3 block text-small text-text-secondary">
@@ -428,7 +439,7 @@ export function ReportProblem({ token }: { token: string }) {
         </label>
       </div>
       {error ? (
-        <p role="alert" className="mt-2 text-body text-danger">
+        <p id="report-error" role="alert" className="mt-2 text-body text-danger">
           {error}
         </p>
       ) : null}

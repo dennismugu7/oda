@@ -135,7 +135,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
           <Link
             href={`/${shop.slug}/search?filters=1`}
             aria-label="Filters and sort"
-            className="-mr-2 flex size-10 shrink-0 items-center justify-center rounded-pill text-navy"
+            className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-pill text-navy"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
               <path
@@ -236,7 +236,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
           Pay the seller directly on M-Pesa{shop.acceptsPayOnDelivery ? ' or on delivery' : ''}.
         </p>
         <p className="mt-2">
-          <Link href="/" className="font-semibold text-navy">
+          <Link href="/" className="inline-flex min-h-11 items-center font-semibold text-navy">
             Made with oda<span className="text-green-bright">.</span>
           </Link>
         </p>
