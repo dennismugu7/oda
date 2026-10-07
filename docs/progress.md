@@ -5,19 +5,33 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-07, owner Step 87)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review done (`docs/hardening-report.md`); CP2 (suspend / unsuspend, admin clean-up) next, then review stop A.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **🛑 review stop A** (phone + web test list in the CP2 entry). CP3 not started.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `76876f26` (M8b CP3). Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M10 CP2, then 🛑 review stop A (phone + web test list).
+**Next step:** owner runs review stop A; after the go-ahead, M10 CP3 (states, accessibility, performance).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 CP2: suspend / unsuspend, admin clean-up (owner Step 89; branch `m10-cp2`)
+
+**Built (decision #82)**
+- **Actions → shop-suspend** → `POST /api/ops/shops/suspension` (Bearer `OPS_SECRET`): the exact current link name (old links, partial names and deleted shops 404), suspend / unsuspend, a reason; one transaction sets `shops.suspended_at` and writes an `ops_events` row (`shop_suspended` / `shop_unsuspended`, actor, snapshot); the same action twice changes nothing.
+- **Suspended seller** (#81 d): stays signed in; `/api/me` → `shop.suspended`; Home and the Shop tab show "Your shop is suspended. Email support@mugu-labs.com" (tap = email support). Every action on existing orders still works; shop and catalogue edits, delivery, payments, pause, onboarding writes, manual orders and product / logo uploads answer 403 `shop_suspended` with that message. Feedback (with screenshot), own details, password, review replies keep working.
+- **Buyers:** shop / product / checkout 404 as before; order pages keep working; "Continue shopping" hides.
+- **Admin clean-up (#72 f):** `requireAdmin`, `AdminCtx`, `adminRepo`, the `admin@example.test` seed account removed; `profiles.is_admin` stays (unwritable, tested) until the M11 contract migration.
+- **Tests:** `server/suspension.test.ts` (5: secret / input / exact name; suspend → 404 + no orders + audit, twice harmless, unsuspend restores + audit; purge skips a suspended shop; the seller finishes an order and uses their account; the refused edits). `routeGuards.test.ts` lists the route. `pnpm check:all` green (shared 259, web 451, db 23, seller 112, ui-tokens 3, Playwright 24).
+- **Staging** runs CP1 (`0f77642`): the CSP, HSTS and other headers are live; the CSP's image origin is the real photo store.
+
+**Compared with the designs:** the suspended banner is new (no design image); it uses the warning tint and text of the "Says paid" chip and the refund box.
+
+**🛑 Review stop A** (test list in the chat, Step 89): security headers on staging, suspend / unsuspend from Actions, the app banner and refused edits, finishing an order while suspended.
 
 ## 2026-10-07 · M10 CP1: security review (owner Step 89; branch `m10-cp1`)
 
