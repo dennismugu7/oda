@@ -17,7 +17,8 @@ import { parseInput, toResponse, ValidationError } from './errors';
 import { catalogueRepo } from './repos/catalogue';
 
 // HTTP handlers for the seller's catalogue (M3): /api/products and /api/categories. Every
-// handler needs a seller with a shop (requireSeller) and only touches that shop's rows.
+// handler needs a seller with a shop (requireSeller), checked before the input is read, and
+// only touches that shop's rows.
 
 type Params = { params: Promise<{ id: string }> };
 type Handler = (request: Request, context: Params) => Promise<Response>;
@@ -52,11 +53,12 @@ const listQuery = z.strictObject({
 
 /** GET /api/products?status=…&category=<id>|none */
 export const listProducts = handle(async (request) => {
+  const r = await repo(request);
   const query = parseInput(
     listQuery,
     Object.fromEntries(new URL(request.url).searchParams.entries()),
   );
-  return (await repo(request)).listProducts({
+  return r.listProducts({
     status: query.status,
     categoryId: query.category,
   });
@@ -64,6 +66,7 @@ export const listProducts = handle(async (request) => {
 
 /** POST /api/products: the product's fields plus `photos` (1–5, the first is the cover). */
 export const createProduct = handle(async (request) => {
+  const r = await repo(request);
   const raw = await body(request);
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new ValidationError('Send the product as JSON.');
@@ -71,16 +74,17 @@ export const createProduct = handle(async (request) => {
   const { photos, ...fields } = raw as Record<string, unknown>;
   const input = parseInput(productInput, fields);
   const list = parseInput(productPhotoList, photos);
-  return (await repo(request)).createProduct(input, list);
+  return r.createProduct(input, list);
 }, 201);
 
 /** GET /api/products/:id */
 export const getProduct = handle(async (request, id) => (await repo(request)).product(id!));
 
 /** PATCH /api/products/:id: any product fields (e.g. just `status`). */
-export const updateProduct = handle(async (request, id) =>
-  (await repo(request)).updateProduct(id!, parseInput(productUpdate, await body(request))),
-);
+export const updateProduct = handle(async (request, id) => {
+  const r = await repo(request);
+  return r.updateProduct(id!, parseInput(productUpdate, await body(request)));
+});
 
 /** DELETE /api/products/:id: soft delete (undo with POST …/restore for a few minutes). */
 export const deleteProduct = handle(async (request, id) => {
@@ -95,8 +99,9 @@ export const restoreProduct = handle(async (request, id) =>
 
 /** PUT /api/products/:id/photos: the full photo list in order (add, remove, reorder, cover). */
 export const setProductPhotos = handle(async (request, id) => {
+  const r = await repo(request);
   const { photos } = parseInput(productPhotosInput, await body(request));
-  return (await repo(request)).setPhotos(id!, photos);
+  return r.setPhotos(id!, photos);
 });
 
 /** GET /api/categories */
@@ -104,17 +109,19 @@ export const listCategories = handle(async (request) => (await repo(request)).li
 
 /** POST /api/categories: name (+ isVisible); it goes to the end of the list. */
 export const createCategory = handle(async (request) => {
+  const r = await repo(request);
   const input = parseInput(categoryInput.omit({ position: true }), await body(request));
-  return (await repo(request)).createCategory({ ...input, position: 0 });
+  return r.createCategory({ ...input, position: 0 });
 }, 201);
 
 /** PATCH /api/categories/:id: rename or show/hide (order: PUT /api/categories/order). */
-export const updateCategory = handle(async (request, id) =>
-  (await repo(request)).updateCategory(
+export const updateCategory = handle(async (request, id) => {
+  const r = await repo(request);
+  return r.updateCategory(
     id!,
     parseInput(categoryUpdate.omit({ position: true }), await body(request)),
-  ),
-);
+  );
+});
 
 /** DELETE /api/categories/:id: its products stay, without a category. */
 export const deleteCategory = handle(async (request, id) => {
@@ -124,12 +131,14 @@ export const deleteCategory = handle(async (request, id) => {
 
 /** PUT /api/categories/order: `ids` = every category of the shop, in the new order. */
 export const reorderCategories = handle(async (request) => {
+  const r = await repo(request);
   const { ids } = parseInput(categoryOrderInput, await body(request));
-  return (await repo(request)).reorderCategories(ids);
+  return r.reorderCategories(ids);
 });
 
 /** PUT /api/categories/:id/products: exactly these products are in the category. */
 export const setCategoryProducts = handle(async (request, id) => {
+  const r = await repo(request);
   const { productIds } = parseInput(categoryProductsInput, await body(request));
-  return (await repo(request)).setCategoryProducts(id!, productIds);
+  return r.setCategoryProducts(id!, productIds);
 });

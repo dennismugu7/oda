@@ -159,14 +159,14 @@ export function settingsRepo(db: Db, ctx: SellerCtx) {
 
     /** Only a saved (not active) account can be removed: checkout always has one to show. */
     async removeAccount(id: string) {
-      const account = await seller.getPaymentAccount(id);
-      if (account.isActive) {
+      await seller.getPaymentAccount(id); // 404 when it isn't this shop's
+      // One statement, so an account made active at the same moment is never deleted.
+      if (!(await seller.deleteInactivePaymentAccount(id))) {
         throw new ConflictError(
           'This is the account buyers pay. Make another one active first.',
           'account_active',
         );
       }
-      await seller.deletePaymentAccount(id);
       return payments();
     },
 

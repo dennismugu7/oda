@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 import { sellerShop } from './shop';
 
 // The buyer storefront end to end (milestones M4): a seller sets up a shop through the real

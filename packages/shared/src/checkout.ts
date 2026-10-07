@@ -32,6 +32,8 @@ export const REPORT_MAX = 1000;
 
 const buyerName = z
   .string({ error: 'Enter your name.' })
+  // Capped before stripLinks: its link pattern slows down sharply on long input (M10 CP1).
+  .max(BUYER_NAME_MAX * 4, { error: `Your name can be at most ${BUYER_NAME_MAX} characters.` })
   .transform(stripLinks)
   .pipe(
     z

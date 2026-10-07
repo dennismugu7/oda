@@ -5,19 +5,33 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-07, owner Step 87)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 plan proposed in `docs/m10-plan.md`: awaiting the owner's approval and answers. M10 not started.**
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review done (`docs/hardening-report.md`); CP2 (suspend / unsuspend, admin clean-up) next, then review stop A.
 - **Staging:** https://oda-eta.vercel.app = `main`; check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `76876f26` (M8b CP3). Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M10 plan awaiting approval (`docs/m10-plan.md`). After approval: record the answers as a decision, then M10 CP1.
+**Next step:** M10 CP2, then 🛑 review stop A (phone + web test list).
 
 **Open items**
-- **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet). Answer the M10 plan's questions.
+- **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-07 · M10 CP1: security review (owner Step 89; branch `m10-cp1`)
+
+**Plan approved** (decision #81): answers recorded in `docs/m10-plan.md`; Maestro → `docs/v2-ideas.md`.
+
+**Review written in `docs/hardening-report.md`** (findings S1–S17, the endpoint guard list, the rate-limit table, the env/secret inventory by name). Fixed in this checkpoint:
+- **S1 (medium):** the buyer name's link stripping was quadratic on long crafted input (64,000 chars took 9 s) and ran before the length check; now capped at 240 chars first (test: 200,000 chars refused in < 200 ms).
+- **S2 (medium):** unexpected errors were logged whole, and Drizzle's message carries the query parameters (phones, emails, token hashes); now `server/safeLog.ts` `describeError()` (test with a real failing query).
+- **S3 (medium):** security headers: per-request nonce CSP through `proxy.ts` (storage origins from config), HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP; API answers `default-src 'none'`. The root layout renders per request so every page carries the nonce. **Every Playwright test fails on a CSP violation** (`e2e/test.ts`); the one break found (Google Fonts in the local email outbox's previews) is allowed on `/dev/outbox` only.
+- **S5–S9 (low):** catalogue handlers check the session before the body; atomic delete of a saved payment account; max lengths on phones, account numbers and the deletion email; the flaky delete-account / reset-password e2e tests (`lastEmailTo` waits for the right email; failed once on `main` during this review); new cross-shop route tests.
+- **Route guard test** `server/routeGuards.test.ts`: all 74 route files listed with their guard and called anonymously from another site; an unlisted or unguarded route fails CI.
+- **Deferred:** dependency audit findings (all in the seller app's build tooling) → re-run after the CP5 Expo upgrade; a least-privilege Neon app role → M11 production; `idempotency_key` → CP3. **Accepted** with reasons: S13–S16.
+
+**Checks:** see the PR. `pnpm audit --prod` run once (owner-approved query).
 
 ## 2026-10-07 · M8b and M8 gates passed; M10 plan proposed (owner Step 87; branch `m8-gate`)
 

@@ -414,6 +414,17 @@ describe('POST /api/shops/:slug/quote', () => {
     ]);
     expect((await quote([{ productId: w.dress.id, qty: 1 }])).status).toBe(422);
   });
+
+  it('never prices another shop’s product (M10 CP1)', async () => {
+    const a = await world();
+    const b = await world();
+    const res = await postQuote(
+      req(`/api/shops/${a.slug}/quote`, { lines: [{ productId: b.top.id, qty: 1 }] }),
+      { params: Promise.resolve({ slug: a.slug }) },
+    );
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as Json).options).toBeUndefined();
+  });
 });
 
 describe('buyer order actions', () => {

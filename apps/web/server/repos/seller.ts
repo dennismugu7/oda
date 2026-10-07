@@ -171,13 +171,13 @@ export function sellerRepo(db: Db, ctx: SellerCtx) {
       });
     },
 
-    async deletePaymentAccount(id: string) {
-      one(
-        await db.delete(t.paymentAccounts).where(inShop.paymentAccount(id)).returning({
-          id: t.paymentAccounts.id,
-        }),
-        'payment account',
-      );
+    /** Deletes a saved (not active) account; false if it became the active one meanwhile. */
+    async deleteInactivePaymentAccount(id: string): Promise<boolean> {
+      const rows = await db
+        .delete(t.paymentAccounts)
+        .where(and(inShop.paymentAccount(id), eq(t.paymentAccounts.isActive, false)))
+        .returning({ id: t.paymentAccounts.id });
+      return rows.length > 0;
     },
 
     // Delivery areas ----------------------------------------------------------------------

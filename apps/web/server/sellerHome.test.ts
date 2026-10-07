@@ -76,6 +76,16 @@ describe('manual orders', () => {
     expect(over.json.options[0]).toMatchObject({ deliveryFee: 0, total: 4500 });
   });
 
+  it('never quotes another shop’s product (M10 CP1)', async () => {
+    const w = await world();
+    const other = await world();
+    const q = await w.call(quoteManualOrder, {
+      body: { lines: [{ productId: other.dress.id, qty: 1, size: 'M' }] },
+    });
+    expect(q.status).toBe(409);
+    expect(q.json.options).toBeUndefined();
+  });
+
   it('creates each payment kind; "not paid yet" gives the order link and never expires', async () => {
     const w = await world();
     const notPaid = await w.call(createManualOrder, { body: manual(w) });

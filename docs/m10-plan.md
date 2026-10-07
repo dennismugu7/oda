@@ -1,6 +1,6 @@
-# M10 plan: hardening (proposed, not approved)
+# M10 plan: hardening (approved)
 
-Proposed in owner Step 87. **Not approved yet; no M10 work started.** Acceptance criteria stay
+Proposed in owner Step 87, **approved in owner Step 89 with the answers below (decision #81)**. Acceptance criteria stay
 in `milestones.md` (M10): a written review in **`docs/hardening-report.md`** with every issue
 fixed or consciously deferred, and a suspended shop returns 404 / unsuspending restores it,
 both logged (tests). One branch per checkpoint, merged through PRs after every check passes;
@@ -165,16 +165,12 @@ a reason.
 5. Download approvals as they come up (each with its size): `pnpm audit` query (tiny),
    `@sentry/nextjs`, `jest-expo` + React Native Testing Library, eas-cli upgrade.
 
-## Questions for you
-1. **App UI tests:** `jest-expo` + React Native Testing Library only (my suggestion), or also
-   Maestro device flows (large download, an emulator or the Redmi over adb)?
-2. **Sentry plan:** the free Developer plan (one user, 5k errors a month) is enough for staging
-   and launch. OK?
-3. **Security headers:** a strict Content-Security-Policy may need small changes to how pages
-   load fonts and images. OK to tighten in CP1, with Playwright checks and a staging test?
-4. **Suspended sellers:** the app shows "Your shop is suspended. Email support@mugu-labs.com"
-   and keeps the seller signed in (read-only). OK, or sign them out?
-5. **`orders.idempotency_key`:** if the CP3 review confirms it, switch to a per-shop unique
-   index (expand: add the new index; contract: drop the old one in M11). OK?
-6. **Expo SDK patches** (#80): upgrade in M10 CP5 with a 0.3.1 native build, or wait for M11's
-   production build?
+## Answers (owner Step 89, decision #81)
+1. **App UI tests:** `jest-expo` + React Native Testing Library only (~30–40 MB approved). Maestro → `docs/v2-ideas.md`.
+2. **Sentry:** free Developer plan, organisation in the **EU (Germany)** data region. `sendDefaultPii` off; a `beforeSend` / `beforeBreadcrumb` scrubber removes phone numbers, emails, order tokens and `/o/…` links, M-Pesa codes, auth headers / cookies and request bodies, with a unit test. `@sentry/nextjs`: size told to the owner before the download.
+3. **Security headers:** strict CSP in CP1; loosen only the specific rule that breaks.
+4. **Suspended sellers:** stay signed in with "Your shop is suspended. Email support@mugu-labs.com". They **can finish existing orders** (accept, mark sent / ready / delivered, refund, cancel, answer payment claims) but **can't create orders, edit the shop or catalogue, or receive new orders**. Tests for both sides (CP2).
+5. **`orders.idempotency_key`:** per-shop unique index in M10 if CP3 confirms the mismatch; the global one dropped in M11.
+6. **Expo SDK patches:** CP5, version 0.3.1, one EAS build. eas-cli upgraded first (~30 MB approved), patch install approved; **ask before starting the EAS build**.
+
+Also approved: the `pnpm audit` query in CP1.

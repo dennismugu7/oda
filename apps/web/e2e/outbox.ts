@@ -14,8 +14,15 @@ interface OutboxEmail {
   sentAt: string;
 }
 
-/** The newest email to `to` (waits briefly for the server to write it). */
-export async function lastEmailTo(to: string): Promise<OutboxEmail> {
+/**
+ * The newest email to `to` (waits briefly for the server to write it). Pass `match` when an
+ * earlier email to the same address may already be there (e.g. the sign-up code before a
+ * deletion link that is sent after the response).
+ */
+export async function lastEmailTo(
+  to: string,
+  match: (email: OutboxEmail) => boolean = () => true,
+): Promise<OutboxEmail> {
   let found: OutboxEmail | undefined;
   await expect
     .poll(
@@ -24,7 +31,7 @@ export async function lastEmailTo(to: string): Promise<OutboxEmail> {
         const files = (await readdir(dir).catch(() => [] as string[])).sort().reverse();
         for (const file of files) {
           const email = JSON.parse(await readFile(path.join(dir, file), 'utf8')) as OutboxEmail;
-          if (email.to === to) {
+          if (email.to === to && match(email)) {
             found = email;
             return true;
           }

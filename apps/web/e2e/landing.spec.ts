@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 
 test('landing page renders in Poppins and brand colours', async ({ page }) => {
   await page.goto('/');

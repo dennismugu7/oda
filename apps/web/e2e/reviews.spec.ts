@@ -1,5 +1,5 @@
 import { crc32, deflateSync } from 'node:zlib';
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from './test';
 import { addDressAndBag, fillDetails, sellerHeaders, sellerShop } from './shop';
 
 // Reviews from the buyer's side (M7 CP2, decision #73): a delivered order is rated with a

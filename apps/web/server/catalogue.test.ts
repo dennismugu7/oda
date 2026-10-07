@@ -122,6 +122,26 @@ describe('products', () => {
     expect(list.json.products[0].coverUrl).toContain(p2.thumbKey);
   });
 
+  it('never files a product under another shop’s category (M10 CP1)', async () => {
+    const s = await newSeller();
+    const other = await newSeller();
+    const theirs = (await other.call(createCategory, { body: { name: 'Theirs' } })).json;
+    const photo = await storedPhoto(s.shopId, 1);
+    const create = await s.call(createProduct, {
+      body: { name: 'X', price: 100, categoryId: theirs.id, photos: [photo] },
+    });
+    expect(create.status).toBe(404);
+    const mine = await addProduct(s);
+    const patch = await s.call(updateProduct, {
+      method: 'PATCH',
+      id: mine.id,
+      body: { categoryId: theirs.id },
+    });
+    expect(patch.status).toBe(404);
+    const list = await s.call(listProducts, { query: `?category=${theirs.id}` });
+    expect(list.json.products).toEqual([]);
+  });
+
   it('refuses bad input and writes nothing', async () => {
     const s = await newSeller();
     const photo = await storedPhoto(s.shopId, 1);

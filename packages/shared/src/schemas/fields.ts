@@ -21,14 +21,17 @@ export const requiredText = (min: number, max: number, label: string) =>
     .max(max, { error: `${label} can be at most ${max} characters.` });
 
 /** Any Kenyan mobile format in, E.164 out. */
-export const kePhone = z.string().transform((value, ctx) => {
-  const e164 = normalizeKePhone(value);
-  if (!e164) {
-    ctx.addIssue({ code: 'custom', message: 'Enter a Kenyan mobile number, e.g. 0712 345 678.' });
-    return z.NEVER;
-  }
-  return e164;
-});
+export const kePhone = z
+  .string()
+  .max(32, { error: 'Enter a Kenyan mobile number, e.g. 0712 345 678.' })
+  .transform((value, ctx) => {
+    const e164 = normalizeKePhone(value);
+    if (!e164) {
+      ctx.addIssue({ code: 'custom', message: 'Enter a Kenyan mobile number, e.g. 0712 345 678.' });
+      return z.NEVER;
+    }
+    return e164;
+  });
 
 export const slug = z
   .string()

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Poppins } from 'next/font/google';
+import { connection } from 'next/server';
 import { colors } from '@oda/ui-tokens';
 import './globals.css';
 
@@ -23,7 +24,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Every page renders per request so Next.js can put this request's CSP nonce on its
+  // scripts (proxy.ts, decision #81 c); a prerendered page would carry none and be blocked.
+  await connection();
   return (
     <html lang="en" className={poppins.variable}>
       <body className="font-sans">{children}</body>
