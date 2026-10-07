@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-07: **CP1 (security review) done.** CP2–CP6 add their sections.
+Status on 2026-10-07: **CP1 (security review) and CP2 (suspend / unsuspend) done.** CP3–CP6 add their sections.
 
 ## Findings
 
@@ -27,7 +27,7 @@ Status on 2026-10-07: **CP1 (security review) done.** CP2–CP6 add their sectio
 | S14 | Catalogue | When a photo is removed from a product, its file is deleted even if the same shop's other product uses the same key (only possible with a hand-crafted request by that seller). | low | **accepted** | Keys are chosen by the server per upload; the app never reuses one. A seller can only affect their own shop. |
 | S15 | Input | No cap on JSON body size before parsing (Vercel's platform limit is 4.5 MB). | low | **accepted** | With S1 fixed, every schema bounds its strings and arrays before any slow work; parsing 4.5 MB of JSON takes milliseconds. |
 | S16 | Output | Public review photo URLs contain the order's internal id (`reviews/<order uuid>/…`). | low | **accepted** | A random UUID: not enumerable, and order access needs the separate `public_token`. |
-| S17 | Admin | `requireAdmin`, `adminRepo`, `profiles.is_admin` reads and the `admin@example.test` seed are dead code since #72. | low | **planned** CP2 | Decision #72 f. |
+| S17 | Admin | `requireAdmin`, `adminRepo`, `profiles.is_admin` reads and the `admin@example.test` seed are dead code since #72. | low | **fixed** (CP2) | Removed (decision #82 f); `is_admin` stays unwritable (`authz.test.ts`) until the M11 contract migration. |
 
 ## CP1 · Security review: checked and fine
 
@@ -118,3 +118,19 @@ Actions. Listing needs a token the browser never has. The purge's scope is uncha
 **Database.** Neon only accepts TLS connections; backups are
 `pg_dump` encrypted with gpg AES-256 (decrypted and compared before upload) in a separate
 store; migrations are expand-only (CLAUDE.md). Role separation: S11.
+
+## CP2 · Suspend / unsuspend (milestone acceptance)
+
+`server/suspension.test.ts` (decisions #81 d, #82):
+- The endpoint needs `OPS_SECRET` (404 without or with a wrong one) and valid input (422);
+  unknown, partial and old link names and deleted shops are 404 and change nothing.
+- **Suspend → the shop is 404** (shop page lookup) and takes no orders (the order insert both
+  checkout and manual orders use refuses it); another shop is untouched; **an `ops_events`
+  row** with the actor, reason and snapshot. Twice: no change, no second row.
+- **Unsuspend restores it** (the shop page is back, edits work again) with its own audit row.
+- A suspended seller stays signed in, sees `suspended` in `/api/me`, reads orders and products
+  and takes an order from accepted to delivered; changes their own details and sends feedback
+  (screenshot upload allowed). Product create / edit, shop profile, pause, manual orders and
+  product photo uploads answer 403 `shop_suspended` with the support email, and nothing changes.
+- The purge leaves a suspended (not deleted) shop alone, even 90 days on.
+- `routeGuards.test.ts` lists the new route (`secret`).

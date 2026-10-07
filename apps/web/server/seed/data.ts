@@ -20,7 +20,6 @@ export const SHOP = {
 };
 
 export const SELLER = { name: 'Amani Wairimu', email: 'amani@example.test' };
-export const ADMIN = { name: 'oda Admin', email: 'admin@example.test' };
 
 export const TILL = { type: 'till' as const, number: '123456', accountName: 'AMANI STYLES' };
 

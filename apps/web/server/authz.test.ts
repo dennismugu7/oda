@@ -13,17 +13,10 @@ import {
   shopUpdate,
 } from '@oda/shared';
 
-import {
-  requireAdmin,
-  requireOrderToken,
-  requireSeller,
-  requireUser,
-  type HasHeaders,
-} from './authz';
+import { requireOrderToken, requireSeller, requireUser, type HasHeaders } from './authz';
 import { getDb } from './db';
 import { ConflictError, HttpError, parseInput } from './errors';
 import { insertOrder, transitionOrder } from './orders';
-import { adminRepo } from './repos/admin';
 import { orderTokenRepo } from './repos/order-token';
 import { signUpVerified } from '@/test/auth';
 import { publicRepo } from './repos/public';
@@ -492,27 +485,8 @@ describe('2. anon lockout', () => {
   });
 });
 
-describe('3. admin', () => {
-  it('anon and non-admins get 404; an admin passes', async () => {
-    expect(await status(requireAdmin(bearer(null)))).toBe(404);
-    expect(await status(requireAdmin(bearer('bogus')))).toBe(404);
-    expect(await status(requireAdmin(A.req))).toBe(404);
-
-    const admin = await signUp('oda Admin');
-    await db.update(t.profiles).set({ isAdmin: true }).where(eq(t.profiles.id, admin.userId));
-    const ctx = await requireAdmin(admin.req);
-    const verified = await adminRepo(db, ctx).setPaymentVerification(B.account.id, {
-      status: 'verified',
-    });
-    expect(verified).toMatchObject({ verificationStatus: 'verified', verifiedBy: admin.userId });
-
-    // Shop search treats LIKE wildcards literally.
-    const shops = adminRepo(db, ctx);
-    expect((await shops.listShops('amani')).map((s) => s.slug)).toEqual(['amani-styles']);
-    expect(await shops.listShops('%')).toEqual([]);
-    expect(await shops.listShops('_')).toEqual([]);
-  });
-
+// 3. admin: no back office (decision #72); the column stays until a later contract migration.
+describe('3. is_admin', () => {
   it('is_admin can’t be set through any whitelist', async () => {
     for (const [name, s] of Object.entries(WRITE_SCHEMAS)) {
       for (const key of ['isAdmin', 'is_admin']) {

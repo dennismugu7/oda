@@ -36,6 +36,7 @@ import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { Button, FormMessage } from '@/ui/auth';
 import { ShopAvatar } from '@/ui/shopAvatar';
+import { SuspendedBanner } from '@/ui/suspended';
 import { colors, radii, spacing, text } from '@/theme';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
@@ -202,6 +203,11 @@ export default function ShopTab() {
         ListHeaderComponent={
           <>
             {header}
+            {shop?.suspended ? (
+              <View style={styles.suspended}>
+                <SuspendedBanner />
+              </View>
+            ) : null}
             {products && products.length > 0 ? (
               <View style={styles.listHead}>
                 <ScrollView
@@ -406,6 +412,7 @@ const styles = StyleSheet.create({
   viewText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
   shareText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
   listHead: { paddingTop: spacing.lg, gap: spacing.md },
+  suspended: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   chips: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   chip: {
     height: 44,

@@ -437,6 +437,7 @@ describe('GET /api/me', () => {
       businessType: 'other',
       ratingAvg: null,
       ratingCount: 0,
+      suspended: false,
     });
 
     await getDb()

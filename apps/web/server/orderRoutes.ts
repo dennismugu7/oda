@@ -9,7 +9,7 @@ import {
   waLink,
   whatsappMessage,
 } from '@oda/shared';
-import { requireSeller } from './authz';
+import { assertCanEditShop, requireSeller } from './authz';
 import { getDeliveryNames } from './repos/delivery';
 import { afterOrderChange } from './afterOrder';
 import type { Defer } from './checkout';
@@ -107,6 +107,7 @@ export const quoteManualOrder = handle(async (request) => {
 export const createManualOrder = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);
+  assertCanEditShop(ctx); // no new orders while suspended (decision #81 d)
   const input = parseInput(manualOrderInput, await body(request));
   const { order } = await insertOrder(db, {
     shopId: ctx.shopId,

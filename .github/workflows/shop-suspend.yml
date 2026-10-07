@@ -1,0 +1,72 @@
+name: shop-suspend
+
+# Suspends or unsuspends one shop on staging (decisions #72 d, #81 d), never by a raw database
+# edit. Give the shop's current link name exactly (old links and partial names are refused), the
+# action and a reason. Suspended: the shop page, products and checkout answer 404; the seller
+# stays signed in, sees "Your shop is suspended" and can still finish existing orders, but can't
+# edit the shop or take new orders. The server writes an audit row in ops_events (who ran this,
+# why, a snapshot). Running the same action twice changes nothing. Called with the Bearer secret
+# OPS_SECRET (the same value is set in Vercel); a wrong or missing secret answers 404
+# "We couldn’t find that.".
+on:
+  workflow_dispatch:
+    inputs:
+      shop_slug:
+        description: 'Shop link name, exactly, e.g. amani-styles'
+        required: true
+      action:
+        description: 'suspend or unsuspend'
+        required: true
+        type: choice
+        options:
+          - suspend
+          - unsuspend
+      reason:
+        description: 'Why (kept in the audit log)'
+        required: true
+
+concurrency:
+  group: shop-suspend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  URL: https://oda-eta.vercel.app/api/ops/shops/suspension
+
+jobs:
+  suspend:
+    name: Suspend or unsuspend a shop
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the inputs and call the server
+        env:
+          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          SLUG: ${{ inputs.shop_slug }}
+          ACTION: ${{ inputs.action }}
+          REASON: ${{ inputs.reason }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          [ -n "$OPS_SECRET" ] || { echo "::error::Repository secret OPS_SECRET is not set."; exit 1; }
+          [[ "$SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "::error::Not a shop link name."; exit 1; }
+          [[ "$ACTION" == suspend || "$ACTION" == unsuspend ]] || { echo "::error::Choose suspend or unsuspend."; exit 1; }
+          BODY=$(jq -n --arg slug "$SLUG" --arg action "$ACTION" --arg reason "$REASON" --arg actor "$ACTOR" \
+            '{shopSlug: $slug, action: $action, reason: $reason, actor: $actor}')
+          # Neon may need a few seconds to wake up: retry twice on a timeout. Never prints the secret.
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $OPS_SECRET" -H 'content-type: application/json' \
+              --data "$BODY" --max-time 60 "$URL" || echo 000)
+            if [ "$status" = "200" ]; then
+              echo "Done: $(cat result.json)"
+              echo "Shop $ACTION: $(cat result.json)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ "$status" != "000" ]; then break; fi
+            echo "Attempt $attempt timed out"
+            sleep 15
+          done
+          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 with the message 'We couldn’t find that.' means OPS_SECRET differs from the one in Vercel; 'No shop has the link name…' means the secret is right but no live shop has that exact link name."
+          exit 1

@@ -8,7 +8,7 @@ import {
   onboardingShop,
   slugify,
 } from '@oda/shared';
-import { requireSeller, requireUser } from './authz';
+import { assertCanEditShop, requireSeller, requireUser } from './authz';
 import { getDb } from './db';
 import { serverEnv } from './env';
 import { parseInput, toResponse, TooManyRequestsError, ValidationError } from './errors';
@@ -78,6 +78,7 @@ export const postShop = handle(async (request) => {
 export const postLogo = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);
+  assertCanEditShop(ctx);
   const { logoPath } = parseInput(onboardingLogo, await body(request));
   await onboardingShopRepo(db, ctx).saveLogo(logoPath);
   return state(request);
@@ -87,6 +88,7 @@ export const postLogo = handle(async (request) => {
 export const postProduct = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);
+  assertCanEditShop(ctx);
   await onboardingShopRepo(db, ctx).saveProduct(parseInput(onboardingProduct, await body(request)));
   return state(request);
 });
@@ -95,6 +97,7 @@ export const postProduct = handle(async (request) => {
 export const postPayment = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);
+  assertCanEditShop(ctx);
   await onboardingShopRepo(db, ctx).savePayment(parseInput(onboardingPayment, await body(request)));
   return state(request);
 });
@@ -116,6 +119,7 @@ export const postChecklist = handle(async (request) => {
 export const postComplete = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);
+  assertCanEditShop(ctx);
   await onboardingShopRepo(db, ctx).complete();
   return state(request);
 });

@@ -60,6 +60,7 @@ const ROUTES: Record<string, Guard | Partial<Record<Method, Guard>>> = {
   'onboarding/shop': 'seller',
   'onboarding/slug': 'seller',
   'ops/reviews/remove': 'secret',
+  'ops/shops/suspension': 'secret',
   'orders/[id]/actions': 'seller',
   'orders/[id]': 'seller',
   'orders/quote': 'seller',

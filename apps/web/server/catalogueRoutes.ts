@@ -11,7 +11,7 @@ import {
   productPhotosInput,
   productUpdate,
 } from '@oda/shared';
-import { requireSeller } from './authz';
+import { assertCanEditShop, requireSeller } from './authz';
 import { getDb } from './db';
 import { parseInput, toResponse, ValidationError } from './errors';
 import { catalogueRepo } from './repos/catalogue';
@@ -43,7 +43,10 @@ const body = (request: Request) => request.json().catch(() => null);
 
 async function repo(request: Request) {
   const db = getDb();
-  return catalogueRepo(db, await requireSeller(request, db));
+  const ctx = await requireSeller(request, db);
+  // A suspended shop can still read its catalogue but not change it (decision #81 d).
+  if (request.method !== 'GET') assertCanEditShop(ctx);
+  return catalogueRepo(db, ctx);
 }
 
 const listQuery = z.strictObject({
