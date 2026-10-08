@@ -199,6 +199,10 @@ repository, as expected (0007 and 0008 were merged after the 02:38 backup).
   `toResponse()` and checks none of them reaches Sentry; the browser SDK loads after idle (first
   view stays ~152 KB of JavaScript); the CSP allows only the DSN's ingest origin. End-to-end
   test events (web and app) at review stop B.
+- **Web source maps** (#87 d): the first build with `SENTRY_AUTH_TOKEN` on Vercel (`eef5f10`)
+  uploaded nothing: Turborepo's strict env mode withheld the token from `next build` (Vercel's
+  build log lists it under "missing from turbo.json"). `turbo.json` now passes it through
+  (`passThroughEnv`, not part of the cache key), with `CI` and `VERCEL` so the upload logs.
 
 ## CP5 · App UI tests, eas-cli, Expo patches
 
