@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { backdateOrder, demoTokens } from '../test/regressionDb';
 import {
   cron,
@@ -31,6 +31,15 @@ const A = { slug: `reg-${runId}-a`, name: 'Reg Test Shop', email: testEmail('a')
 const B = { slug: `reg-${runId}-b`, name: 'Reg Test B', email: testEmail('b') };
 
 let a: Seller;
+// One API connection for the whole run: Playwright closes each test's own `request` when the
+// test ends, and the sellers' calls continue across sections.
+let api: APIRequestContext;
+test.beforeAll(async ({ playwright }) => {
+  api = await playwright.request.newContext({ baseURL: STAGING });
+});
+test.afterAll(async () => {
+  await api?.dispose();
+});
 const ids: Record<string, string> = {};
 const tokens: Record<string, string> = {};
 let shopSlug = A.slug; // changes at 3.15
@@ -101,7 +110,7 @@ const sms = (code: string, amount: number) =>
 // Sitting 1 -----------------------------------------------------------------------------------
 
 test('Sitting 1 · 1A Sign-up and email code (M2)', async ({ request }) => {
-  a = new Seller(request, A.email, pw());
+  a = new Seller(api, A.email, pw());
   let attemptId = '';
   await test.step('1.2 Create my account: a 6-digit code is emailed', async () => {
     const started = await a.signUp();
@@ -872,7 +881,7 @@ test('Sitting 3 · 3E Delete: web, then app; the digest (M8a)', async ({ page, r
     expect(await a.signIn()).toBe(403);
   });
   await test.step('3.24 Seller B: a quick shop (steps 1–2 and payment skipped)', async () => {
-    const b = new Seller(request, B.email, pw());
+    const b = new Seller(api, B.email, pw());
     const started = await b.signUp();
     const code = await signupCode(request, B.email, started.since);
     expect((await b.verify(started.attemptId, code)).status()).toBe(200);
@@ -904,5 +913,3 @@ test('Sitting 3 · 3E Delete: web, then app; the digest (M8a)', async ({ page, r
     expect(second.feedback + second.reports).toBe(0);
   });
 });
-
-void STAGING;
