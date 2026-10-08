@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/ui/auth';
+import { Star } from '@/ui/star';
 import { colors, radii, spacing, text } from '@/theme';
 import { rateButtonTitle, rateNext, STAR_LABELS } from './rate';
 
@@ -94,7 +95,7 @@ export function RateSheet({ visible, onClose }: { visible: boolean; onClose: () 
                   hitSlop={6}
                   onPress={() => setStars(n)}
                 >
-                  <Text style={[styles.star, n > stars && styles.starOff]}>★</Text>
+                  <Star filled={n <= stars} size={40} />
                 </Pressable>
               ))}
             </View>
@@ -151,8 +152,6 @@ const styles = StyleSheet.create({
   title: { ...text('headline'), color: colors.navy, textAlign: 'center' },
   line: { ...text('body'), color: colors.textSecondary, textAlign: 'center' },
   stars: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
-  star: { fontSize: 40, lineHeight: 48, color: colors.star },
-  starOff: { color: colors.toggleOff },
   label: {
     ...text('bodyStrong'),
     fontFamily: 'Poppins_700Bold',

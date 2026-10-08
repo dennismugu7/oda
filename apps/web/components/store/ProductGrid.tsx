@@ -69,7 +69,7 @@ export function ProductGrid({
             <p className="mt-2 line-clamp-2 text-body text-navy">{p.name}</p>
             {p.ratingCount > 0 ? (
               <p className="text-small text-text-secondary">
-                <span className="text-star">★</span> {Number(p.ratingAvg).toFixed(1)} (
+                <span className="star-glyph">★</span> {Number(p.ratingAvg).toFixed(1)} (
                 {p.ratingCount})
               </p>
             ) : null}

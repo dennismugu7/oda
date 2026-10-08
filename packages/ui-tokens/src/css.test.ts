@@ -11,7 +11,7 @@ describe('theme.css', () => {
   });
 
   it('keeps the brand colours from docs/design-changes.md', () => {
-    expect(colors.primary).toBe('#D94A27');
+    expect(colors.primary).toBe('#C44323');
     expect(colors.navy).toBe('#1C1A2E');
     expect(colors.green).toBe('#1F7A55');
   });

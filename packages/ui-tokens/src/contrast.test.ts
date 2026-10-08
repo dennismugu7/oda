@@ -42,13 +42,7 @@ const TEXT: [Name, Name, string][] = [
   ['danger', 'surface', '"Delete account"'],
   ['info', 'infoTint', 'blue initials'],
   ['navy', 'primaryTint', 'text on the tinted card'],
-];
-
-/**
- * Brand pairs below AA, waiting for the owner's decision (review stop B): the primary orange
- * with white button text (4.23:1) and as text on white (4.23:1) or its tint (3.80:1).
- */
-const PENDING_TEXT: [Name, Name, string][] = [
+  // The brand orange, darkened to #C44323 at review stop B (decision #88).
   ['textOnPrimary', 'primary', 'primary buttons'],
   ['primary', 'surface', 'primary links'],
   ['primary', 'primaryTint', 'secondary buttons'],
@@ -58,10 +52,10 @@ const GRAPHICS: [Name, Name, string][] = [
   ['navy', 'surface', 'selected borders, icons'],
   ['green', 'surface', 'toggles on, progress'],
   ['primary', 'surface', 'badges, today bar'],
+  // Rating stars: the yellow fill is 2.19:1, so every star carries this outline (decision #89).
+  ['starOutline', 'surface', 'rating star outlines on white'],
+  ['starOutline', 'background', 'rating star outlines on the page'],
 ];
-
-/** Graphics below 3:1, waiting for the owner's decision: rating stars on white (2.19:1). */
-const PENDING_GRAPHICS: [Name, Name, string][] = [['star', 'surface', 'rating stars']];
 
 describe('colour contrast (WCAG 2.2 AA)', () => {
   it.each(TEXT)('%s on %s (%s): at least 4.5:1', (fg, bg) => {
@@ -70,15 +64,6 @@ describe('colour contrast (WCAG 2.2 AA)', () => {
 
   it.each(GRAPHICS)('%s on %s (%s): at least 3:1', (fg, bg) => {
     expect(contrast(colors[fg], colors[bg])).toBeGreaterThanOrEqual(3);
-  });
-
-  it('the pending pairs are still the known ones (fails once fixed: move them up)', () => {
-    for (const [fg, bg] of PENDING_TEXT) {
-      expect(contrast(colors[fg], colors[bg]), `${fg} on ${bg}`).toBeLessThan(4.5);
-    }
-    for (const [fg, bg] of PENDING_GRAPHICS) {
-      expect(contrast(colors[fg], colors[bg]), `${fg} on ${bg}`).toBeLessThan(3);
-    }
   });
 
   it('computes WCAG ratios', () => {

@@ -10,6 +10,7 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 - **Brand name in UI text:** always lowercase **oda** (never "Oda"), including where an image capitalises it.
 - **Till badge:** dropped (decision #72). Onboarding step 5 and 20b-payments don't mention verification.
 - **Theme:** light only. Hide the Theme row in Settings.
+- **Colour contrast (M10, decisions #88, #89):** the primary orange is **#C44323**, a little deeper than the images' ~#D94A27, so white button text and orange text pass WCAG AA everywhere; rating stars keep the images' yellow fill with a **thin #936511 outline** on every star (shown and tapped), so their shape passes 3:1. The app icon, splash and notification accent change with the next native build.
 - **Brand:** primary orange-red (~#D94A27), dark navy (~#1C1B2E), green accent (~#1F7A4D), warm cream/peach backgrounds. **Poppins everywhere** and **brand colours everywhere**: screens that show other fonts (02–08, including the button on 02) or off-brand colours (08's tick) are mockup inconsistencies. Extract exact tokens from the images into `packages/ui-tokens` in Milestone 0.
 
 ## Seller app (`design/app/`)
