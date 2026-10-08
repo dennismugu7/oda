@@ -1,70 +1,72 @@
-// Publishes an EAS Update to the preview channel (decision #47), always from apps/seller,
-// whatever the current directory: a run from the repo root once made eas-cli create an
-// empty app.json there (Step 49). Refuses to run while a stray app.json exists at the root.
+// Publishes an EAS Update to the preview channel (decisions #47, #90) by starting the
+// eas-update-preview workflow on the current branch and waiting for it: the update is built,
+// published and its source maps uploaded to Sentry on the runner, never on the laptop.
 //
 //   pnpm --filter @oda/seller update:preview "What changed"
 //   pnpm update:preview "What changed"   (from the repo root)
+//
+// The branch must be pushed and clean: the runner builds what GitHub has, not this folder.
 import { spawnSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { strayRootFiles } from '../../../scripts/check-repo-root.mjs';
-import { parseEnvList, publicUrlProblems } from './public-urls.mjs';
 
-const app = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const WORKFLOW = 'eas-update-preview.yml';
 const message = process.argv.slice(2).join(' ').trim();
 if (!message) {
   console.error('Give the update a message, e.g. pnpm update:preview "Fix the sign-in error"');
   process.exit(1);
 }
 
-const before = strayRootFiles();
-if (before.length > 0) {
-  console.error(`Remove these from the repo root first: ${before.join(', ')}`);
-  process.exit(1);
+const branch = run('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
+if (branch === 'HEAD') stop('Check out a branch first (detached HEAD).');
+if (run('git', ['status', '--porcelain'])) {
+  stop('Commit or stash your changes first: the update is built from the pushed branch.');
+}
+run('git', ['fetch', '--quiet', 'origin', branch]);
+const head = run('git', ['rev-parse', 'HEAD']);
+if (head !== run('git', ['rev-parse', `origin/${branch}`])) {
+  stop(`Push ${branch} first: GitHub's copy differs from this one.`);
 }
 
-// The update is built with the EAS "preview" environment: its URLs must be public https.
-const envList = spawnSync('pnpm', ['exec', 'eas', 'env:list', '--environment', 'preview'], {
-  cwd: app,
-  encoding: 'utf8',
-  shell: process.platform === 'win32',
+const started = new Date(Date.now() - 5_000).toISOString();
+run('gh', ['workflow', 'run', WORKFLOW, '--ref', branch, '-f', `message=${message}`]);
+console.log(`Started ${WORKFLOW} on ${branch} (${head.slice(0, 7)}): "${message}"`);
+
+// The run appears a few seconds after the dispatch.
+let runId = '';
+for (let i = 0; i < 30 && !runId; i++) {
+  spawnSync(process.execPath, ['-e', 'setTimeout(() => {}, 2000)']);
+  runId = run('gh', [
+    'run',
+    'list',
+    '--workflow',
+    WORKFLOW,
+    '--branch',
+    branch,
+    '--event',
+    'workflow_dispatch',
+    '--limit',
+    '5',
+    '--json',
+    'databaseId,headSha,createdAt',
+    '--jq',
+    `[.[] | select(.headSha == "${head}" and .createdAt >= "${started}")][0].databaseId // ""`,
+  ]);
+}
+if (!runId) stop('The workflow run did not show up; see Actions → eas-update-preview.');
+
+const watched = spawnSync('gh', ['run', 'watch', runId, '--exit-status', '--interval', '10'], {
+  stdio: 'inherit',
 });
-if (envList.status !== 0) {
-  console.error(envList.stderr || envList.stdout);
-  console.error('Could not read the EAS "preview" environment; nothing was published.');
-  process.exit(1);
-}
-const problems = publicUrlProblems(parseEnvList(envList.stdout));
-if (problems.length > 0) {
-  for (const problem of problems) console.error(problem);
-  console.error(
-    'Fix the EAS "preview" environment (expo.dev → Environment variables); nothing was published.',
-  );
-  process.exit(1);
+const url = run('gh', ['run', 'view', runId, '--json', 'url', '--jq', '.url']);
+if (watched.status !== 0) stop(`The update failed: ${url}`);
+console.log(`Published; the update id and runtime are in the run's summary: ${url}`);
+
+function run(cmd, args) {
+  const result = spawnSync(cmd, args, { encoding: 'utf8' });
+  if (result.status !== 0) stop(`${cmd} ${args[0]} failed: ${(result.stderr || '').trim()}`);
+  return result.stdout.trim();
 }
 
-const result = spawnSync(
-  'pnpm',
-  [
-    'exec',
-    'eas',
-    'update',
-    '--channel',
-    'preview',
-    '--environment',
-    'preview',
-    '--non-interactive',
-    '--message',
-    // With shell: true (Windows) the arguments are joined unquoted, so a message with spaces
-    // would split into many: quote it (double quotes inside become single ones).
-    process.platform === 'win32' ? `"${message.replace(/"/g, "'")}"` : message,
-  ],
-  { cwd: app, stdio: 'inherit', shell: process.platform === 'win32' },
-);
-
-const after = strayRootFiles();
-if (after.length > 0) {
-  console.error(`eas-cli left files at the repo root: ${after.join(', ')}. Delete them.`);
+function stop(text) {
+  console.error(text);
   process.exit(1);
 }
-process.exit(result.status ?? 1);
