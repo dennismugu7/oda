@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-08: **CP1–CP5 done** (security; suspend / unsuspend; states, accessibility, performance; Sentry, push receipts, backups; app UI tests, Expo patches, 0.3.1); **review stop B passed** (owner Step 93). CP6 adds its section.
+Status on 2026-10-08: **CP1–CP5 done** (security; suspend / unsuspend; states, accessibility, performance; Sentry, push receipts, backups; app UI tests, Expo patches, 0.3.1); **review stop B passed** (owner Step 93); **CP6 regression green** (decision #92; section below), waiting for 🛑 review stop C.
 
 ## Findings
 
@@ -214,3 +214,32 @@ repository, as expected (0007 and 0008 were merged after the 02:38 backup).
   `m10-cp5-expo` with version 0.3.1; EAS build `da329ea4` (owner-approved), merged as PR #61
   (`b3c9825`, staging); EAS Update `feb0b16f` on runtime 0.3.1 (#85 e).
 - **Dependency audit:** re-run after the 0.3.1 merge (S10).
+
+## CP6 · Full regression on staging (decision #92)
+
+**Actions → staging-regression**, run [37830669952](https://github.com/dennismugu7/oda/actions/runs/37830669952) on `main` `99f174d` (2026-10-08): **all 15 sections passed, 87 steps, 0 failed**. These are the three sittings of `docs/regression-script.md` with the same step numbers. Seller steps use the app's API calls; buyer steps run in Chromium at 390×844. Coverage:
+- sign-up with the emailed code (wrong code, resend);
+- onboarding with the resume step;
+- delivery, categories and products (photos, was-price, statuses, delete and Undo);
+- the shop on the web (search, sold out, cart, Demo Duka favourites, 404, landing and legal pages);
+- password reset by email;
+- pay now end to end: payment not found, confirm, sent, delivered;
+- pay on delivery with pickup; buyer cancel;
+- seller cancel with refund (the private note is never shown);
+- manual order; order tabs and search; notifications;
+- Demo Duka's states; expiry after 48 h;
+- review with a photo: edit, reply, report, ops removal;
+- insights and customers;
+- settings: details, password, link change with redirect, Paybill, pay on delivery off and on, pause, feedback, buyer report;
+- suspend and unsuspend;
+- web and in-app account deletion; the digest (once, not twice).
+
+- **Found:** one script gap, not a product bug (run 37828588526). With only a Till, a shop takes pay now only until Payments → On delivery is turned on, and the script never turned it on. Added as step 1.15b.
+- **Hygiene:**
+  - The log contains no order links, email links or keys (checked); codes are masked.
+  - Clean-up deleted and purged both test accounts (2 shops, 15 files).
+  - Screenshots are kept until 2026-10-15 (`regression-screens`).
+- **Not in this run:**
+  - Push on a device, offline states and the Rate sheet. Those are covered by the app's jest-expo UI tests, now 71 (36 → 71: order actions, delivery, payments, delete account, reviews, Rate sheet, catalogue).
+  - A hands-on real-device check of the production build is **still required before launch (M11)**.
+- **Local flake noted:** once, `e2e/delete-account.spec.ts` timed out waiting 5 s for its outbox email on a busy laptop; the rerun was green and CI was green.
