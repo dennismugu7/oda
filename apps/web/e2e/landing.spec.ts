@@ -10,7 +10,7 @@ test('landing page renders in Poppins and brand colours', async ({ page }) => {
 
   const logo = page.getByLabel('oda');
   const logoColour = await logo.evaluate((el) => getComputedStyle(el).color);
-  expect(logoColour).toBe('rgb(217, 74, 39)'); // #D94A27
+  expect(logoColour).toBe('rgb(196, 67, 35)'); // #C44323 (decision #88)
 
   // Without APP_DOWNLOAD_URL the store button is a placeholder (decision #59).
   await expect(page.getByText('Coming soon to Google Play')).toBeVisible();

@@ -309,12 +309,15 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
                   key={n}
                   href={`/o/${order.token}/review?stars=${n}`}
                   aria-label={`Rate ${n} out of 5`}
-                  className="flex size-11 items-center justify-center text-text-muted hover:text-star"
+                  className="flex size-11 items-center justify-center text-track hover:text-star"
                 >
                   <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
                     <path
                       d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"
                       fill="currentColor"
+                      className="stroke-star-outline"
+                      strokeWidth="1"
+                      strokeLinejoin="round"
                     />
                   </svg>
                 </Link>

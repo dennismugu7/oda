@@ -3,7 +3,7 @@
 
 export const colors = {
   // Brand
-  primary: '#D94A27', // buttons, today bar, badges
+  primary: '#C44323', // buttons, today bar, badges (darkened in M10 for AA contrast, decision #88)
   primaryTint: '#FDF0EA', // secondary button fill ("Create new shop")
   primarySoft: '#F2C7B9', // chart bars (past days)
   navy: '#1C1A2E', // headers, headings, selected borders, dark chips
@@ -39,7 +39,8 @@ export const colors = {
   warningTextStrong: '#6B4A0C',
   warningAccent: '#CC9B44', // stepper "in progress" ring
   danger: '#B3261E', // destructive button, "Delete account"
-  star: '#E0A52B',
+  star: '#E0A52B', // rating star fill (2.19:1 on white: always drawn with starOutline)
+  starOutline: '#936511', // thin outline on every rating star, 5.11:1 on white (decision #89)
   info: '#2D5FA8', // blue avatar initial
   infoTint: '#E6EDF8',
 } as const;

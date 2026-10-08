@@ -28,17 +28,20 @@ import { avatarFor, emptyText, histogramBars, REVIEW_TABS, reviewLabel } from '@
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
+import { Star } from '@/ui/star';
 import { colors, radii, spacing, text } from '@/theme';
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
-    <Text
+    <View
+      accessible
       accessibilityLabel={`${rating} out of 5 stars`}
-      style={{ fontSize: size, lineHeight: size + 4, letterSpacing: 2 }}
+      style={{ flexDirection: 'row', gap: 2, paddingVertical: 2 }}
     >
-      <Text style={{ color: colors.star }}>{'★'.repeat(rating)}</Text>
-      <Text style={{ color: colors.toggleOff }}>{'★'.repeat(5 - rating)}</Text>
-    </Text>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star key={n} filled={n <= rating} size={size} />
+      ))}
+    </View>
   );
 }
 

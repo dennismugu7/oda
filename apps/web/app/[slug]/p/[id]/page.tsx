@@ -115,7 +115,7 @@ export default async function ProductPage(props: Props) {
         <p className="mt-1 text-body text-text-secondary">
           {product.ratingCount > 0 ? (
             <>
-              <span className="text-star">★</span>{' '}
+              <span className="star-glyph">★</span>{' '}
               <span className="font-semibold text-navy">
                 {Number(product.ratingAvg).toFixed(1)}
               </span>{' '}

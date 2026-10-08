@@ -111,8 +111,12 @@ function StarButtons({
           <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
             <path
               d={STAR_PATH}
-              className={value !== null && n <= value ? 'fill-star' : 'fill-none stroke-text-muted'}
-              strokeWidth="1.6"
+              className={
+                value !== null && n <= value
+                  ? 'fill-star stroke-star-outline'
+                  : 'fill-none stroke-star-outline'
+              }
+              strokeWidth="1"
               strokeLinejoin="round"
             />
           </svg>

@@ -1,6 +1,13 @@
 @import 'tailwindcss';
 @import '@oda/ui-tokens/theme.css';
 
+/* A rating star written as text (★): the yellow fill with a thin dark outline, so the star's
+   shape meets 3:1 on white (decision #89). */
+@utility star-glyph {
+  color: var(--color-star);
+  -webkit-text-stroke: 0.06em var(--color-star-outline);
+}
+
 html {
   color-scheme: light;
 }

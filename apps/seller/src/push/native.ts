@@ -3,6 +3,7 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { colors } from '@/theme';
 import type { PushDevice } from './session';
 
 // While the app is open, still show the banner and play the sound.
@@ -20,7 +21,8 @@ async function ensureChannel() {
   await Notifications.setNotificationChannelAsync('orders', {
     name: 'Orders',
     importance: Notifications.AndroidImportance.HIGH,
-    lightColor: '#D94A27',
+    // Android keeps a channel's settings once created: phones that have it keep the old colour.
+    lightColor: colors.primary,
   });
 }
 

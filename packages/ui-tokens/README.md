@@ -16,7 +16,7 @@ A test fails if `theme.css` is out of date.
 
 | Token             | Value                 | Sampled from (file @ x,y in image pixels)                                             |
 | ----------------- | --------------------- | ------------------------------------------------------------------------------------- |
-| primary           | `#D94A27`             | 09 Next button @450,1850; 16 today bar @763,1320; web 01 View cart @745,2330          |
+| primary           | `#C44323`             | was `#D94A27` (09 Next button @450,1850); darkened for AA contrast, decision #88      |
 | primaryTint       | `#FDF0EA`             | 01 "Create new shop" @540,2140                                                        |
 | primarySoft       | `#F2C7B9`             | 16 chart bar @135,1320                                                                |
 | navy              | `#1C1A2E`             | 09 header @450,90; 09 heading glyphs; 11 focused input border                         |
@@ -41,6 +41,7 @@ A test fails if `theme.css` is out of date.
 | warningAccent     | `#CC9B44`             | 17 stepper ring @350,238                                                              |
 | danger            | `#B3261E`             | 17b "Cancel order" @450,1760                                                          |
 | star              | `#E0A52B`             | 20b-reviews rating bar @500,441 (web 02 star is brighter, `#F2A413`)                  |
+| starOutline       | `#936511`             | not in the designs: thin outline on every rating star, decision #89                   |
 | info / infoTint   | `#2D5FA8` / `#E6EDF8` | 16 "B" avatar                                                                         |
 
 | Geometry             | Value                       | Measured                                                         |

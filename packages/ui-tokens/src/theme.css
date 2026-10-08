@@ -1,7 +1,7 @@
 /* Generated from src/tokens.ts by `pnpm --filter @oda/ui-tokens generate`. Do not edit. */
 @theme {
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #D94A27;
+  --color-primary: #C44323;
   --color-primary-tint: #FDF0EA;
   --color-primary-soft: #F2C7B9;
   --color-navy: #1C1A2E;
@@ -30,6 +30,7 @@
   --color-warning-accent: #CC9B44;
   --color-danger: #B3261E;
   --color-star: #E0A52B;
+  --color-star-outline: #936511;
   --color-info: #2D5FA8;
   --color-info-tint: #E6EDF8;
   --radius-sm: 8px;
