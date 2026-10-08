@@ -620,7 +620,61 @@ describe('transitionOrder: scope, forbidden actions and races', () => {
     expect((await reload(order.id)).status).toBe('awaiting_payment');
   });
 
-  it('two confirmPayment calls at once: exactly one wins, the other gets 409', async () => {
+  // Two confirms of the same claim can lose in two ways, both safe (hardening report S18):
+  // both read the order before either writes → the loser's guarded UPDATE matches no row (409);
+  // the loser reads after the winner committed → the state machine refuses it (422). A plain
+  // Promise.all decides the path by timing, so each path gets its own deterministic test.
+  it('two confirmPayment calls that both read before either writes: one wins, the other gets 409', async () => {
+    const w = await world();
+    const { order } = await insertOrder(db, newOrder(w));
+    await transitionOrder(db, await buyer(order.publicToken), { type: 'submitCode', message: SMS });
+    // Hold the row lock from a third connection. Plain reads don't wait for it, so both calls
+    // read the claimed order, then block at their UPDATE until both are provably waiting.
+    const { racing } = await db.transaction(async (lock) => {
+      await lock.execute(sql`select 1 from orders where id = ${order.id} for update`);
+      const racing = Promise.allSettled([
+        transitionOrder(db, seller(w, order.id), { type: 'confirmPayment' }),
+        transitionOrder(db, seller(w, order.id), { type: 'confirmPayment' }),
+      ]);
+      // The first waits for this lock, the second queues behind the first (test files run one
+      // at a time, so no other backend of this database waits on a lock).
+      for (let waited = 0; ; waited += 20) {
+        const blocked = await db.execute<{ n: number }>(
+          sql`select count(*)::int as n from pg_stat_activity
+              where datname = current_database() and wait_event_type = 'Lock'`,
+        );
+        if (blocked.rows[0]!.n === 2) break;
+        if (waited > 8000) throw new Error('Both confirms never reached their UPDATE');
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      // Wrapped: returning the promise itself would wait for it before committing (deadlock).
+      return { racing }; // committing the lock lets them through, one after the other
+    });
+    const results = await racing;
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
+    expect(rejected.reason).toBeInstanceOf(ConflictError);
+    expect((rejected.reason as ConflictError).message).toBe(
+      'This order changed. Refresh and try again.',
+    );
+    expect((await events(order.id)).filter((e) => e.toStatus === 'confirmed')).toHaveLength(1);
+    expect((await product(w.dress.id)).unitsSold).toBe(1);
+  }, 20_000);
+
+  it('a confirmPayment that reads an order already confirmed is refused (422), nothing twice', async () => {
+    const w = await world();
+    const { order } = await insertOrder(db, newOrder(w));
+    await transitionOrder(db, await buyer(order.publicToken), { type: 'submitCode', message: SMS });
+    await transitionOrder(db, seller(w, order.id), { type: 'confirmPayment' });
+    const confirmed = await reload(order.id);
+    const err = await fails(transitionOrder(db, seller(w, order.id), { type: 'confirmPayment' }));
+    expect(err.status).toBe(422);
+    expect(await reload(order.id)).toEqual(confirmed);
+    expect((await events(order.id)).filter((e) => e.toStatus === 'confirmed')).toHaveLength(1);
+    expect((await product(w.dress.id)).unitsSold).toBe(1);
+  });
+
+  it('two confirmPayment calls at once, either path: exactly one confirm', async () => {
     const w = await world();
     const { order } = await insertOrder(db, newOrder(w));
     await transitionOrder(db, await buyer(order.publicToken), { type: 'submitCode', message: SMS });
@@ -630,12 +684,10 @@ describe('transitionOrder: scope, forbidden actions and races', () => {
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
-    expect(rejected.reason).toBeInstanceOf(ConflictError);
-    expect((rejected.reason as ConflictError).message).toBe(
-      'This order changed. Refresh and try again.',
-    );
+    expect([409, 422]).toContain((rejected.reason as HttpError).status);
     expect((await events(order.id)).filter((e) => e.toStatus === 'confirmed')).toHaveLength(1);
     expect((await product(w.dress.id)).unitsSold).toBe(1);
+    expect((await claims(order.id)).map((c) => c.outcome)).toEqual(['confirmed']);
   });
 
   it('a buyer cancel racing a seller confirm: one wins, the order is consistent', async () => {

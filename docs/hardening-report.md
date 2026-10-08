@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (states, accessibility, performance) done; CP4 in progress** (push receipts, restore check, Sentry privacy done; Sentry accounts and the web SDK with the owner). CP5–CP6 add their sections.
+Status on 2026-10-08: **CP1 (security), CP2 (suspend / unsuspend), CP3 (states, accessibility, performance) and CP5 (app UI tests, Expo patches, 0.3.1) done; CP4 in progress** (push receipts, restore check, Sentry privacy and the web SDK done; source maps and the test events with the owner). CP6 adds its section.
 
 ## Findings
 
@@ -33,6 +33,7 @@ Status on 2026-10-07: **CP1 (security), CP2 (suspend / unsuspend) and CP3 (state
 | S15 | Input | No cap on JSON body size before parsing (Vercel's platform limit is 4.5 MB). | low | **accepted** | With S1 fixed, every schema bounds its strings and arrays before any slow work; parsing 4.5 MB of JSON takes milliseconds. |
 | S16 | Output | Public review photo URLs contain the order's internal id (`reviews/<order uuid>/…`). | low | **accepted** | A random UUID: not enumerable, and order access needs the separate `public_token`. |
 | S17 | Admin | `requireAdmin`, `adminRepo`, `profiles.is_admin` reads and the `admin@example.test` seed are dead code since #72. | low | **fixed** (CP2) | Removed (decision #82 f); `is_admin` stays unwritable (`authz.test.ts`) until the M11 contract migration. |
+| S18 | Tests (money path) | The race test "two confirmPayment calls at once: exactly one wins, the other gets 409" failed once on `main` (CI on `eba2568`, PR #60 merge): the loser got 422 "This action … not allowed" instead of 409. **The code is right; the test assumed one interleaving.** `transitionOrder()` reads the order without a lock and then runs `UPDATE … WHERE status = <read> AND payment_status = <read>`, so a second confirm loses one of two ways: both read before either writes → its UPDATE waits for the winner, then matches no row → 409; or it reads after the winner committed → the state machine refuses → 422. Both leave exactly one confirm, one `confirmed` event, one claim outcome and `units_sold` + 1. `Promise.allSettled` let timing pick the path, so the test (and the 409 guard) was only checked when the timing lined up. | low | **fixed** (test) | `orders.test.ts`: the 409 path is forced (a third connection holds the row lock until both calls are waiting at their UPDATE in `pg_stat_activity`, then commits); the 422 path is a separate test (confirm after confirm, nothing changes twice); the unforced race stays and checks only what must hold on either path. 11 runs green locally. Mutation check: with the UPDATE's status and payment-status conditions removed, the forced test fails every time (both confirms succeed); the old test caught that only when both reads came first. |
 
 ## CP1 · Security review: checked and fine
 
@@ -206,5 +207,6 @@ repository, as expected (0007 and 0008 were merged after the 02:38 backup).
   found two radio controls that told screen readers "selected" instead of "checked" (fixed).
 - **eas-cli** 24.11.0 on the laptop; `eas.json` asks for at least 24.11.0 (on the 0.3.1 branch).
 - **Expo SDK 57 patches:** installed and checked (online expo-doctor 21/21) on branch
-  `m10-cp5-expo` with version 0.3.1; merged with the owner-approved EAS build (#85 e).
+  `m10-cp5-expo` with version 0.3.1; EAS build `da329ea4` (owner-approved), merged as PR #61
+  (`b3c9825`, staging); EAS Update `feb0b16f` on runtime 0.3.1 (#85 e).
 - **Dependency audit:** re-run after the 0.3.1 merge (S10).
