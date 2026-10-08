@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-08: **CP1 (security), CP2 (suspend / unsuspend), CP3 (states, accessibility, performance) and CP5 (app UI tests, Expo patches, 0.3.1) done; CP4 in progress** (push receipts, restore check, Sentry privacy and the web SDK done; source maps and the test events with the owner). CP6 adds its section.
+Status on 2026-10-08: **CP1–CP5 done** (security; suspend / unsuspend; states, accessibility, performance; Sentry, push receipts, backups; app UI tests, Expo patches, 0.3.1); **review stop B passed** (owner Step 93). CP6 adds its section.
 
 ## Findings
 
