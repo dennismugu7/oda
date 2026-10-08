@@ -31,6 +31,11 @@ Newest entries at the top.
   - 6: TalkBack pass (names, tab positions, order rows, Move up / Move down, switch and checked states, Help).
   - 7: PageSpeed on `/demo-duka` (Mobile) at 85 or more.
 - **M10:** CP1–CP5 done; next **CP6** (full regression on staging, `docs/regression-script.md`), then 🛑 review stop C and the gate.
+- **CP6 started:**
+  - Staging serves `main` (`/api/health` = `bfcdee6`, then `c653db3` after PR #67). The newest preview update is group `ce15b170` (`01a11b05`), which the owner verified on the Redmi.
+  - **demo-seed-staging** run 37772931752 green: Demo Duka reset, with pay now + pay on delivery, the fake Till, 3 areas + pickup, 5 categories, 12 products (0 new) and 9 sample orders (one per state). It seeds no reviews.
+  - `docs/regression-script.md` written: three sittings of about 20 minutes, using throwaway Shops A and B and never Demo Duka for seller steps. Claude runs the ops tools and jobs between sittings.
+  - Sitting 1 sent to the owner.
 
 ## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
 
