@@ -1,0 +1,129 @@
+name: staging-sitting1-cleanup
+
+# The owner's Sitting 1 test account (decision #92 c, owner Step 94): the staging account whose
+# email contains "+oda-a@". Never automatic. "list" shows each such account's shop name and
+# slug (never the email); "delete" runs only after the owner's yes, with that exact slug (or
+# "no-shop" for an account that never got a shop). It deletes the account the way the app's
+# Delete account does (decision #75: shop and profile deleted_at, sessions removed, an
+# ops_events row), backdates it 31 days and runs the purge (dry run, then real). It refuses
+# demo-duka, furaha-styles and any account without "+oda-a@" in its email.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list shows the accounts; delete only after the owner's yes"
+        required: true
+        type: choice
+        options: [list, delete]
+        default: list
+      shop_slug:
+        description: 'For delete, the exact slug from the list (or no-shop)'
+        required: false
+        type: string
+
+concurrency:
+  group: staging-sitting1-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Sitting 1 account (${{ inputs.action }})
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+    steps:
+      - name: Check the inputs and the secrets
+        env:
+          ACTION: ${{ inputs.action }}
+          SLUG: ${{ inputs.shop_slug }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          [ -n "$DATABASE_URL_UNPOOLED" ] || { echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is not set."; exit 1; }
+          if [ "$ACTION" = "delete" ]; then
+            [ -n "$CRON_SECRET" ] || { echo "::error::CRON_SECRET is not set."; exit 1; }
+            [[ "$SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "::error::Give the exact slug from the list (or no-shop)."; exit 1; }
+            case "$SLUG" in demo-duka|furaha-styles) echo "::error::$SLUG is never deleted here."; exit 1;; esac
+          fi
+
+      - name: List the +oda-a@ accounts (shop name and slug only)
+        run: |
+          rows=$(psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -At -F ' | ' <<'SQL'
+          select coalesce(s.name, '(no shop)'), coalesce(s.slug, 'no-shop'),
+                 to_char(u.created_at at time zone 'Africa/Nairobi', 'YYYY-MM-DD HH24:MI'),
+                 case when p.deleted_at is not null or s.deleted_at is not null then 'already deleted' else 'live' end
+          from auth_user u
+          left join profiles p on p.id = u.id
+          left join shops s on s.owner_id = u.id
+          where position('+oda-a@' in u.email) > 0
+          order by u.created_at;
+          SQL
+          )
+          {
+            echo "### Staging accounts with +oda-a@ in the email"
+            echo
+            if [ -z "$rows" ]; then
+              echo "None found."
+            else
+              echo "| Shop name | Slug | Created (Nairobi) | State |"
+              echo "|---|---|---|---|"
+              while IFS= read -r line; do echo "| $line |"; done <<< "$rows"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete the account (owner's yes)
+        if: inputs.action == 'delete'
+        env:
+          SLUG: ${{ inputs.shop_slug }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          result=$(psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -qAt -v slug="$SLUG" -v actor="$ACTOR" <<'SQL'
+          begin;
+          create temp table target on commit drop as
+            select u.id as user_id, s.id as shop_id, s.slug, s.name
+            from auth_user u
+            left join shops s on s.owner_id = u.id
+            where position('+oda-a@' in u.email) > 0
+              and ((:'slug' = 'no-shop' and s.id is null) or s.slug = :'slug')
+              and coalesce(s.slug, '') not in ('demo-duka', 'furaha-styles');
+          -- Exactly one account, or nothing happens.
+          select case when (select count(*) from target) = 1 then 1 else 1 / 0 end;
+          update profiles set deleted_at = now(), expo_push_tokens = '{}'
+            where id = (select user_id from target) and deleted_at is null;
+          update shops set deleted_at = now()
+            where owner_id = (select user_id from target) and deleted_at is null;
+          delete from auth_session where user_id = (select user_id from target);
+          insert into ops_events (action, shop_id, target_id, reason, actor, details)
+            select 'account_deleted', shop_id, user_id,
+                   'Owner''s Sitting 1 test account, deleted on the owner''s yes (decision #92)',
+                   :'actor', jsonb_build_object('via', 'ops', 'slug', slug, 'name', name)
+            from target;
+          -- Backdated so the purge below removes it now (as staging-backdate-deletion does).
+          update shops set deleted_at = now() - interval '31 days'
+            where owner_id = (select user_id from target);
+          update profiles set deleted_at = now() - interval '31 days'
+            where id = (select user_id from target);
+          select coalesce(slug, 'no-shop') from target;
+          commit;
+          SQL
+          ) || { echo "::error::Nothing deleted: no single +oda-a@ account with that slug (see the list above)."; exit 1; }
+          echo "Deleted and backdated: $(tail -n 1 <<< "$result")" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Purge (dry run, then real)
+        if: inputs.action == 'delete'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          URL: https://oda-eta.vercel.app/api/cron/purge
+          ACTOR: ${{ github.actor }}
+        run: |
+          for dry in true false; do
+            status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" -H "x-oda-actor: $ACTOR" \
+              -H 'content-type: application/json' -d "{\"dryRun\": $dry}" --max-time 90 "$URL" || echo 000)
+            [ "$status" = "200" ] || { echo "::error::The purge answered $status."; exit 1; }
+            jq -r --arg dry "$dry" '"Purge (dry run: \($dry)): accounts \(.accounts) (\(.slugs|map(. // "no shop")|join(", "))), files \(.accountFiles)"' result.json | tee -a "$GITHUB_STEP_SUMMARY"
+          done
