@@ -2,22 +2,35 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-08, owner Step 92)
+## Handoff (keep current; updated 2026-10-08, owner Step 93)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3 and CP5 done; CP4 waits on the Sentry source-map token and the test events; then 🛑 review stop B.
-- **Staging:** https://oda-eta.vercel.app = `main` (`b3c9825`, PR #61: 0.3.1); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93: steps 0–7 and update `01a11b05` on the Redmi). **CP6** (full regression, `docs/regression-script.md`) in progress; then 🛑 review stop C and the gate.
+- **Staging:** https://oda-eta.vercel.app = `main` (`bfcdee6`, PR #66); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** owner: Sentry step 4 (`SENTRY_AUTH_TOKEN` in Vercel, by name) and the phone on update `feb0b16f`; then the Sentry test events (Actions → sentry-test, Help long press), the dependency re-audit (S10, asks first) and 🛑 review stop B (test list, TalkBack script, contrast options).
+**Next step:** CP6: Demo Duka reseeded, the owner runs `docs/regression-script.md` in three sittings (Sitting 1 first, results before Sitting 2); Claude runs the automated parts. Then 🛑 review stop C.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-08 · Review stop B passed (owner Step 93)
+
+- **Owner:** review stop B **passed**, steps 0–7 (with the colour update on the Redmi):
+  - 0: the phone on the newest update (Help now shows `01a11b05`: orange #C44323, outlined stars).
+  - 1: web test event `c2b723a0…` in Sentry `oda-web`, scrubbed (`[email]`, `[phone]`, no cookies, headers or body), readable stack.
+  - 2: the app's Help long-press error in Sentry `oda-seller` (release `oda-seller@0.3.1`, environment `preview`, no user data).
+  - 3: push receipts counts in the cron-expire-orders summary.
+  - 4: backup-restore-check green, migrations 9 of 9.
+  - 5: offline states (saved data or "You're offline", Try again recovers, no endless spinner).
+  - 6: TalkBack pass (names, tab positions, order rows, Move up / Move down, switch and checked states, Help).
+  - 7: PageSpeed on `/demo-duka` (Mobile) at 85 or more.
+- **M10:** CP1–CP5 done; next **CP6** (full regression on staging, `docs/regression-script.md`), then 🛑 review stop C and the gate.
 
 ## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
 
