@@ -5,14 +5,14 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-08, owner Step 93)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93: steps 0–7 and update `01a11b05` on the Redmi). **CP6** (full regression, `docs/regression-script.md`) in progress; then 🛑 review stop C and the gate.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93). **CP6 regression green** (automated, decision #92: Actions → staging-regression run 37830669952, 15/15 sections, 87 steps); 🛑 **review stop C** next, then the gate.
 - **Staging:** https://oda-eta.vercel.app = `main` (`bfcdee6`, PR #66); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** CP6: Demo Duka reseeded, the owner runs `docs/regression-script.md` in three sittings (Sitting 1 first, results before Sitting 2); Claude runs the automated parts. Then 🛑 review stop C.
+**Next step:** 🛑 **review stop C**: the owner reads staging-regression run 37830669952 (Summary + `regression-screens`). After a yes: the M10 gate → `m10-done`. Owner: delete the Resend key `oda-staging-regression` (and the GitHub secret `RESEND_API_KEY`) once CP6 is closed.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
@@ -48,6 +48,10 @@ Newest entries at the top.
     - DB helpers in `apps/web/test/regressionDb.ts` (backdate only this run's shops; Demo Duka read-only).
     - Not covered by it: push on a device, offline and Rate-the-app (left to the app UI tests).
   - **App UI tests 36 → 71** (decision #92 d): order actions (confirm, payment not found, sent with a rider, delivered with collection, cancel, refund), delivery, payments, delete account, reviews (reply, report), Rate sheet, catalogue (was-price, Move up / Move down). No product bugs found.
+  - **Runs:**
+    - 37824915580: stopped at 1B (a test-code bug: a disposed request context; PR #71).
+    - 37828588526: Sitting 1 and 2A green; 2.10 found the script gap, pay on delivery never turned on (step 1.15b, PR #72).
+    - **37830669952: all 15 sections, 87 steps green.** The log has no links, tokens or keys; clean-up purged both test accounts.
 
 ## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
 
