@@ -1,6 +1,6 @@
 // Fails when Expo/EAS project files appear at the repo root: the app's config lives in
 // apps/seller, and a root app.json means a command ran in the wrong folder (Step 49).
-// Run by CI and by apps/seller/scripts/eas-update.mjs.
+// Run by CI and by apps/seller/scripts/eas-update-publish.mjs (on the eas-update-preview runner).
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
