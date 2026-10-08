@@ -2,22 +2,29 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-07, owner Step 87)
+## Handoff (keep current; updated 2026-10-08, owner Step 92)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). Now: CP3 → CP4 → CP5 → review stop B.
-- **Staging:** https://oda-eta.vercel.app = `main` (`78a8268`, M10 CP2); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
-- **App:** EAS preview build **0.3.0** (runtime 0.3.0) on the Redmi + EAS Update `055045ba` (M10 CP4–CP5). Build **0.3.1** (`da329ea4`, Expo SDK patches) is building on EAS; `m10-cp5-expo` merges after the owner installs it. Sentry installed (native module in 0.3.0) but inactive until M10 (#70). JS changes: `pnpm update:preview "…"`.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3 and CP5 done; CP4 waits on the Sentry source-map token and the test events; then 🛑 review stop B.
+- **Staging:** https://oda-eta.vercel.app = `main` (`b3c9825`, PR #61: 0.3.1); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
+- **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; EAS Update **`feb0b16f`** (runtime 0.3.1: Sentry on, scrubbed; CP3–CP5 app changes). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
-- **Git:** everything merged through PRs; no open PRs. **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
+- **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** owner: Sentry steps 2–4 and installing the 0.3.1 APK; then the 0.3.1 merge, Sentry test events, 🛑 review stop B.
+**Next step:** owner: Sentry step 4 (`SENTRY_AUTH_TOKEN` in Vercel, by name) and the phone on update `feb0b16f`; then the Sentry test events (Actions → sentry-test, Help long press), the dependency re-audit (S10, asks first) and 🛑 review stop B (test list, TalkBack script, contrast options).
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
+
+- **Found on restart:** PR #61 (0.3.1, Expo SDK patches) was already merged on 2026-10-07 (`b3c9825`, CI green, staging migrated and deployed, `/api/health` = `b3c9825`) and EAS Update `feb0b16f` published on runtime 0.3.1; this log hadn't caught up (Handoff updated). The owner's phone has build 0.3.1 ("update built-in" until it fetches `feb0b16f`).
+- **"Vercel" on PR #61:** passed (commit status "Deployment has completed"); it only looked empty because statuses have `state`, not `status`.
+- **Flaky test (hardening report S18):** CI on `main` failed once at the PR #60 merge (`eba2568`): "two confirmPayment calls at once" got 422 instead of 409. The code is correct (both ways leave one confirm, one event, units sold + 1); the test let timing pick between the two safe paths. Now one forced-interleaving test for 409 (a row lock held until both calls wait at their UPDATE), one for 422, and the free race checking only the invariants. 11 runs green; a mutation without the UPDATE guard fails the forced test every time.
+- **Laptop:** Docker Desktop started by Claude (owner-approved); bookflow's Supabase containers restart with it (their restart policy; left alone).
 
 ## 2026-10-07 · M10 CP4 part 2: Sentry on the web; 0.3.1 build started (owner Step 91; branches `m10-cp4b`, `m10-cp5-expo`)
 
