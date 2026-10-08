@@ -36,6 +36,10 @@ Newest entries at the top.
   - **demo-seed-staging** run 37772931752 green: Demo Duka reset, with pay now + pay on delivery, the fake Till, 3 areas + pickup, 5 categories, 12 products (0 new) and 9 sample orders (one per state). It seeds no reviews.
   - `docs/regression-script.md` written: three sittings of about 20 minutes, using throwaway Shops A and B and never Demo Duka for seller steps. Claude runs the ops tools and jobs between sittings.
   - Sitting 1 sent to the owner.
+- **CP6 is now automated (decision #92, owner Step 94):**
+  - The owner can't enter test data in the app, and the Redmi isn't available. **Actions → staging-regression** will run the whole script (all three sittings), with test sellers on Resend test addresses. The owner added the GitHub secret `RESEND_API_KEY` (Full access key `oda-staging-regression`, to delete after CP6), verified by name.
+  - A real-device check stays required before launch (M11).
+  - **Actions → staging-sitting1-cleanup:** lists the owner's `+oda-a@` test account (shop name and slug only) and deletes it only after the owner's yes.
 
 ## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
 
