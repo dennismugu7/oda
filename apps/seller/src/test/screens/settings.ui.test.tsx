@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
+import { Alert } from 'react-native';
 import type { ApiError } from '@/api';
 import type { Details } from '@/settings/api';
+import { signOutOnThisPhone } from '@/settings/signOut';
 import { clearSettingsCaches } from '@/settings/useLoaded';
+import DeleteAccount from '../../../app/settings/delete';
 import YourDetails from '../../../app/settings/details';
 import ChangePassword from '../../../app/settings/password';
 
@@ -10,13 +14,19 @@ type Answer<T> = Promise<{ data: T | null; error: ApiError | null }>;
 const mockDetails = jest.fn<() => Answer<Details>>();
 const mockSaveDetails = jest.fn<(body: unknown) => Answer<Details>>();
 const mockChangePassword = jest.fn<(body: unknown) => Promise<{ data: unknown; error: unknown }>>();
+const mockDeleteAccount = jest.fn<() => Answer<Record<string, never>>>();
 
 jest.mock('@/settings/api', () => ({
   settingsApi: {
     details: () => mockDetails(),
     saveDetails: (body: unknown) => mockSaveDetails(body),
+    deleteAccount: () => mockDeleteAccount(),
   },
   changePassword: (body: unknown) => mockChangePassword(body),
+}));
+
+jest.mock('@/settings/signOut', () => ({
+  signOutOnThisPhone: jest.fn(async () => undefined),
 }));
 
 const DETAILS: Details = {
@@ -115,5 +125,42 @@ describe('Settings · Change your password', () => {
         revokeOtherSessions: true,
       }),
     );
+  });
+});
+
+describe('Settings · Delete account', () => {
+  it('Delete stays off until DELETE is typed, then deletes, signs out and leaves', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    mockDeleteAccount.mockResolvedValue({ data: {}, error: null });
+    const user = userEvent.setup();
+    await render(<DeleteAccount />);
+    const remove = screen.getByRole('button', { name: 'Delete my account' });
+    expect(remove).toBeDisabled();
+    const field = screen.getByLabelText('Type DELETE to confirm');
+    await user.type(field, 'delete');
+    expect(remove).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, 'DELETE');
+    expect(remove).toBeEnabled();
+    await user.press(remove);
+    expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/welcome'));
+    expect(signOutOnThisPhone).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      'Your account is deleted',
+      'Your shop is closed and you’re signed out. Your data is removed after 30 days.',
+    );
+    alert.mockRestore();
+  });
+
+  it('a failed delete says so and keeps the seller signed in', async () => {
+    mockDeleteAccount.mockResolvedValue({ data: null, error: { status: 0, code: 'UNREACHABLE' } });
+    const user = userEvent.setup();
+    await render(<DeleteAccount />);
+    await user.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
+    await user.press(screen.getByRole('button', { name: 'Delete my account' }));
+    expect(await screen.findByText("Couldn't reach oda. Try again.")).toBeTruthy();
+    expect(signOutOnThisPhone).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });
