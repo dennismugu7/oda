@@ -1,5 +1,11 @@
 # M10 CP6 · Full regression script (staging, Redmi)
 
+> **Now automated (decision #92, owner Step 94):** **Actions → staging-regression**
+> (`apps/web/regression/staging.regression.ts`) runs these steps against staging with the same
+> numbers, and the app's screens are covered by the jest-expo UI tests. The owner no longer
+> runs the sittings by hand. This file stays as the reference list of steps. A hands-on check
+> on a real Android device is still required before launch (M11).
+
 The phone part of M10's full regression (`docs/m10-plan.md` → CP6): every seller-app and buyer-web
 flow from M2 to M10, on **staging** (https://oda-eta.vercel.app) with the Redmi on build 0.3.1 and
 EAS Update `01a11b05`. Three sittings of about 20 minutes. Send the results after each sitting

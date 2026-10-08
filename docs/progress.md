@@ -40,6 +40,14 @@ Newest entries at the top.
   - The owner can't enter test data in the app, and the Redmi isn't available. **Actions → staging-regression** will run the whole script (all three sittings), with test sellers on Resend test addresses. The owner added the GitHub secret `RESEND_API_KEY` (Full access key `oda-staging-regression`, to delete after CP6), verified by name.
   - A real-device check stays required before launch (M11).
   - **Actions → staging-sitting1-cleanup:** lists the owner's `+oda-a@` test account (shop name and slug only) and deletes it only after the owner's yes.
+  - Its first `list` run (37817271171) found **no** `+oda-a@` account, so nothing needed deleting.
+  - **staging-regression built** (branch `m10-cp6-regression`):
+    - `apps/web/regression/` and `playwright.staging.config.ts`: 15 sections and about 100 numbered steps from `docs/regression-script.md`. Seller steps use the app's API calls, buyer steps a browser at 390×844, with Resend read-back for the code, reset and delete emails, and ops and cron calls.
+    - Its own summary reporter (masked secrets, redacted errors) and screenshots.
+    - Clean-up always runs.
+    - DB helpers in `apps/web/test/regressionDb.ts` (backdate only this run's shops; Demo Duka read-only).
+    - Not covered by it: push on a device, offline and Rate-the-app (left to the app UI tests).
+  - **App UI tests 36 → 71** (decision #92 d): order actions (confirm, payment not found, sent with a rider, delivered with collection, cancel, refund), delivery, payments, delete account, reviews (reply, report), Rate sheet, catalogue (was-price, Move up / Move down). No product bugs found.
 
 ## 2026-10-08 · Status after a laptop restart; flaky confirm test made deterministic (owner Step 91–92; branch `m10-flaky-confirm`)
 

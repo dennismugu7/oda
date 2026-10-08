@@ -1,0 +1,115 @@
+name: staging-regression
+
+# M10 CP6 · the full regression against staging (decision #92; replaces the three phone
+# sittings of docs/regression-script.md). Manual only, from main only; never on pull requests
+# or pushes. Test sellers sign up on Resend test addresses (delivered+<run id>-a@resend.dev …)
+# and the run reads their emails back through Resend's API (RESEND_API_KEY: read-only use,
+# GET /emails only). Codes, links and tokens are masked and never written to the summary.
+# Clean-up always runs: this run's own accounts are deleted, backdated and purged. Never
+# touches demo-duka, furaha-styles, the owner's accounts or any other shop.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: staging-regression
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    name: Regression on staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TURBO_TELEMETRY_DISABLED: 1
+    steps:
+      - name: Check the branch and the secrets
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DATABASE_URL: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: |
+          [ "$GITHUB_REF" = "refs/heads/main" ] || { echo "::error::Run this from main only."; exit 1; }
+          for name in RESEND_API_KEY OPS_SECRET CRON_SECRET DATABASE_URL; do
+            [ -n "${!name}" ] || { echo "::error::Secret for $name is not set."; exit 1; }
+          done
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter "@oda/web..."
+
+      - run: pnpm --filter @oda/web exec playwright install --with-deps chromium
+
+      - name: Staging is up
+        run: curl -fsS --retry 3 --retry-delay 10 https://oda-eta.vercel.app/api/health
+
+      - name: Run the regression
+        working-directory: apps/web
+        env:
+          REGRESSION_RUN_ID: ${{ github.run_id }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DATABASE_URL: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: pnpm exec playwright test -c playwright.staging.config.ts
+
+      # Always: this run's own test accounts only (their emails carry this run's id).
+      - name: Clean up this run's accounts (delete, backdate, purge)
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          RUN: ${{ github.run_id }}
+        run: |
+          count=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -qAt -v run="$RUN" <<'SQL'
+          begin;
+          create temp table mine on commit drop as
+            select u.id as user_id from auth_user u
+            where u.email like 'delivered+' || :'run' || '-%@resend.dev';
+          update profiles set deleted_at = now() - interval '31 days', expo_push_tokens = '{}'
+            where id in (select user_id from mine);
+          update shops set deleted_at = now() - interval '31 days'
+            where owner_id in (select user_id from mine)
+              and slug not in ('demo-duka', 'furaha-styles');
+          delete from auth_session where user_id in (select user_id from mine);
+          insert into ops_events (action, shop_id, target_id, reason, actor, details)
+            select 'account_deleted', s.id, m.user_id,
+                   'staging-regression test account, cleaned up (decision #92)',
+                   'staging-regression', jsonb_build_object('via', 'ops', 'run', :'run')
+            from mine m left join shops s on s.owner_id = m.user_id;
+          select count(*) from mine;
+          commit;
+          SQL
+          )
+          echo "### Clean-up" >> "$GITHUB_STEP_SUMMARY"
+          echo "- This run's test accounts deleted and backdated: $count" | tee -a "$GITHUB_STEP_SUMMARY"
+          for dry in true false; do
+            status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" -H "x-oda-actor: staging-regression" \
+              -H 'content-type: application/json' -d "{\"dryRun\": $dry}" --max-time 90 \
+              https://oda-eta.vercel.app/api/cron/purge || echo 000)
+            [ "$status" = "200" ] || { echo "::error::The purge answered $status."; exit 1; }
+            jq -r --arg dry "$dry" '"- Purge (dry run: \($dry)): accounts \(.accounts) (\(.slugs|map(. // "no shop")|join(", "))), files \(.accountFiles), more: \(.more)"' result.json | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Keep the screenshots (7 days)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: regression-screens
+          path: |
+            apps/web/regression-output/screens
+            apps/web/regression-output/summary.md
+          retention-days: 7
+          if-no-files-found: ignore
