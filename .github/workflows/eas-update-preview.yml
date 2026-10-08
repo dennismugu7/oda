@@ -65,5 +65,9 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: mugu-labs
           SENTRY_PROJECT: oda-seller
-          SENTRY_URL: https://de.sentry.io/
+          # Must stay set: without it Sentry's script looks for its Expo config plugin (we have none)
+          # and stops. sentry-cli uses the address inside the org token anyway (sentry.io, which
+          # routes to the EU organisation); a different value here only adds a warning (run
+          # 37762416080 ignored https://de.sentry.io/ and uploaded fine through sentry.io).
+          SENTRY_URL: https://sentry.io/
         run: node node_modules/@sentry/react-native/scripts/expo-upload-sourcemaps.js dist
