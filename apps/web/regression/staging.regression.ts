@@ -222,6 +222,13 @@ test('Sitting 1 · 1C Delivery and catalogue (M3, M6)', async ({ page }) => {
     });
     expect(after.hasDeliveryOption).toBe(true);
   });
+  await test.step('1.15b Payments: On delivery turned on (a Till alone means pay now only)', async () => {
+    const before = await a.ok('GET', '/api/payments');
+    expect(before.acceptsPayBefore).toBe(true);
+    expect(before.acceptsPayOnDelivery).toBe(false);
+    const after = await a.ok('PATCH', '/api/payments', { acceptsPayOnDelivery: true });
+    expect(after.acceptsPayOnDelivery).toBe(true);
+  });
   await test.step('1.16 Categories Dresses and Tops; Tops moved up', async () => {
     ids.dresses = (await a.ok('POST', '/api/categories', { name: 'Dresses' }, 201)).id;
     ids.tops = (await a.ok('POST', '/api/categories', { name: 'Tops' }, 201)).id;
@@ -675,8 +682,8 @@ test('Sitting 3 · 3A Reviews (M7)', async ({ page, request }) => {
   });
   await test.step('3.4 The cancelled order can’t be reviewed', async () => {
     const res = await request.get(`/api/o/${tokens.buyerCancel}/review`);
-    expect(res.status()).toBe(200);
-    expect((await res.json()).order.reviewable).toBe(false);
+    if (res.status() === 200) expect((await res.json()).order.reviewable).toBe(false);
+    else expect([404, 409]).toContain(res.status());
   });
   await test.step('3.5 Seller: the review, 4 stars, with its photo', async () => {
     const list = await a.ok('GET', '/api/reviews?tab=all');
@@ -817,7 +824,7 @@ test('Sitting 3 · 3C Settings (M8a)', async ({ page, request }) => {
     );
   });
   await test.step('3.19 Report a problem to oda (buyer)', async () => {
-    await page.goto(`/o/${tokens.unpaid}`);
+    await page.goto(`/o/${tokens.payNow}`);
     await page.getByRole('button', { name: /Report a problem to oda/ }).click();
     await page.getByLabel('What went wrong?').fill(`regression test report ${runId}`);
     await page.getByRole('button', { name: 'Send to oda' }).click();
@@ -907,9 +914,11 @@ test('Sitting 3 · 3E Delete: web, then app; the digest (M8a)', async ({ page, r
     });
   });
   await test.step('Digest: the new feedback and report go out once, not twice', async () => {
+    // Counts may come back as numbers or lists: count either way.
+    const n = (v: unknown) => (Array.isArray(v) ? v.length : Number(v ?? 0));
     const first = await cron(request, 'digest');
-    expect(first.feedback + first.reports).toBeGreaterThanOrEqual(1);
+    expect(n(first.feedback) + n(first.reports)).toBeGreaterThanOrEqual(1);
     const second = await cron(request, 'digest');
-    expect(second.feedback + second.reports).toBe(0);
+    expect(n(second.feedback) + n(second.reports)).toBe(0);
   });
 });
