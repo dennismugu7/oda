@@ -65,6 +65,7 @@ never your main shop:
 |---|---------|----------|
 | 1.14 | More → **Delivery**. | The warning "Buyers can't order yet. Add a delivery area or turn on pickup." |
 | 1.15 | Add delivery area: `Kilimani`, fee `200`, **By rider**, time `Same day`, then **Add area**. Turn on **Buyers can pick up**, with place `Yaya Centre` and hours `Mon–Sat 9–6`. | The warning is gone; the area and pickup are listed. |
+| 1.15b | More → **Payments**: turn on **On delivery**. | Both "Before delivery" and "On delivery" are on (with only a Till, buyers could pay now only). |
 | 1.16 | Shop tab → **Categories**: add `Dresses`, then `Tops`. On **Tops**, open its actions and choose **Move up**. | Tops is now above Dresses. Notice: "Empty categories stay hidden from buyers until you add a product." |
 | 1.17 | Centre **Add product** button: add 2 photos, name `Test top`, price `900`, was price `1200`, category **Tops**, **+ Size** S and M, **+ Colour** one colour, then **Add product**. | It appears on the Shop tab with its photo. |
 | 1.18 | Try was price `800` (lower than the price) on any product, then save. | "The was-price must be higher than the price." Fix it or **Leave** → **Leave**. |
