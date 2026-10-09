@@ -1,6 +1,10 @@
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   assertDeploymentConfig,
+  DEPLOYMENT_CHECK_ENV,
   indexable,
   odaEnvironment,
   PRODUCTION_BASE_URL,
@@ -13,6 +17,7 @@ const production = {
   NEXT_PUBLIC_ODA_ENV: 'production',
   VERCEL: '1',
   VERCEL_ENV: 'production',
+  VERCEL_GIT_COMMIT_REF: 'production',
   PUBLIC_SHOP_BASE_URL: PRODUCTION_BASE_URL,
   BETTER_AUTH_URL: `${PRODUCTION_BASE_URL}/`,
   STORAGE_DRIVER: 'vercel-blob',
@@ -120,5 +125,52 @@ describe('productionConfigProblems', () => {
     expect(productionConfigProblems({ ...production, VERCEL_ENV: 'preview' })).toEqual([
       'Production builds only from its own Production environment.',
     ]);
+  });
+
+  it('production only builds from the production branch', () => {
+    expect(
+      productionConfigProblems({ ...production, VERCEL_GIT_COMMIT_REF: 'm11-some-branch' }),
+    ).toEqual(['Production builds only from the production branch (release-production).']);
+  });
+});
+
+describe('the build sees what the check reads', () => {
+  it('turbo.json passes every checked variable to the build', () => {
+    const turbo = JSON.parse(readFileSync(join(__dirname, '../../../turbo.json'), 'utf8'));
+    const build = turbo.tasks.build;
+    const passed = new Set([...(build.env ?? []), ...(build.passThroughEnv ?? [])]);
+    expect(DEPLOYMENT_CHECK_ENV.filter((name) => !passed.has(name))).toEqual([]);
+  });
+
+  it('the check reads nothing beyond that list (and NEXT_PUBLIC_*)', () => {
+    const source = readFileSync(join(__dirname, 'deployment.ts'), 'utf8');
+    const read = new Set(
+      [...source.matchAll(/\benv\.([A-Z][A-Z0-9_]+)/g), ...source.matchAll(/'([A-Z][A-Z0-9_]+)'/g)]
+        .map((m) => m[1] ?? '')
+        .filter((name) => !name.startsWith('NEXT_PUBLIC_')),
+    );
+    const listed = new Set<string>(DEPLOYMENT_CHECK_ENV);
+    expect([...read].filter((name) => !listed.has(name))).toEqual([]);
+  });
+});
+
+describe('vercel-ignore.mjs (exit 0 = skip)', () => {
+  const run = (env: Record<string, string>) =>
+    spawnSync(process.execPath, [join(__dirname, '../scripts/vercel-ignore.mjs')], {
+      env: { NODE_ENV: 'test', PATH: process.env.PATH ?? '', ...env },
+    }).status;
+
+  it('oda-production builds only the production branch as Production', () => {
+    const prod = { ODA_VERCEL_PROJECT: 'production' };
+    expect(run({ ...prod, VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'production' })).toBe(1);
+    // Vercel's first deployment of a project is Production whatever its branch.
+    expect(run({ ...prod, VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'm11-branch' })).toBe(0);
+    expect(run({ ...prod, VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'm11-branch' })).toBe(0);
+    expect(run({ ...prod, VERCEL_ENV: 'production' })).toBe(0);
+  });
+
+  it('the staging project builds as before', () => {
+    expect(run({ VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'm11-branch' })).toBe(1);
+    expect(run({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' })).toBe(1);
   });
 });

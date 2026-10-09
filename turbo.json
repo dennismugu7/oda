@@ -6,7 +6,23 @@
     "build": {
       "dependsOn": ["^build"],
       "env": ["DATABASE_URL", "PUBLIC_SHOP_BASE_URL", "VERCEL_GIT_COMMIT_SHA"],
-      "passThroughEnv": ["SENTRY_AUTH_TOKEN", "CI", "VERCEL"],
+      "passThroughEnv": [
+        "SENTRY_AUTH_TOKEN",
+        "CI",
+        "VERCEL",
+        "VERCEL_ENV",
+        "VERCEL_GIT_COMMIT_REF",
+        "BETTER_AUTH_URL",
+        "STORAGE_DRIVER",
+        "STORAGE_PUBLIC_BASE_URL",
+        "EMAIL_TRANSPORT",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "BETTER_AUTH_SECRET",
+        "CRON_SECRET",
+        "OPS_SECRET",
+        "EXPO_ACCESS_TOKEN"
+      ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
