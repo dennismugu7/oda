@@ -1,0 +1,62 @@
+name: db-app-role
+
+# Creates or updates the web app's least-privilege database role `oda_app` (decision #93 D5,
+# hardening report S11): rows only (select, insert, update, delete), no DDL, no truncate, owns
+# nothing, in no role (so not in neon_superuser: it's created in SQL, never in the Neon
+# console). It sets the password from the Environment secret ODA_APP_DB_PASSWORD (sent to
+# Postgres only as a SCRAM verifier), applies the grants, then logs in as the role over the
+# direct and the pooled host and checks that create / drop / truncate are refused. The summary
+# shows host names and counts, never a password or connection string. migrate-staging re-applies
+# the grants after every migration (without the password). Production joins in M11 CP2.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Database'
+        required: true
+        type: choice
+        options:
+          - staging
+
+concurrency:
+  group: db-app-role-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  app-role:
+    name: App database role (${{ inputs.target }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ${{ inputs.target }}
+    steps:
+      - name: Check the secrets are set
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+          ODA_APP_DB_PASSWORD: ${{ secrets.ODA_APP_DB_PASSWORD }}
+        run: |
+          [ -n "$DATABASE_URL_UNPOOLED" ] || { echo "::error::Secret NEON_STAGING_DATABASE_URL_UNPOOLED is not set."; exit 1; }
+          case "$DATABASE_URL_UNPOOLED" in
+            *-pooler.*) echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is the pooled string; use the direct one."; exit 1 ;;
+          esac
+          [ -n "$ODA_APP_DB_PASSWORD" ] || { echo "::error::Environment secret ODA_APP_DB_PASSWORD is not set in '${{ inputs.target }}'."; exit 1; }
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # The same reduced install as migrate-staging (decision #39).
+      - run: pnpm install --frozen-lockfile --filter "@oda/db..."
+
+      - name: Create / update the role, grant, check
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+          ODA_APP_DB_PASSWORD: ${{ secrets.ODA_APP_DB_PASSWORD }}
+        run: pnpm --filter @oda/db db:app-role

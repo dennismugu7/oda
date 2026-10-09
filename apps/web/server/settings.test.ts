@@ -106,7 +106,7 @@ describe('your details', () => {
       expect((await patch(s, patchDetails, body)).status, JSON.stringify(body)).toBe(422);
     }
     const profile = await db().query.profiles.findFirst({ where: eq(t.profiles.id, s.userId) });
-    expect(profile?.isAdmin).toBe(false);
+    expect(profile).toMatchObject({ recoveryPhone: null, deletedAt: null });
   });
 });
 

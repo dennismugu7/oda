@@ -29,7 +29,6 @@ export const profiles = pgTable('profiles', {
   firstName: text('first_name'),
   lastName: text('last_name'),
   recoveryPhone: text('recovery_phone'),
-  isAdmin: boolean('is_admin').notNull().default(false),
   expoPushTokens: text('expo_push_tokens')
     .array()
     .notNull()

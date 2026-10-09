@@ -132,3 +132,10 @@ jobs:
         env:
           DATABASE_URL_UNPOOLED: postgres://oda:oda@localhost:5442/oda
         run: pnpm db:migrate
+
+      # The app role script on the same reduced install (db-app-role, migrate-staging; #93 D5).
+      - name: App role (as db-app-role does)
+        env:
+          DATABASE_URL_UNPOOLED: postgres://oda:oda@localhost:5442/oda
+          ODA_APP_DB_PASSWORD: ci-only-app-role-password-not-secret
+        run: pnpm --filter @oda/db db:app-role
