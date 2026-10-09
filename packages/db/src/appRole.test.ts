@@ -9,6 +9,7 @@ import {
   isNeonHost,
   neonPooledHost,
   scramVerifier,
+  upsertAppRole,
 } from './appRole';
 
 // A role of its own: apps/web's tests set up `oda_app` on the same server at the same time.
@@ -115,9 +116,11 @@ describe('ensureAppRole', () => {
     const asOwnerLike = appRoleUrl(ownerUrl, ownerPass, ownerLike);
     const appRole = 'oda_app_by_owner_like_db_test';
     // Creating, then updating the password: the update must not touch superuser-only attributes.
-    await ensureAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
-    const again = await ensureAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
-    expect(again).toMatchObject({ created: false, passwordSet: true, elevated: [], memberOf: [] });
+    // (Only the role step: this stand-in doesn't own the tables, Neon's owner does.)
+    await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    const again = await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    expect(again).toEqual({ exists: true, created: false });
+    expect((await checkAppLogin(appRoleUrl(ownerUrl, password, appRole))).user).toBe(appRole);
   });
 
   it('gives tables created by later migrations the same grants', async () => {
