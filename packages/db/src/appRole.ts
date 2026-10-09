@@ -124,15 +124,15 @@ async function upsertRole(
   }
   // scramVerifier checked the password (24–128 printable ASCII); quotes are doubled.
   const secret = opts.plaintextPassword ? opts.password.replaceAll("'", "''") : verifier;
-  const attrs = 'login nocreatedb nocreaterole noinherit';
   if (!exists) {
-    const create = `${attrs} nosuperuser noreplication nobypassrls`;
-    await pool.query(`create role ${role} with ${create} password '${secret}'`);
+    const attrs = 'login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls';
+    await pool.query(`create role ${role} with ${attrs} password '${secret}'`);
     return { exists: true, created: true };
   }
-  // Only a superuser may even restate nosuperuser / noreplication / nobypassrls (Neon's owner
-  // isn't one); inspect() fails the check if any of them is on.
-  await pool.query(`alter role ${role} with ${attrs} password '${secret}'`);
+  // Restating an attribute needs that attribute (superuser, createdb, replication, bypassrls),
+  // which Neon's owner may not have; so an update sets only the password, and inspect() fails
+  // the check if any elevated attribute is on.
+  await pool.query(`alter role ${role} with login noinherit password '${secret}'`);
   return { exists: true, created: false };
 }
 

@@ -109,7 +109,7 @@ describe('ensureAppRole', () => {
     await owner.query(
       `do $$ begin
          if not exists (select 1 from pg_roles where rolname = '${ownerLike}') then
-           create role ${ownerLike} login createrole password '${ownerPass}';
+           create role ${ownerLike} login createrole createdb password '${ownerPass}';
          end if;
        end $$`,
     );
