@@ -1,0 +1,122 @@
+name: release-production
+
+# Releases a commit to production (M11 CP2, decision #93 D3/D11). Manual only, from `main`.
+# 1. check: the commit is on `main`, CI passed on it, and staging got it (a green
+#    migrate-staging run for that very commit). Empty input = the newest such commit.
+# 2. approve: GitHub Environment `production-release` asks the owner to approve (GitHub mobile
+#    works). Not `production`: Vercel's deployments already use "Production" (names ignore case).
+# 3. advance: fast-forwards the `production` branch to the commit (never a force push; a
+#    ruleset blocks every other update of that branch).
+# 4. deploy (deploy.yml, target production): migrate production Neon, re-apply the app role's
+#    grants, Vercel Deploy Hook of the oda-production project, wait for /api/health.
+# So production only ever runs reviewed code that has already run on staging.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit on main to release (empty = the newest one live on staging)'
+        required: false
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check the commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      - name: Run from main only
+        run: |
+          [ "$GITHUB_REF" = refs/heads/main ] || { echo "::error::Run release-production from main."; exit 1; }
+
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pick and check the commit
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          # The newest commits staging got: successful migrate-staging runs, newest first.
+          staged=$(gh run list --workflow migrate-staging.yml --branch main --status success \
+            --limit 50 --json headSha --jq '.[].headSha')
+          if [ -z "$INPUT_SHA" ]; then
+            sha=$(printf '%s\n' "$staged" | head -1)
+            [ -n "$sha" ] || { echo "::error::No successful migrate-staging run on main yet."; exit 1; }
+          else
+            [[ "$INPUT_SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::Not a commit hash: '$INPUT_SHA'."; exit 1; }
+            sha=$(git rev-parse --verify "$INPUT_SHA^{commit}" 2>/dev/null) || { echo "::error::Unknown commit $INPUT_SHA."; exit 1; }
+          fi
+          git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$sha is not on main."; exit 1; }
+          printf '%s\n' "$staged" | grep -qx "$sha" || {
+            echo "::error::$sha has no successful migrate-staging run: staging never ran it (or not among the last 50)."; exit 1; }
+          ci=$(gh run list --workflow ci.yml --commit "$sha" --status success --limit 1 --json databaseId --jq 'length')
+          [ "$ci" = 1 ] || { echo "::error::CI didn't pass on $sha."; exit 1; }
+          if git rev-parse --verify -q origin/production >/dev/null; then
+            git merge-base --is-ancestor origin/production "$sha" || {
+              echo "::error::$sha is older than (or beside) what production runs ($(git rev-parse --short origin/production)). Releases only move forward."; exit 1; }
+            [ "$(git rev-parse origin/production)" != "$sha" ] || echo "::notice::production already points at $sha: it is deployed again."
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Release $(git rev-parse --short "$sha") to production"
+            echo
+            git log -1 --format='- %s (%an, %ad)' --date=short "$sha"
+            if git rev-parse --verify -q origin/production >/dev/null; then
+              echo "- New since the last release: $(git rev-list --count origin/production.."$sha") commits"
+            else
+              echo "- First release"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  approve:
+    name: Owner approval
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production-release
+    steps:
+      - run: echo "Approved release of ${{ needs.check.outputs.sha }}."
+
+  advance:
+    name: Move the production branch
+    needs: [check, approve]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward production
+        env:
+          SHA: ${{ needs.check.outputs.sha }}
+        run: |
+          # A plain push: GitHub refuses it unless it is a fast-forward.
+          git push origin "$SHA:refs/heads/production"
+          echo "production → $SHA"
+
+  deploy:
+    name: Deploy
+    needs: [check, advance]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      target: production
+      sha: ${{ needs.check.outputs.sha }}
+    secrets: inherit

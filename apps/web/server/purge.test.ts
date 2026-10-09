@@ -1,16 +1,16 @@
 import { utimes } from 'node:fs/promises';
 import path from 'node:path';
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
 import { newSeller } from '@/test/sellerApi';
-import { storeJpeg } from '@/test/storage';
+import { refuseAllStorage, storeJpeg } from '@/test/storage';
 import { deleteAccount } from './accountDeletion';
 import { getDb } from './db';
 import { insertOrder } from './orders';
 import { postPurge, purge } from './purge';
-import { getStorage, localObjectExists, storageDriver } from './storage';
+import { getStorage, localObjectExists, resetStorageForTests, storageDriver } from './storage';
 
 // M8a CP3: the daily purge (decisions #72 c, #74 c, #75) with backdated records instead of
 // waiting 30 days: a dry run removes nothing, a real run removes a deleted account's data,
@@ -192,6 +192,33 @@ describe('deleted accounts', () => {
     expect(next.retried).toBe(1);
     expect(await db().select().from(t.storageDeletions)).toEqual([]);
     expect(await localObjectExists(`logos/${gone.shopId}/logo.jpg`)).toBe(false);
+  });
+
+  it('while storage refuses every call, accounts wait for the next run and the sweep is skipped', async () => {
+    // Vercel Blob stopped at a Hobby limit (decision #93 D1): a shop's files can't be listed,
+    // so its rows stay; nothing is swept from a listing that failed.
+    const gone = await fullShop();
+    await deletedDaysAgo(gone, 31);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    refuseAllStorage();
+    try {
+      const report = await purge(db(), { dryRun: false });
+      expect(report).toMatchObject({
+        storageUnavailable: true,
+        accounts: [],
+        unreferenced: 0,
+        more: true,
+      });
+    } finally {
+      resetStorageForTests();
+      warn.mockRestore();
+    }
+    expect(await userExists(gone.userId)).toBe(true);
+    expect(await exists(gone.files)).toEqual([true, true, true, true, true]);
+    // Storage back: the next run purges it as usual.
+    const next = await purge(db(), { dryRun: false });
+    expect(next.storageUnavailable).toBe(false);
+    expect(await userExists(gone.userId)).toBe(false);
   });
 });
 

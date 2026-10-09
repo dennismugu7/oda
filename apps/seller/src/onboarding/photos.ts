@@ -61,19 +61,28 @@ export async function preparePhoto(picked: Picked, deps: PhotoDeps): Promise<Pre
 
 const UPLOAD_FAILED = "Couldn't upload your photo. Try again.";
 
+/**
+ * The server's answers when photo uploads are off or storage isn't answering (decision #93
+ * D1): a new product may then be saved without a photo.
+ */
+const PAUSED_CODES = new Set(['storage_unavailable', 'uploads_off']);
+
 /** Uploads one encoded file; returns its storage key. */
 async function uploadOne(
   file: Encoded,
   kind: 'product' | 'logo' | 'feedback',
   deps: PhotoDeps,
-): Promise<{ key: string | null; error: string | null }> {
+): Promise<{ key: string | null; error: string | null; paused?: boolean }> {
   const blob = await deps.readFile(file.uri);
   const { data, error } = await deps.requestUpload({
     kind,
     contentType: 'image/jpeg',
     size: blob.size,
   });
-  if (error || !data) return { key: null, error: error?.message ?? UPLOAD_FAILED };
+  if (error || !data) {
+    const paused = !!error?.code && PAUSED_CODES.has(error.code);
+    return { key: null, error: error?.message ?? UPLOAD_FAILED, paused };
+  }
   const ok = await deps.put(data, blob).catch(() => false);
   return ok ? { key: data.key, error: null } : { key: null, error: UPLOAD_FAILED };
 }
@@ -91,12 +100,12 @@ export interface UploadedPhoto {
 export async function uploadProductPhoto(
   prepared: Prepared,
   deps: PhotoDeps,
-): Promise<{ photo: UploadedPhoto | null; error: string | null }> {
+): Promise<{ photo: UploadedPhoto | null; error: string | null; paused?: boolean }> {
   try {
     const full = await uploadOne(prepared.full, 'product', deps);
-    if (!full.key) return { photo: null, error: full.error };
+    if (!full.key) return { photo: null, error: full.error, paused: full.paused };
     const thumb = await uploadOne(prepared.thumb, 'product', deps);
-    if (!thumb.key) return { photo: null, error: thumb.error };
+    if (!thumb.key) return { photo: null, error: thumb.error, paused: thumb.paused };
     return {
       photo: {
         objectKey: full.key,

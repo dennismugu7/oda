@@ -136,8 +136,34 @@ describe('photos: re-encoded on the phone, never uploaded as picked (decision #5
     expect(result).toEqual({
       photo: null,
       error: "Photo uploads aren't switched on yet. Try again later.",
+      paused: true,
     });
     expect(deps.put).not.toHaveBeenCalled();
+  });
+
+  it('marks paused uploads (storage not answering, decision #93 D1), not other failures', async () => {
+    const paused = fakeDeps({
+      requestUpload: vi.fn(async () => ({
+        data: null,
+        error: {
+          status: 503,
+          code: 'storage_unavailable',
+          message: 'Photo uploads are paused for now. Try again later.',
+        },
+      })),
+    });
+    expect(
+      await uploadProductPhoto(await preparePhoto(picked, paused.deps), paused.deps),
+    ).toMatchObject({ photo: null, paused: true });
+    const limited = fakeDeps({
+      requestUpload: vi.fn(async () => ({
+        data: null,
+        error: { status: 429, code: 'rate_limited', message: 'Too many photos for now.' },
+      })),
+    });
+    expect(
+      await uploadProductPhoto(await preparePhoto(picked, limited.deps), limited.deps),
+    ).toMatchObject({ photo: null, paused: false });
   });
 
   it('a failed upload says so instead of throwing', async () => {

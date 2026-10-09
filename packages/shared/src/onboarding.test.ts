@@ -95,6 +95,20 @@ describe('step 4', () => {
     ).toBe(false);
   });
 
+  it('takes no photo only with photoLater (photo uploads paused, decision #93 D1)', () => {
+    const later = onboardingProduct.safeParse({
+      name: 'Dress',
+      price: 100,
+      photos: [],
+      photoLater: true,
+    });
+    expect(later.success).toBe(true);
+    expect(
+      onboardingProduct.safeParse({ name: 'Dress', price: 100, photos: [], photoLater: false })
+        .success,
+    ).toBe(false);
+  });
+
   it('accepts only storage keys from our own upload flow', () => {
     const bad = { ...photo(1), objectKey: '../../etc/passwd' };
     expect(onboardingProduct.safeParse({ name: 'Dress', price: 100, photos: [bad] }).success).toBe(
@@ -200,7 +214,7 @@ describe('Finish your shop (7 items)', () => {
     const skippedPayment = finishYourShop({ ...none, productCount: 1 });
     expect(skippedPayment.items[0]!.done).toBe(false);
 
-    const all = finishYourShop({
+    const allFacts = {
       productCount: 5,
       hasActivePaymentAccount: true,
       hasLogo: true,
@@ -208,9 +222,20 @@ describe('Finish your shop (7 items)', () => {
       deliveryAreaCount: 2,
       pickupEnabled: false,
       ticks: { shared_link: '2026-10-04T10:00:00Z', tested_whatsapp: '2026-10-04T10:01:00Z' },
-    });
+    };
+    const all = finishYourShop(allFacts);
     expect(all).toMatchObject({ done: 7, complete: true });
     expect(finishYourShop({ ...none, productCount: 4 }).items[3]!.done).toBe(false);
+
+    // A product saved while uploads were paused (decision #93 D1): an 8th item, open, so
+    // the checklist isn't complete until the photo is added.
+    const noPhoto = finishYourShop({ ...allFacts, productsWithoutPhoto: 1 });
+    expect(noPhoto.items.at(-1)).toEqual({
+      id: 'product_photo',
+      label: 'Add a product photo',
+      done: false,
+    });
+    expect(noPhoto).toMatchObject({ done: 7, total: 8, complete: false });
   });
 
   it('"Add delivery options" is done with a delivery area or pickup on (decision #61)', () => {

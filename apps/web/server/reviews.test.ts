@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
 import { REVIEW_LIMITS } from '@oda/shared';
 import { anonCall, newSeller, type Json, type Seller } from '@/test/sellerApi';
-import { storeJpeg } from '@/test/storage';
+import { refuseAllStorage, storeJpeg } from '@/test/storage';
 import { requireOps } from './authz';
 import type { Defer } from './checkout';
 import { getDb } from './db';
@@ -27,7 +27,7 @@ import {
   removeReview,
   writeBuyerReview,
 } from './reviews';
-import { getStorage } from './storage';
+import { getStorage, resetStorageForTests } from './storage';
 
 // Reviews (M7 CP1, decision #73) against oda_test: the buyer's review through the order
 // token (delivered, buyer-placed orders only; one per order; 7-day edits; photos under the
@@ -365,6 +365,35 @@ describe('writing a review', () => {
 });
 
 describe('review photos', () => {
+  it('while storage refuses every call: a photo upload answers 503, the review still posts', async () => {
+    // Vercel Blob stopped at a Hobby limit (decision #93 D1).
+    const w = await shopWorld();
+    const o = await w.delivered();
+    const [d, top] = await items(o.id);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    refuseAllStorage();
+    try {
+      const up = await upload(o.publicToken);
+      expect(up.status).toBe(503);
+      expect(up.json.error).toMatchObject({
+        code: 'storage_unavailable',
+        message: 'Photo uploads are paused for now. Try again later.',
+      });
+      const res = await buyer('POST', o.publicToken, {
+        rating: 5,
+        tags: ['As described'],
+        items: [
+          { orderItemId: d!.id, rating: 5, text: 'Lovely', photoKey: null },
+          { orderItemId: top!.id, rating: null, text: null, photoKey: null },
+        ],
+      });
+      expect(res.status).toBe(201);
+    } finally {
+      resetStorageForTests();
+      warn.mockRestore();
+    }
+  });
+
   it('presigns keys under the order’s prefix and checks the bytes on submit', async () => {
     const w = await shopWorld();
     const o = await w.delivered();

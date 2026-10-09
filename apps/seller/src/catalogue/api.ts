@@ -81,8 +81,15 @@ const photoBody = (photos: PhotoInput[]) =>
 export const catalogueApi = {
   products: () => apiJson<ProductList>('/api/products'),
   product: (id: string) => apiJson<Product>(`/api/products/${id}`),
-  create: (fields: ProductFields, photos: PhotoInput[]) =>
-    apiJson<Product>('/api/products', { body: { ...fields, photos: photoBody(photos) } }),
+  /** `photoLater`: no photos while photo uploads are paused (decision #93 D1). */
+  create: (fields: ProductFields, photos: PhotoInput[], photoLater = false) =>
+    apiJson<Product>('/api/products', {
+      body: {
+        ...fields,
+        photos: photoBody(photos),
+        ...(photoLater && photos.length === 0 ? { photoLater: true } : {}),
+      },
+    }),
   update: (id: string, fields: Partial<ProductFields>) =>
     apiJson<Product>(`/api/products/${id}`, { method: 'PATCH', body: fields }),
   setPhotos: (id: string, photos: PhotoInput[]) =>

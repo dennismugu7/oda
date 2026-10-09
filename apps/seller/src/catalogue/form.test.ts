@@ -42,6 +42,8 @@ describe('product form (design 18-edit-product)', () => {
   it('says what is missing before saving', () => {
     const ok = { ...emptyDraft(), name: 'Dress', price: '2,800' };
     expect(draftProblem(ok, 0)).toMatch(/Add a photo/);
+    // Photo uploads paused, or a product already saved without one (decision #93 D1).
+    expect(draftProblem(ok, 0, true)).toBeNull();
     expect(draftProblem({ ...ok, name: ' ' }, 1)).toBe('Enter the product name.');
     expect(draftProblem({ ...ok, price: '' }, 1)).toBe('Enter the price in shillings.');
     expect(draftProblem({ ...ok, compareAtPrice: '2,800' }, 1)).toBe(

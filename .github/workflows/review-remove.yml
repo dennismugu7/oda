@@ -20,33 +20,42 @@ on:
       reason:
         description: 'Why it is removed (kept in the audit log)'
         required: true
+      target:
+        description: 'Which deployment'
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
 
 concurrency:
-  group: review-remove
+  group: review-remove-${{ inputs.target }}
   cancel-in-progress: false
 
 permissions:
   contents: read
 
-env:
-  URL: https://oda-eta.vercel.app/api/ops/reviews/remove
-
 jobs:
   remove:
-    name: Remove a review
+    name: Remove a review (${{ inputs.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    environment: ${{ inputs.target == 'production' && 'production-jobs' || 'staging' }}
     steps:
       - name: Check the inputs and call the server
         env:
-          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          TARGET: ${{ inputs.target }}
+          URL: ${{ vars.BASE_URL }}/api/ops/reviews/remove
+          # The name is picked, never a fallback: production reads only its own secret.
+          OPS_SECRET: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_OPS_SECRET' || 'OPS_SECRET'] }}
           REVIEW_ID: ${{ inputs.review_id }}
           SLUG: ${{ inputs.shop_slug }}
           NUMBER: ${{ inputs.order_number }}
           REASON: ${{ inputs.reason }}
           ACTOR: ${{ github.actor }}
         run: |
-          [ -n "$OPS_SECRET" ] || { echo "::error::Repository secret OPS_SECRET is not set."; exit 1; }
+          [[ "$URL" == https://* ]] || { echo "::error::Variable BASE_URL is not set in the $TARGET Environment."; exit 1; }
+          [ -n "$OPS_SECRET" ] || { echo "::error::The $TARGET ops secret is not set (OPS_SECRET / PRODUCTION_OPS_SECRET)."; exit 1; }
           if [ -n "$REVIEW_ID" ]; then
             [[ "$REVIEW_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "::error::Not a review id."; exit 1; }
             BODY=$(jq -n --arg id "$REVIEW_ID" --arg reason "$REASON" --arg actor "$ACTOR" \
@@ -71,5 +80,5 @@ jobs:
             echo "Attempt $attempt timed out"
             sleep 15
           done
-          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 with the message 'We couldn’t find that.' means OPS_SECRET differs from the one in Vercel; 'No review found…' means the secret is right but no review matched."
+          echo "::error::The server answered $status: $(cat result.json 2>/dev/null). A 404 with the message 'We couldn’t find that.' means the ops secret differs from the one in Vercel; 'No review found…' means the secret is right but no review matched."
           exit 1

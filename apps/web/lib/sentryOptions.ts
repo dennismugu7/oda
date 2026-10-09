@@ -3,6 +3,7 @@
 // Preview). Privacy first: sendDefaultPii off, every event and breadcrumb through the shared
 // scrubber (packages/shared/src/sentry.ts), no tracing, no session replay.
 import { scrubBreadcrumb, scrubEvent } from '@oda/shared';
+import { odaEnvironment } from '@/server/deployment';
 
 export const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || undefined;
 
@@ -10,8 +11,13 @@ export function sentryOptions(runtime: 'server' | 'edge' | 'browser') {
   return {
     dsn: SENTRY_DSN,
     enabled: !!SENTRY_DSN && process.env.NODE_ENV === 'production',
-    // Vercel: "production" for staging (until M11), "preview" for branch previews.
-    environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV ?? 'local',
+    // "production", "staging", "preview" or "local" (server/deployment.ts, M11 CP2).
+    // Read literally, so Next.js inlines them in the browser bundle.
+    environment: odaEnvironment({
+      NEXT_PUBLIC_ODA_ENV: process.env.NEXT_PUBLIC_ODA_ENV,
+      NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+    }),
     sendDefaultPii: false,
     tracesSampleRate: 0,
     initialScope: { tags: { runtime } },

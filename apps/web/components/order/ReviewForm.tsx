@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { RATING_LABELS, REVIEW_TAGS, REVIEW_TEXT_MAX } from '@oda/shared';
+import { SafeImg } from '@/components/SafeImg';
 
 export interface ReviewFormItem {
   orderItemId: string;
@@ -286,8 +287,7 @@ export function ReviewForm({
       >
         <p className="flex items-center justify-center gap-3 text-body text-navy">
           {shopLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- plain images (decision #59)
-            <img src={shopLogoUrl} alt="" className="size-10 rounded-pill object-cover" />
+            <SafeImg src={shopLogoUrl} alt="" className="size-10 rounded-pill object-cover" />
           ) : (
             <span className="flex size-10 items-center justify-center rounded-pill bg-navy text-small font-semibold text-text-on-navy">
               {shopInitials}
@@ -344,8 +344,7 @@ export function ReviewForm({
                   <div className="flex items-center gap-3">
                     <span className="size-14 shrink-0 overflow-hidden rounded-lg bg-beige">
                       {item.coverUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails
-                        <img src={item.coverUrl} alt="" className="size-full object-cover" />
+                        <SafeImg src={item.coverUrl} alt="" className="size-full object-cover" />
                       ) : null}
                     </span>
                     <div className="min-w-0 flex-1">

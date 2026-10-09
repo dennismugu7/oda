@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatKes, normalizeKePhone } from '@oda/shared';
 import { cartCount, readSource, writeSource, type CartLine } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
+import { SafeImg } from '@/components/SafeImg';
 
 export interface CheckoutArea {
   id: string;
@@ -419,8 +420,7 @@ export function CheckoutForm({
                 className="size-10 overflow-hidden rounded-lg border-2 border-background bg-beige"
               >
                 {l.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                  <img
+                  <SafeImg
                     src={l.coverUrl}
                     alt=""
                     width={40}

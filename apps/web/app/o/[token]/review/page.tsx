@@ -14,6 +14,7 @@ import { openOrder } from '@/server/checkout';
 import { getDb } from '@/server/db';
 import { NotFoundError } from '@/server/errors';
 import { buyerReviewRepo } from '@/server/repos/reviews';
+import { SafeImg } from '@/components/SafeImg';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,8 +115,7 @@ export default async function ReviewPage({
                 {mine.rating ? <Stars rating={mine.rating} /> : null}
                 {mine.text ? <p className="mt-2 text-body text-navy">{mine.text}</p> : null}
                 {mine.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- plain images (decision #59)
-                  <img
+                  <SafeImg
                     src={mine.photoUrl}
                     alt={`Your photo of ${item.name}`}
                     className="mt-3 size-24 rounded-lg object-cover"

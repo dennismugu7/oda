@@ -15,6 +15,7 @@ import {
   takingOrders,
   whatsappLink,
 } from '@/server/storefront';
+import { SafeImg } from '@/components/SafeImg';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,8 +76,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
       <VisitBeacon slug={shop.slug} shopId={shop.id} />
       <header className="flex items-center gap-3 px-4 pt-5">
         {shop.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- plain images, no optimizer (decision #59)
-          <img
+          <SafeImg
             src={shop.logoUrl}
             alt=""
             width={64}

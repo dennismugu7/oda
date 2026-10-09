@@ -67,16 +67,20 @@ export const listProducts = handle(async (request) => {
   });
 });
 
-/** POST /api/products: the product's fields plus `photos` (1–5, the first is the cover). */
+/**
+ * POST /api/products: the product's fields plus `photos` (1–5, the first is the cover). While
+ * photo uploads are paused the app may send no photos with `photoLater: true` (#93 D1).
+ */
 export const createProduct = handle(async (request) => {
   const r = await repo(request);
   const raw = await body(request);
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new ValidationError('Send the product as JSON.');
   }
-  const { photos, ...fields } = raw as Record<string, unknown>;
+  const { photos, photoLater, ...fields } = raw as Record<string, unknown>;
   const input = parseInput(productInput, fields);
-  const list = parseInput(productPhotoList, photos);
+  const later = photoLater === true && Array.isArray(photos) && photos.length === 0;
+  const list = later ? [] : parseInput(productPhotoList, photos);
   return r.createProduct(input, list);
 }, 201);
 

@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import { formatKes } from '@oda/shared';
 import { cartCount, MAX_QTY } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
+import { SafeImg } from '@/components/SafeImg';
 
 export function Gallery({ photos: all, name }: { photos: { url: string | null }[]; name: string }) {
   const [index, setIndex] = useState(0);
@@ -29,8 +30,7 @@ export function Gallery({ photos: all, name }: { photos: { url: string | null }[
         tabIndex={photos.length > 1 ? 0 : undefined}
       >
         {photos.map((p, i) => (
-          // eslint-disable-next-line @next/next/no-img-element -- plain images (decision #59)
-          <img
+          <SafeImg
             key={i}
             src={p.url}
             alt={i === 0 ? name : `${name}, photo ${i + 1} of ${photos.length}`}

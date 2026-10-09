@@ -72,8 +72,17 @@ export function fieldsFrom(d: ProductDraft): ProductFields {
 }
 
 /** The first problem to show, or null when the product can be saved. */
-export function draftProblem(d: ProductDraft, photoCount: number): string | null {
-  if (photoCount < 1) return 'Add a photo of your product. Buyers want to see it.';
+/**
+ * What stops the draft from being saved. `photoOptional`: no photo is fine while photo uploads
+ * are paused, and for a product already saved without one (decision #93 D1).
+ */
+export function draftProblem(
+  d: ProductDraft,
+  photoCount: number,
+  photoOptional = false,
+): string | null {
+  if (photoCount < 1 && !photoOptional)
+    return 'Add a photo of your product. Buyers want to see it.';
   if (photoCount > PRODUCT_PHOTOS_MAX) return `Add at most ${PRODUCT_PHOTOS_MAX} photos.`;
   if (!d.name.trim()) return 'Enter the product name.';
   const price = amount(d.price);

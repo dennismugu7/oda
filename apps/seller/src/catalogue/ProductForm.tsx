@@ -48,6 +48,9 @@ import { colors, radii, spacing, text } from '@/theme';
 let slotIds = 0;
 const newSlotId = () => `slot-${++slotIds}`;
 
+const PAUSED_NOTE =
+  'Photo uploads are paused for now. You can save the product and add its photo later.';
+
 const STATUSES: { value: ProductStatus; label: string }[] = [
   { value: 'available', label: 'Available' },
   { value: 'sold_out', label: 'Sold out' },
@@ -172,6 +175,8 @@ function Editor({
   const [colourError, setColourError] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [dragAvailable, setDragAvailable] = useState(true);
+  // Storage isn't taking photos (decision #93 D1): a product may be saved without one.
+  const [paused, setPaused] = useState(false);
 
   const set = <K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -201,7 +206,8 @@ function Editor({
         update(slot.id, { status: 'done', photo: { objectKey, thumbKey, width, height } });
       } else {
         update(slot.id, { status: 'failed' });
-        setError(result.error);
+        setError(result.paused ? PAUSED_NOTE : result.error);
+        if (result.paused) setPaused(true);
       }
     } catch {
       update(slot.id, { status: 'failed' });
@@ -235,11 +241,13 @@ function Editor({
 
   async function save() {
     const photos = donePhotos(slots);
+    // Saved without a photo before, and still none: edits are fine (decision #93 D1).
+    const photoOptional = paused || (!!product && original.length === 0);
     const problem = uploading
       ? 'Wait for the photos to finish uploading.'
-      : slots.some((s) => s.status === 'failed')
+      : !paused && slots.some((s) => s.status === 'failed')
         ? 'A photo didn’t upload. Tap it to try again, or remove it.'
-        : draftProblem(draft, photos.length);
+        : draftProblem(draft, photos.length, photoOptional);
     if (problem) {
       setError(problem);
       return;
@@ -249,7 +257,7 @@ function Editor({
     setFields({});
     let failed = null;
     if (!product) {
-      failed = (await catalogueApi.create(fieldsFrom(draft), photos)).error;
+      failed = (await catalogueApi.create(fieldsFrom(draft), photos, paused)).error;
     } else {
       const changes = changedFields(product, draft);
       if (Object.keys(changes).length > 0) {

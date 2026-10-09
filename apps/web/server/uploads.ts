@@ -8,7 +8,12 @@ import { getDb } from './db';
 import { ForbiddenError, HttpError, TooManyRequestsError, ValidationError } from './errors';
 import { hasLocationData, sniffImageType, type ImageType } from './imageCheck';
 import { hitLimit } from './rateLimit';
-import { getPrivateStorage, getStorage, StorageUnavailableError } from './storage';
+import {
+  getPrivateStorage,
+  getStorage,
+  StoragePausedError,
+  StorageUnavailableError,
+} from './storage';
 
 // Uploads (docs/data-model.md → File storage, decision #52). The phone asks for an upload,
 // sends the file straight to storage, then saves the key through the API, which checks the
@@ -62,6 +67,24 @@ export class UploadsOffError extends HttpError {
   }
 }
 
+/** The store refused or didn't answer (e.g. Vercel Blob stopped at a Hobby limit, #93 D1). */
+export class StoragePausedHttpError extends HttpError {
+  constructor() {
+    super(503, 'Photo uploads are paused for now. Try again later.', 'storage_unavailable');
+  }
+}
+
+/** Runs a storage call, answering 503 when storage is off or not answering. */
+export async function storageStep<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw new UploadsOffError();
+    if (error instanceof StoragePausedError) throw new StoragePausedHttpError();
+    throw error;
+  }
+}
+
 const isPrivateKey = (key: string) => key.startsWith('feedback/');
 
 /** Where a key lives: feedback screenshots in the private store, everything else public. */
@@ -89,17 +112,14 @@ export async function createUpload(ctx: SellerCtx, input: UploadRequest, db: Db 
   const prefix: ShopKeyPrefix =
     input.kind === 'logo' ? 'logos' : input.kind === 'feedback' ? 'feedback' : 'products';
   const key = `${prefix}/${ctx.shopId}/${randomUUID()}.${EXT_OF[EXTENSIONS[input.contentType]!]}`;
-  try {
+  return storageStep(async () => {
     if (input.kind === 'feedback') {
       const upload = await storeFor(key).presignPut(key, input.contentType, input.size);
       return { key, publicUrl: null, ...upload };
     }
     const upload = await getStorage().presignPut(key, input.contentType, input.size);
     return { key, publicUrl: getStorage().publicUrl(key), ...upload };
-  } catch (error) {
-    if (error instanceof StorageUnavailableError) throw new UploadsOffError();
-    throw error;
-  }
+  });
 }
 
 const MISSING = "We couldn't find that photo. Upload it again.";
@@ -124,13 +144,7 @@ export async function verifyStoredImage(
  * checked (review photos are owned through the order token, decision #73 k).
  */
 export async function checkStoredBytes(key: string, db: Db = getDb()): Promise<void> {
-  let bytes: Uint8Array | null;
-  try {
-    bytes = await storeFor(key).read(key);
-  } catch (error) {
-    if (error instanceof StorageUnavailableError) throw new UploadsOffError();
-    throw error;
-  }
+  const bytes = await storageStep(() => storeFor(key).read(key));
   if (!bytes || bytes.length === 0) throw new ValidationError(MISSING, undefined, 'UPLOAD_MISSING');
 
   const reject = async (message: string, code: string) => {

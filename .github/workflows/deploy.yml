@@ -1,0 +1,114 @@
+name: deploy
+
+# Migrate, then deploy one deployment (decision #27; M11 CP2, decision #93 D3). Called by
+# migrate-staging (after CI passes on `main`) and by release-production (after the owner's
+# approval); never run on its own. It applies the Drizzle migrations to that Neon database
+# with the owner role, re-applies the app role's grants (any new table gets them before the
+# new code runs), triggers the Vercel Deploy Hook and waits until /api/health reports the
+# commit. So a deployment never runs against a schema older than the code it ships.
+#
+# Per target (the GitHub Environment; each secret picked by name, never as a fallback):
+# - staging: Environment `staging`, NEON_STAGING_DATABASE_URL_UNPOOLED,
+#   VERCEL_DEPLOY_HOOK_STAGING, variable BASE_URL.
+# - production: Environment `production-jobs`, PRODUCTION_NEON_DATABASE_URL_UNPOOLED,
+#   PRODUCTION_VERCEL_DEPLOY_HOOK, variable BASE_URL.
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+      sha:
+        description: 'The commit to migrate and deploy'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-and-deploy:
+    name: Migrate Neon ${{ inputs.target }}, then deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ inputs.target == 'production' && 'production-jobs' || 'staging' }}
+    env:
+      TARGET: ${{ inputs.target }}
+      SHA: ${{ inputs.sha }}
+
+    steps:
+      - name: Check the target, secrets and address
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_NEON_DATABASE_URL_UNPOOLED' || 'NEON_STAGING_DATABASE_URL_UNPOOLED'] }}
+          DEPLOY_HOOK: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_VERCEL_DEPLOY_HOOK' || 'VERCEL_DEPLOY_HOOK_STAGING'] }}
+          BASE_URL: ${{ vars.BASE_URL }}
+        run: |
+          [[ "$TARGET" == staging || "$TARGET" == production ]] || { echo "::error::Unknown target '$TARGET'."; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Not a full commit hash: '$SHA'."; exit 1; }
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::The $TARGET database secret is not set (Neon's direct, non-pooled owner string)."; exit 1
+          fi
+          case "$DATABASE_URL_UNPOOLED" in
+            *-pooler.*) echo "::error::The $TARGET database secret is the pooled string; use the direct one (no -pooler in the host)."; exit 1 ;;
+          esac
+          case "$DEPLOY_HOOK" in
+            https://api.vercel.com/v1/integrations/deploy/*) ;;
+            *) echo "::error::The $TARGET deploy hook secret is missing or isn't a Vercel Deploy Hook URL."; exit 1 ;;
+          esac
+          [[ "$BASE_URL" == https://* ]] || { echo "::error::Variable BASE_URL is not set in the $TARGET Environment."; exit 1; }
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0 # the health check compares commits
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # @oda/db and everything its workspace packages need (e.g. zod for @oda/shared), decision #39.
+      # CI's "Staging migrate install" job runs this exact command, so keep the two in sync.
+      - run: pnpm install --frozen-lockfile --filter "@oda/db..."
+
+      - name: Migrate
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_NEON_DATABASE_URL_UNPOOLED' || 'NEON_STAGING_DATABASE_URL_UNPOOLED'] }}
+        run: pnpm db:migrate
+
+      # Grants for the app role `oda_app` on any table the migration added (decision #93 D5);
+      # fails the run if any table is missing a grant. No password here: if the role doesn't
+      # exist yet, this does nothing.
+      - name: App role grants
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_NEON_DATABASE_URL_UNPOOLED' || 'NEON_STAGING_DATABASE_URL_UNPOOLED'] }}
+        run: pnpm --filter @oda/db db:app-role
+
+      - name: Deploy (Vercel Deploy Hook)
+        env:
+          DEPLOY_HOOK: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_VERCEL_DEPLOY_HOOK' || 'VERCEL_DEPLOY_HOOK_STAGING'] }}
+        run: curl -fsS -X POST "$DEPLOY_HOOK" -o /dev/null && echo "Deployment of $TARGET requested for $SHA"
+
+      - name: Wait until it runs this commit (or a newer one)
+        env:
+          HEALTH_URL: ${{ vars.BASE_URL }}/api/health
+        run: |
+          short="${SHA:0:7}"
+          for attempt in $(seq 1 60); do
+            live="$(curl -fsS "$HEALTH_URL" | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p' || true)"
+            if [ "$live" = "$short" ]; then
+              echo "$TARGET runs $short."
+              echo "$TARGET runs \`$short\` ($HEALTH_URL)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            # A newer commit (containing this one) is already live: also fine.
+            if [ -n "$live" ] && git merge-base --is-ancestor "$SHA" "$live" 2>/dev/null; then
+              echo "$TARGET runs $live, which includes $short."; exit 0
+            fi
+            echo "Attempt $attempt: $TARGET runs '${live:-?}', waiting for $short…"
+            sleep 10
+          done
+          echo "::error::$TARGET didn't report $short within 10 minutes. Check the deployment in Vercel."
+          exit 1

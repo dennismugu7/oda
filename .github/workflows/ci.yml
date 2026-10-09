@@ -58,6 +58,9 @@ jobs:
       - name: No stray Expo files at the repo root
         run: pnpm check:root
 
+      - name: Workflows keep staging and production apart
+        run: pnpm check:workflows
+
       - name: Lint
         run: pnpm lint
 

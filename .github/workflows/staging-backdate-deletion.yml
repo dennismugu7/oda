@@ -18,6 +18,9 @@ jobs:
   backdate:
     name: Backdate one deleted shop
     runs-on: ubuntu-24.04
+    # Staging only (M11 CP2): this Environment holds no production secret or address;
+    # scripts/check-workflows.mjs fails CI if this tool could reach production.
+    environment: staging
     timeout-minutes: 5
     steps:
       - name: Check the inputs and the secret

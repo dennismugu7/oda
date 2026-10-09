@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   backupName,
+  backupPrefix,
+  backupTarget,
   isBackupName,
   newestBackup,
   planRetention,
@@ -68,5 +70,37 @@ describe('newest backup (weekly restore check)', () => {
     expect(newestBackup([{ pathname: 'staging/x', uploadedAt: at('2026-10-07T00:00:00Z') }])).toBe(
       null,
     );
+  });
+});
+
+describe('targets (M11 CP2): each environment has its own prefix and names', () => {
+  it('names and recognises production backups apart from staging ones', () => {
+    const at = new Date('2026-10-04T23:50:00Z');
+    expect(backupName(at, 'production')).toBe('production/oda-production-20261004T2350Z.dump.gpg');
+    expect(backupPrefix('production')).toBe('production/');
+    expect(isBackupName(backupName(at, 'production'), 'production')).toBe(true);
+    expect(isBackupName(backupName(at, 'production'))).toBe(false);
+    expect(isBackupName(backupName(at), 'production')).toBe(false);
+  });
+
+  it('a production plan never touches a staging file, and the reverse', () => {
+    const staging = backup(daysAgo(40));
+    const prod = { pathname: backupName(daysAgo(40), 'production'), uploadedAt: daysAgo(40) };
+    const today = { pathname: backupName(NOW, 'production'), uploadedAt: NOW };
+    const plan = planRetention([staging, prod, today], NOW, today.pathname, 14, 'production');
+    expect(names(plan.remove)).toEqual([prod.pathname]);
+    expect(plan.ignored).toEqual([staging.pathname]);
+    expect(newestBackup([staging, prod], 'production')?.pathname).toBe(prod.pathname);
+    expect(planRetention([staging, prod, today], NOW, backupName(NOW)).ignored).toEqual([
+      prod.pathname,
+      today.pathname,
+    ]);
+  });
+
+  it('reads BACKUP_TARGET: staging by default, production, nothing else', () => {
+    expect(backupTarget(undefined)).toBe('staging');
+    expect(backupTarget('')).toBe('staging');
+    expect(backupTarget('production')).toBe('production');
+    expect(() => backupTarget('prod')).toThrow('BACKUP_TARGET must be staging or production');
   });
 });

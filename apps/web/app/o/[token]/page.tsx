@@ -36,6 +36,7 @@ import { NotFoundError } from '@/server/errors';
 import { orderTokenRepo } from '@/server/repos/order-token';
 import { buyerReviewRepo } from '@/server/repos/reviews';
 import { publicUrl } from '@/server/uploads';
+import { SafeImg } from '@/components/SafeImg';
 
 export const dynamic = 'force-dynamic';
 
@@ -463,8 +464,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
               <li key={n} className="flex items-center gap-3 py-3 text-body">
                 <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-beige">
                   {i.coverPath ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                    <img
+                    <SafeImg
                       src={publicUrl(i.coverPath) ?? undefined}
                       alt=""
                       width={48}

@@ -6,7 +6,7 @@ import { getDb } from './db';
 import { demoShopSlugs } from './demo';
 import { serverEnv } from './env';
 import { toResponse } from './errors';
-import { getPrivateStorage, getStorage, listAll } from './storage';
+import { getPrivateStorage, getStorage, listAll, StoragePausedError } from './storage';
 import { queueDeletions } from './uploads';
 
 // The daily purge (/api/cron/purge; decisions #72 c, #74 c, #75). Steps, each idempotent and
@@ -63,6 +63,11 @@ export interface PurgeReport {
   signupAttempts: number;
   /** File deletes that failed; queued in storage_deletions for the next run. */
   failedFiles: number;
+  /**
+   * Storage couldn't be listed (e.g. Vercel Blob stopped at a Hobby limit, #93 D1): accounts
+   * whose files couldn't be listed are kept for the next run, the unreferenced sweep is skipped.
+   */
+  storageUnavailable: boolean;
   more: boolean;
 }
 
@@ -277,6 +282,7 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     unreferencedFiles: [],
     signupAttempts: 0,
     failedFiles: 0,
+    storageUnavailable: false,
     more: false,
   };
 
@@ -288,7 +294,16 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
       report.skippedDemo.push(account.slug);
       continue;
     }
-    const files = account.shopId ? await shopFiles(db, account.shopId) : [];
+    let files: string[];
+    try {
+      files = account.shopId ? await shopFiles(db, account.shopId) : [];
+    } catch (error) {
+      // Its files can't be listed: no row goes before its files do. Kept for the next run.
+      if (!(error instanceof StoragePausedError)) throw error;
+      report.storageUnavailable = true;
+      report.more = true;
+      continue;
+    }
     const deletedAt = account.shopDeletedAt ?? account.profileDeletedAt;
     report.accounts.push({
       userId: account.userId,
@@ -395,24 +410,31 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
   const orphans: string[] = [];
   const uploadedAt = new Map<string, Date>();
   const publicStore = getStorage();
-  sweep: for (const prefix of publicStore.driver === 'disabled' ? [] : SWEPT_PREFIXES) {
-    let page: string[] = [];
-    const check = async () => {
-      const used = await referenced(db, page);
-      orphans.push(...page.filter((k) => !used.has(k)));
-      page = [];
-    };
-    for await (const object of listAll(publicStore, prefix)) {
-      if (object.uploadedAt.getTime() >= oldEnough) continue;
-      page.push(object.key);
-      uploadedAt.set(object.key, object.uploadedAt);
-      if (page.length === 200) await check();
-      if (orphans.length >= BATCH.unreferenced) {
-        report.more = true;
-        break sweep;
+  try {
+    sweep: for (const prefix of publicStore.driver === 'disabled' ? [] : SWEPT_PREFIXES) {
+      let page: string[] = [];
+      const check = async () => {
+        const used = await referenced(db, page);
+        orphans.push(...page.filter((k) => !used.has(k)));
+        page = [];
+      };
+      for await (const object of listAll(publicStore, prefix)) {
+        if (object.uploadedAt.getTime() >= oldEnough) continue;
+        page.push(object.key);
+        uploadedAt.set(object.key, object.uploadedAt);
+        if (page.length === 200) await check();
+        if (orphans.length >= BATCH.unreferenced) {
+          report.more = true;
+          break sweep;
+        }
       }
+      await check();
     }
-    await check();
+  } catch (error) {
+    // The sweep can wait for the next run; nothing is deleted from a partial listing.
+    if (!(error instanceof StoragePausedError)) throw error;
+    report.storageUnavailable = true;
+    orphans.length = 0;
   }
   let sweptOrphans = orphans.slice(0, BATCH.unreferenced);
   if (!dryRun && sweptOrphans.length) {
@@ -468,6 +490,7 @@ export function summary(report: PurgeReport) {
     unreferenced: report.unreferenced,
     signupAttempts: report.signupAttempts,
     failedFiles: report.failedFiles,
+    storageUnavailable: report.storageUnavailable,
     more: report.more,
   };
 }
