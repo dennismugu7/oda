@@ -20,6 +20,7 @@ const steps = [
   ['typecheck', 'pnpm', ['exec', 'turbo', 'run', 'typecheck', '--concurrency=1']],
   ['tests', 'pnpm', ['exec', 'turbo', 'run', 'test', '--concurrency=1', '--force']],
   ['repo root', 'node', ['scripts/check-repo-root.mjs']],
+  ['workflows', 'node', ['scripts/check-workflows.mjs']],
   ['expo deps + native runtime', 'pnpm', ['--filter', '@oda/seller', 'deps:check']],
   [
     'android bundle',

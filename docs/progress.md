@@ -2,19 +2,19 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-09, M11 CP1 at review stop A)
+## Handoff (keep current; updated 2026-10-09, M11 CP2 in progress)
 
 **Current state**
-- **M11:** plan approved (#93); CP1 done, at review stop A.
+- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 in progress:** the code (PR "M11 CP2") is merged first; then the owner's dashboard steps, one at a time; then Claude's config, the first release and the smoke check; then review stop B.
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
-- **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
+- **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup** (02:30 staging; production at 02:50 once `PRODUCTION_LIVE`), **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Database role (#93 D5):** staging's web app connects as **`oda_app`** (rows only) through Neon's pooler; migrations, backups and the workflows' psql steps keep the owner role (`NEON_STAGING_DATABASE_URL_UNPOOLED`). Its password is in GitHub Environment `staging` → `ODA_APP_DB_PASSWORD` and in Vercel `DATABASE_URL` (Production + Preview, Sensitive). **Actions → db-app-role** re-applies and checks it; migrate-staging re-applies the grants after each migration. **Rollback** if ever needed: the owner pastes Neon's pooled owner string into Vercel `DATABASE_URL` and redeploys.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** 🛑 **review stop A** (M11 CP1, entry below). Nothing in CP2 starts before the owner's go-ahead. Plan `docs/m11-plan.md` (decision #93).
+**Next step:** M11 CP2 (entry below): after the code PR merges, the owner's dashboard steps (Neon, Vercel, Blob, domain, Resend, Sentry, backup passphrase, Expo token), sent one at a time. Then 🛑 **review stop B**. Plan `docs/m11-plan.md` (#93), layout #94.
 
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
@@ -24,6 +24,42 @@ Newest entries at the top.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · M11 CP2 part 1: production code (Blob stop, config guard, workflows)
+
+**Before CP2 (owner's ask at review stop A):** every staging job runs with `oda_app`:
+- backup-staging run **37914806615** green (dump 112K, uploaded `staging/oda-staging-20261009T1000Z.dump.gpg`, 33 KB);
+- backup-restore-check run **37914971068** green (restored that backup: shops 4, profiles 6, products 15, orders 9, order_items 9, reviews 0, ops_events 29; migrations 10 = 10);
+- cron-purge run **37914811838** green, dry run (nothing due);
+- cron-digest run **37914816588** green (nothing new, no email).
+Backups and the restore check use the owner role by design (`pg_dump`); the purge and the digest run inside the web app, so as `oda_app`.
+- **New tables get `oda_app`'s grants automatically:** `appRoleGrants()` sets `ALTER DEFAULT PRIVILEGES` for tables, sequences and functions, run by the owner role, the same role that runs migrations (`packages/db/src/appRole.ts:25`). Test: `packages/db/src/appRole.test.ts` "gives tables created by later migrations the same grants" (a table created after the role exists can be written by it). Safety net: every deploy re-applies the grants right after migrating and fails if any table lacks them (`appRoleCli.ts`, `missingGrants`), before the new code is deployed.
+
+**Code (this PR; decision #94):**
+- **Blob stop (#93 D1):**
+  - the storage guard turns any provider failure into 503 `storage_unavailable` on every upload route and on saving a photo;
+  - `photoLater` lets a new product be saved without a photo (onboarding and the product editor), offered by the app only after a paused answer;
+  - the 8th checklist item "Add a product photo" shows while a live product has none;
+  - `SafeImg` gives buyer pages the placeholder tile;
+  - the purge keeps accounts and skips the sweep while storage can't list;
+  - a backup or restore check exits 1.
+  - Tests: `server/storagePaused.test.ts`, purge and review cases, `scripts/backup/blobStop.test.ts` (a fake Blob API answering 403), `e2e/blob-stop.spec.ts` (every photo fails; shop, cart, checkout, order placed, no broken image), and app tests for the paused answer and `draftProblem`.
+- **Production config guard** (`server/deployment.ts`, build and start) and **noindex** off production. Sentry environment names: production / staging / preview / local.
+- **Workflows:**
+  - every address from `vars.BASE_URL`, secrets picked by name, production legs behind `PRODUCTION_LIVE`;
+  - `backup.yml` replaces `backup-staging.yml`;
+  - new `deploy.yml` (shared migrate-and-deploy) and `release-production.yml`;
+  - db-app-role takes production;
+  - the staging-only tools are pinned to Environment `staging`;
+  - `scripts/check-workflows.mjs` runs in CI and `check:all`.
+- **Vercel:** `vercel.json` also stops `production` pushes from building, and adds `scripts/vercel-ignore.mjs` (oda-production builds only Production).
+
+**Deviations from the plan text (in #94):**
+- Production GitHub secrets are named `PRODUCTION_…` and all live in `production-jobs`; the approval Environment is `production-release` (GitHub already has Vercel's "Production", and names ignore case). GitHub falls back to repository secrets, and staging's can't be moved.
+- `backup-staging` was renamed `backup`.
+- The product editor also accepts `photoLater`, for the same Blob-stop reason as onboarding.
+
+**Not run locally:** database tests and Playwright (Docker off). Ran locally: format, lint, typecheck, shared and app tests, the no-database web tests, the web build, the workflow check.
 
 ## 2026-10-09 · M11 CP1: contract migrations + the `oda_app` role (review stop A)
 

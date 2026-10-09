@@ -1,28 +1,38 @@
 name: sentry-test
 
-# Sends one test error from the staging web server to Sentry (M10 CP4, decision #87) to check
-# reporting end to end. The error's made-up email and phone must show in Sentry as [email] and
-# [phone]. Called with the Bearer secret OPS_SECRET (the same value is set in Vercel).
+# Sends one test error from the chosen web server (staging or production) to Sentry (M10 CP4,
+# decision #87) to check reporting end to end. The error's made-up email and phone must show in Sentry as [email] and
+# [phone]. Called with the Bearer ops secret of that deployment (the same value is set in Vercel).
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which deployment'
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
 
 permissions:
   contents: read
 
-env:
-  URL: https://oda-eta.vercel.app/api/ops/sentry-test
-
 jobs:
   send:
-    name: Send a test error
+    name: Send a test error (${{ inputs.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    environment: ${{ inputs.target == 'production' && 'production-jobs' || 'staging' }}
     steps:
       - name: Call the server
         env:
-          OPS_SECRET: ${{ secrets.OPS_SECRET }}
+          TARGET: ${{ inputs.target }}
+          URL: ${{ vars.BASE_URL }}/api/ops/sentry-test
+          # The name is picked, never a fallback: production reads only its own secret.
+          OPS_SECRET: ${{ secrets[inputs.target == 'production' && 'PRODUCTION_OPS_SECRET' || 'OPS_SECRET'] }}
         run: |
-          [ -n "$OPS_SECRET" ] || { echo "::error::Repository secret OPS_SECRET is not set."; exit 1; }
+          [[ "$URL" == https://* ]] || { echo "::error::Variable BASE_URL is not set in the $TARGET Environment."; exit 1; }
+          [ -n "$OPS_SECRET" ] || { echo "::error::The $TARGET ops secret is not set (OPS_SECRET / PRODUCTION_OPS_SECRET)."; exit 1; }
           for attempt in 1 2 3; do
             status=$(curl -sS -o result.json -w '%{http_code}' -X POST \
               -H "Authorization: Bearer $OPS_SECRET" --max-time 60 "$URL" || echo 000)

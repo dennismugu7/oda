@@ -25,6 +25,7 @@
     "db:reset": "docker compose down -v && pnpm db:up && pnpm db:migrate && pnpm db:seed",
     "update:preview": "pnpm --filter @oda/seller update:preview",
     "check:root": "node scripts/check-repo-root.mjs",
+    "check:workflows": "node scripts/check-workflows.mjs",
     "check:all": "node scripts/check-all.mjs"
   },
   "devDependencies": {

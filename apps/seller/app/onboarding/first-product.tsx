@@ -59,6 +59,9 @@ function savedSlots(state: OnboardingState): Slot[] {
   }));
 }
 
+const PAUSED_NOTE =
+  'Photo uploads are paused for now. Add the product now and its photo later: Finish your shop on Home reminds you.';
+
 function Step({ state }: { state: OnboardingState }) {
   const product = state.product;
   const { busy, error, fields, submit, setError } = useSubmit();
@@ -69,6 +72,8 @@ function Step({ state }: { state: OnboardingState }) {
   const [addingSize, setAddingSize] = useState(false);
   const [customSize, setCustomSize] = useState('');
   const [sizeError, setSizeError] = useState<string | null>(null);
+  // Storage isn't taking photos (decision #93 D1): the product may be saved without one.
+  const [paused, setPaused] = useState(false);
 
   const uploading = slots.some((s) => s.status === 'uploading');
   const room = PRODUCT_PHOTOS_MAX - slots.length;
@@ -89,7 +94,8 @@ function Step({ state }: { state: OnboardingState }) {
         update(slot.id, { status: 'done', photo: { objectKey, thumbKey, width, height } });
       } else {
         update(slot.id, { status: 'failed' });
-        setError(result.error);
+        setError(result.paused ? PAUSED_NOTE : result.error);
+        if (result.paused) setPaused(true);
       }
     } catch {
       update(slot.id, { status: 'failed' });
@@ -131,11 +137,12 @@ function Step({ state }: { state: OnboardingState }) {
   async function save() {
     const photos = slots.flatMap((s) => (s.status === 'done' && s.photo ? [s.photo] : []));
     const amount = Number(price.replace(/\D/g, ''));
-    if (!photos.length) {
+    const photoLater = paused && !photos.length;
+    if (!photos.length && !photoLater) {
       setError('Add a photo of your product. Buyers want to see it.');
       return;
     }
-    if (slots.some((s) => s.status === 'failed')) {
+    if (!photoLater && slots.some((s) => s.status === 'failed')) {
       setError('A photo didn’t upload. Tap it to try again, or remove it.');
       return;
     }
@@ -148,7 +155,13 @@ function Step({ state }: { state: OnboardingState }) {
       return;
     }
     const next = await submit(() =>
-      onboardingApi.product({ name: name.trim(), price: amount, sizes, photos }),
+      onboardingApi.product({
+        name: name.trim(),
+        price: amount,
+        sizes,
+        photos,
+        ...(photoLater ? { photoLater: true as const } : {}),
+      }),
     );
     if (next) router.push(ONBOARDING_ROUTES[5]);
   }

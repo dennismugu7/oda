@@ -1,5 +1,5 @@
-// "Finish your shop" on Home (designs 15, 16; spec §5.3): the 7 checklist items, hidden once
-// complete. Items with a place to go open it (delivery, products, the WhatsApp test). Once the
+// "Finish your shop" on Home (designs 15, 16; spec §5.3): the 7 checklist items (8 while a
+// product has no photo, decision #93 D1), hidden once complete. Items with a place to go open it (delivery, products, the WhatsApp test). Once the
 // shop has orders it starts folded (16: title, count and bar); a tap opens the items.
 import Feather from '@expo/vector-icons/Feather';
 import type { FinishItem } from '@oda/shared';
@@ -34,6 +34,7 @@ export function FinishCard({ compact = false }: { compact?: boolean }) {
   const actions: Partial<Record<FinishItem, () => void>> = {
     delivery: () => router.push('/delivery'),
     more_products: () => router.push('/products/new'),
+    product_photo: () => router.push('/shop'),
     tested_whatsapp: async () => {
       const opened = await Linking.openURL(`https://wa.me/${whatsapp.replace(/^\+/, '')}`).then(
         () => true,

@@ -75,7 +75,14 @@ export const onboardingApi = {
     apiJson<OnboardingState>('/api/onboarding/shop', { body }),
   logo: (logoPath: string | null) =>
     apiJson<OnboardingState>('/api/onboarding/logo', { body: { logoPath } }),
-  product: (body: { name: string; price: number; sizes: string[]; photos: OnboardingPhoto[] }) =>
+  product: (body: {
+    name: string;
+    price: number;
+    sizes: string[];
+    photos: OnboardingPhoto[];
+    /** Only while photo uploads are paused, with no photos (decision #93 D1). */
+    photoLater?: true;
+  }) =>
     apiJson<OnboardingState>('/api/onboarding/product', {
       body: {
         ...body,

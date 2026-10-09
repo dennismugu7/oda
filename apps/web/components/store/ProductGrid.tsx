@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { formatKes, type ProductBadge } from '@oda/shared';
 import { CardCartAction, FavouriteButton } from './interactive';
+import { SafeImg } from '@/components/SafeImg';
 
 export interface GridProduct {
   id: string;
@@ -44,8 +45,7 @@ export function ProductGrid({
           <Link href={`/${slug}/p/${p.id}`} className="block">
             <div className="relative aspect-square overflow-hidden rounded-xl bg-beige">
               {p.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                <img
+                <SafeImg
                   src={p.coverUrl}
                   alt=""
                   width={400}

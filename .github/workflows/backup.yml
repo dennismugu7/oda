@@ -1,0 +1,123 @@
+name: backup
+
+# Nightly encrypted database backup (docs/data-model.md → Backups, decisions #54, #93):
+# pg_dump (Postgres 18, Neon's major) → checked with pg_restore --list → encrypted with gpg
+# (AES-256) → that environment's private Vercel Blob backups store, keeping 14 days.
+# The plain dump never leaves the runner. Restore: download the file from the store,
+#   gpg --decrypt oda-<target>-<time>.dump.gpg > oda.dump
+#   pg_restore --no-owner --no-acl --clean --if-exists -d "<owner database url>" oda.dump
+# then run Actions → db-app-role for that target, so the app role's grants are checked again.
+#
+# Targets (M11 CP2): staging at 02:30 Nairobi (Environment `staging`:
+# NEON_STAGING_DATABASE_URL_UNPOOLED, BACKUP_BLOB_READ_WRITE_TOKEN, BACKUP_PASSPHRASE;
+# prefix staging/), production at 02:50
+# (Environment `production-jobs`: PRODUCTION_NEON_DATABASE_URL_UNPOOLED,
+# PRODUCTION_BACKUP_BLOB_READ_WRITE_TOKEN, PRODUCTION_BACKUP_PASSPHRASE; prefix production/;
+# scheduled once the repository variable PRODUCTION_LIVE is `true`). Each secret is picked by
+# name, never as a fallback: a production run can't read or write staging's store.
+on:
+  schedule:
+    - cron: '30 23 * * *' # 02:30 in Nairobi: staging
+    - cron: '50 23 * * *' # 02:50 in Nairobi: production
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which database'
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+concurrency:
+  group: backup-${{ inputs.target || github.event.schedule }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Back up Neon ${{ matrix.target }}
+    if: github.event.schedule != '50 23 * * *' || vars.PRODUCTION_LIVE == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        target: ${{ fromJSON(inputs.target && format('["{0}"]', inputs.target) || (github.event.schedule == '50 23 * * *' && '["production"]' || '["staging"]')) }}
+    environment: ${{ matrix.target == 'production' && 'production-jobs' || 'staging' }}
+    env:
+      BACKUP_TARGET: ${{ matrix.target }}
+
+    steps:
+      - name: Check the secrets are set
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_NEON_DATABASE_URL_UNPOOLED' || 'NEON_STAGING_DATABASE_URL_UNPOOLED'] }}
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_BACKUP_BLOB_READ_WRITE_TOKEN' || 'BACKUP_BLOB_READ_WRITE_TOKEN'] }}
+          BACKUP_PASSPHRASE: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_BACKUP_PASSPHRASE' || 'BACKUP_PASSPHRASE'] }}
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::The $BACKUP_TARGET database secret is not set (Neon's direct owner string)."; exit 1
+          fi
+          case "$DATABASE_URL_UNPOOLED" in
+            *-pooler.*) echo "::error::The $BACKUP_TARGET database secret is the pooled string; use the direct one."; exit 1 ;;
+          esac
+          if [ -z "$BACKUP_BLOB_READ_WRITE_TOKEN" ]; then
+            echo "::error::The $BACKUP_TARGET backups store token is not set (the private backups store's read-write token)."; exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 20 ]; then
+            echo "::error::The $BACKUP_TARGET backup passphrase is missing or shorter than 20 characters."; exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter "@oda/web..."
+
+      - name: Dump (pg_dump 18, custom format)
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_NEON_DATABASE_URL_UNPOOLED' || 'NEON_STAGING_DATABASE_URL_UNPOOLED'] }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/backup"
+          docker run --rm -e DATABASE_URL_UNPOOLED -v "$RUNNER_TEMP/backup:/backup" postgres:18 \
+            sh -c 'pg_dump --format=custom --no-owner --no-acl --file=/backup/oda.dump "$DATABASE_URL_UNPOOLED"'
+          docker run --rm -v "$RUNNER_TEMP/backup:/backup" postgres:18 \
+            sh -c 'pg_restore --list /backup/oda.dump > /dev/null'
+          echo "Dump: $(du -h "$RUNNER_TEMP/backup/oda.dump" | cut -f1), readable by pg_restore."
+
+      - name: Encrypt (gpg, AES-256)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_BACKUP_PASSPHRASE' || 'BACKUP_PASSPHRASE'] }}
+        run: |
+          cd "$RUNNER_TEMP/backup"
+          printf '%s' "$BACKUP_PASSPHRASE" > passphrase
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file passphrase \
+            --symmetric --cipher-algo AES256 --output oda.dump.gpg oda.dump
+          # Check it decrypts before the plain files go.
+          gpg --batch --pinentry-mode loopback --passphrase-file passphrase \
+            --decrypt oda.dump.gpg | cmp - oda.dump
+          rm -f passphrase oda.dump
+
+      # A Blob refusal (e.g. a Hobby limit, decision #93 D1) fails this step and the run (red,
+      # GitHub emails the owner); it never passes silently.
+      - name: Upload and keep 14 days
+        env:
+          BACKUP_BLOB_READ_WRITE_TOKEN: ${{ secrets[matrix.target == 'production' && 'PRODUCTION_BACKUP_BLOB_READ_WRITE_TOKEN' || 'BACKUP_BLOB_READ_WRITE_TOKEN'] }}
+        run: |
+          set -o pipefail # tee must not hide a failed upload
+          pnpm --filter @oda/web exec tsx scripts/backup/upload.ts "$RUNNER_TEMP/backup/oda.dump.gpg" | tee "$RUNNER_TEMP/backup/upload.log"
+          {
+            echo "### Backup ($BACKUP_TARGET)"
+            echo
+            head -1 "$RUNNER_TEMP/backup/upload.log"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove local files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/backup"

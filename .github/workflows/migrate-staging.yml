@@ -1,9 +1,9 @@
 name: migrate-staging
 
 # Migrate, then deploy staging (decision #27, race fixed in M1): Vercel no longer deploys
-# `main` on push (apps/web/vercel.json). After CI passes on `main`, this workflow applies
-# the Drizzle migrations to Neon staging, then triggers the Production deployment through
-# a Vercel Deploy Hook and waits until /api/health reports the new commit. So a deployment
+# `main` on push (apps/web/vercel.json). After CI passes on `main`, deploy.yml applies the
+# Drizzle migrations to Neon staging, re-applies the app role's grants, triggers the staging
+# project's Deploy Hook and waits until /api/health reports the new commit. So a deployment
 # never runs against a schema older than the code it ships.
 on:
   workflow_dispatch:
@@ -20,86 +20,15 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  # The commit CI tested (manual runs: the branch's latest commit).
-  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-  HEALTH_URL: https://oda-eta.vercel.app/api/health
-
 jobs:
-  migrate-and-deploy:
-    name: Migrate Neon staging, then deploy
+  staging:
     # Only after a green CI run on a push to main (or by hand).
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-
-    steps:
-      - name: Check the secrets are set
-        env:
-          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
-          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}
-        run: |
-          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
-            echo "::error::Repository secret NEON_STAGING_DATABASE_URL_UNPOOLED is not set (Neon's direct, non-pooled string)."
-            exit 1
-          fi
-          case "$DATABASE_URL_UNPOOLED" in
-            *-pooler.*) echo "::error::NEON_STAGING_DATABASE_URL_UNPOOLED is the pooled string; use the direct one (no -pooler in the host)."; exit 1 ;;
-          esac
-          case "$DEPLOY_HOOK" in
-            https://api.vercel.com/v1/integrations/deploy/*) ;;
-            *) echo "::error::Repository secret VERCEL_DEPLOY_HOOK_STAGING is missing or isn't a Vercel Deploy Hook URL."; exit 1 ;;
-          esac
-
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SHA }}
-          fetch-depth: 0 # the health check compares commits
-
-      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      # @oda/db and everything its workspace packages need (e.g. zod for @oda/shared), decision #39.
-      # CI's "Staging migrate install" job runs this exact command, so keep the two in sync.
-      - run: pnpm install --frozen-lockfile --filter "@oda/db..."
-
-      - name: Migrate
-        env:
-          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
-        run: pnpm db:migrate
-
-      # Grants for the app role `oda_app` on any table the migration added (decision #93 D5).
-      # No password here: if the role doesn't exist yet, this does nothing.
-      - name: App role grants
-        env:
-          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
-        run: pnpm --filter @oda/db db:app-role
-
-      - name: Deploy (Vercel Deploy Hook for main)
-        env:
-          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}
-        run: curl -fsS -X POST "$DEPLOY_HOOK" -o /dev/null && echo "Deployment requested for $SHA"
-
-      - name: Wait until staging runs this commit (or a newer one)
-        run: |
-          short="${SHA:0:7}"
-          for attempt in $(seq 1 60); do
-            live="$(curl -fsS "$HEALTH_URL" | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p' || true)"
-            if [ "$live" = "$short" ]; then
-              echo "Staging runs $short."; exit 0
-            fi
-            # main moved on and a newer commit (containing this one) is already live: also fine.
-            if [ -n "$live" ] && git merge-base --is-ancestor "$SHA" "$live" 2>/dev/null; then
-              echo "Staging runs $live, which includes $short."; exit 0
-            fi
-            echo "Attempt $attempt: staging runs '${live:-?}', waiting for $short…"
-            sleep 10
-          done
-          echo "::error::Staging didn't report $short within 10 minutes. Check the deployment in Vercel."
-          exit 1
+    uses: ./.github/workflows/deploy.yml
+    with:
+      target: staging
+      # The commit CI tested (manual runs: the branch's latest commit).
+      sha: ${{ github.event.workflow_run.head_sha || github.sha }}
+    secrets: inherit

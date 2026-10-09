@@ -1,12 +1,13 @@
-// Nightly staging backup, last step (decision #54): uploads the encrypted dump to the
+// Nightly backup (BACKUP_TARGET staging or production), last step (decision #54): uploads the encrypted dump to the
 // private Vercel Blob store, then deletes backups older than 14 days. The log lists what it
-// kept and deleted. Run by .github/workflows/backup-staging.yml:
-//   BACKUP_BLOB_READ_WRITE_TOKEN=… tsx scripts/backup/upload.ts <file.dump.gpg>
+// kept and deleted. Run by .github/workflows/backup.yml:
+//   BACKUP_TARGET=staging BACKUP_BLOB_READ_WRITE_TOKEN=… tsx scripts/backup/upload.ts <file.dump.gpg>
 // Blob operations per run: 1 put + 1 list per 1,000 files (advanced); deletes are free.
 import { openAsBlob } from 'node:fs';
 import { del, list, put } from '@vercel/blob';
 import {
-  BACKUP_PREFIX,
+  backupPrefix,
+  backupTarget,
   backupName,
   KEEP_DAYS,
   planRetention,
@@ -25,9 +26,10 @@ async function main() {
   const token = process.env.BACKUP_BLOB_READ_WRITE_TOKEN;
   if (!file) throw new Error('Usage: upload.ts <encrypted dump file>');
   if (!token) throw new Error('BACKUP_BLOB_READ_WRITE_TOKEN is not set');
+  const target = backupTarget();
 
   const now = new Date();
-  const pathname = backupName(now);
+  const pathname = backupName(now, target);
   const body = await openAsBlob(file);
   if (body.size === 0) throw new Error('The backup file is empty');
   await put(pathname, body, {
@@ -42,14 +44,14 @@ async function main() {
   const stored: StoredBackup[] = [];
   let cursor: string | undefined;
   do {
-    const page = await list({ prefix: BACKUP_PREFIX, cursor, limit: 1000, token });
+    const page = await list({ prefix: backupPrefix(target), cursor, limit: 1000, token });
     stored.push(
       ...page.blobs.map((b) => ({ pathname: b.pathname, uploadedAt: b.uploadedAt, size: b.size })),
     );
     cursor = page.hasMore ? page.cursor : undefined;
   } while (cursor);
 
-  const plan = planRetention(stored, now, pathname);
+  const plan = planRetention(stored, now, pathname, KEEP_DAYS, target);
   console.log(`Kept (${plan.keep.length}, newer than ${KEEP_DAYS} days or the newest):`);
   for (const b of plan.keep) console.log(`  ${b.pathname}  ${mb(b.size)}`);
   if (plan.remove.length > 0)

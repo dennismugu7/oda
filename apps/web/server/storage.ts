@@ -70,6 +70,45 @@ export class StorageUnavailableError extends Error {
   }
 }
 
+/**
+ * The provider refused or didn't answer: a Vercel Blob store stopped at a Hobby limit (or
+ * suspended), a quota, a timeout, a 5xx (decision #93 D1). Uploads answer 503
+ * `storage_unavailable`; everything that doesn't need a stored file keeps working.
+ */
+export class StoragePausedError extends Error {
+  constructor(readonly reason: string) {
+    super('Storage is not answering right now');
+    this.name = 'StoragePausedError';
+  }
+}
+
+const GUARDED = ['presignPut', 'read', 'delete', 'list', 'signedReadUrl'] as const;
+
+/**
+ * Turns every provider failure of a remote store into StoragePausedError (logged with its
+ * reason, which never holds a token or a signed URL: the SDK's own error text).
+ */
+export function guardStore<T extends object>(store: T): T {
+  const guarded = { ...store } as Record<string, unknown>;
+  for (const name of GUARDED) {
+    const fn = (store as Record<string, unknown>)[name];
+    if (typeof fn !== 'function') continue;
+    guarded[name] = async (...args: unknown[]) => {
+      try {
+        return await (fn as (...a: unknown[]) => Promise<unknown>).apply(store, args);
+      } catch (error) {
+        if (error instanceof StoragePausedError || error instanceof StorageUnavailableError) {
+          throw error;
+        }
+        const reason = error instanceof Error ? `${error.name}: ${error.message}` : 'unknown';
+        console.warn(`[storage] ${name} failed: ${reason.slice(0, 200)}`);
+        throw new StoragePausedError(reason);
+      }
+    };
+  }
+  return guarded as T;
+}
+
 export const UPLOAD_TTL_SECONDS = 10 * 60;
 
 const envSchema = z.object({
@@ -456,7 +495,7 @@ export function getPrivateStorage(): PrivateStorage | null {
     };
   } else {
     const token = env.FEEDBACK_BLOB_READ_WRITE_TOKEN;
-    cachedPrivate = token ? privateVercelBlobStorage(token) : null;
+    cachedPrivate = token ? guardStore(privateVercelBlobStorage(token)) : null;
   }
   return cachedPrivate;
 }
@@ -481,9 +520,9 @@ export function getStorage(): ObjectStorage {
     driver === 'local'
       ? localStorage(env)
       : driver === 's3'
-        ? s3Storage(env)
+        ? guardStore(s3Storage(env))
         : driver === 'vercel-blob'
-          ? vercelBlobStorage(env)
+          ? guardStore(vercelBlobStorage(env))
           : disabledStorage;
   return cached;
 }
@@ -492,4 +531,13 @@ export function getStorage(): ObjectStorage {
 export function resetStorageForTests(): void {
   cached = undefined;
   cachedPrivate = undefined;
+}
+
+/** Tests only: use these stores until the next reset (e.g. one that refuses every call). */
+export function setStorageForTests(
+  store: ObjectStorage,
+  privateStore: PrivateStorage | null,
+): void {
+  cached = store;
+  cachedPrivate = privateStore;
 }

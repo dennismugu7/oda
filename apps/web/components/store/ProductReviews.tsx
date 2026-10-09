@@ -5,6 +5,7 @@
 // reported the review), tags and the seller's reply. The first page comes from the server;
 // "See more reviews" loads the next 20.
 import { useState } from 'react';
+import { SafeImg } from '@/components/SafeImg';
 
 export interface PublicReview {
   id: string;
@@ -65,8 +66,7 @@ function ReviewCard({ review, shopName }: { review: PublicReview; shopName: stri
           aria-label={zoom ? 'Show the photo smaller' : 'Show the photo bigger'}
           className="mt-3 block overflow-hidden rounded-lg bg-beige"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- plain images (decision #59) */}
-          <img
+          <SafeImg
             src={review.photoUrl}
             alt={`Photo from ${review.buyerDisplayName}`}
             loading="lazy"

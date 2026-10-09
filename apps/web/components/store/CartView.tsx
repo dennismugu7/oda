@@ -10,6 +10,7 @@ import { formatKes } from '@oda/shared';
 import { cartCount, cartTotal, type CartLine } from '@/lib/store/cart';
 import { reconcile, type CurrentProduct } from '@/lib/store/reconcile';
 import { useCart } from './useShopStore';
+import { SafeImg } from '@/components/SafeImg';
 
 export interface Suggestion {
   id: string;
@@ -209,8 +210,7 @@ export function CartView({
               className="size-24 shrink-0 overflow-hidden rounded-xl bg-beige"
             >
               {c.line.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                <img
+                <SafeImg
                   src={c.line.coverUrl}
                   alt=""
                   width={96}
@@ -304,8 +304,7 @@ export function CartView({
                   className="size-16 shrink-0 overflow-hidden rounded-lg bg-beige"
                 >
                   {s.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- plain thumbnails (decision #59)
-                    <img
+                    <SafeImg
                       src={s.coverUrl}
                       alt=""
                       width={64}

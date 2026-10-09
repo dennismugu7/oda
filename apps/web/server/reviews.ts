@@ -25,8 +25,8 @@ import { sendSellerPushes } from './push';
 import { hitLimit, secondsLeftInWindow } from './rateLimit';
 import { buyerReviewRepo, sellerReviewsRepo } from './repos/reviews';
 import { body, handle } from './routeHandler';
-import { getStorage, StorageUnavailableError } from './storage';
-import { flushDeletions, queueDeletions, UploadsOffError } from './uploads';
+import { getStorage } from './storage';
+import { flushDeletions, queueDeletions, storageStep } from './uploads';
 
 // Review endpoints (M7, decision #73): the buyer's review through the order token (same Origin
 // check and per-IP lookup limit as the other buyer endpoints), the seller's Reviews screen,
@@ -114,13 +114,10 @@ export async function postReviewUpload(
       input.contentType
     ];
     const key = `${repo.photoPrefix}${randomUUID()}.${ext}`;
-    try {
-      const upload = await getStorage().presignPut(key, input.contentType, input.size);
-      return json({ key, publicUrl: getStorage().publicUrl(key), ...upload });
-    } catch (error) {
-      if (error instanceof StorageUnavailableError) throw new UploadsOffError();
-      throw error;
-    }
+    const upload = await storageStep(() =>
+      getStorage().presignPut(key, input.contentType, input.size),
+    );
+    return json({ key, publicUrl: getStorage().publicUrl(key), ...upload });
   } catch (error) {
     return toResponse(error);
   }

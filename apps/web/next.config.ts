@@ -1,8 +1,11 @@
 import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
+import { assertDeploymentConfig, indexable } from './server/deployment';
 import { staticSecurityHeaders } from './server/securityHeaders';
 
 const dev = process.env.NODE_ENV === 'development';
+// A production build without its config fails here, so the running deployment stays up.
+if (process.env.VERCEL) assertDeploymentConfig();
 const toList = (headers: Record<string, string>) =>
   Object.entries(headers).map(([key, value]) => ({ key, value }));
 
@@ -24,6 +27,10 @@ const config: NextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: toList(staticSecurityHeaders(dev)) },
+      // Only production is indexed: staging and previews tell search engines to stay away.
+      ...(indexable()
+        ? []
+        : [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }]),
       {
         source: '/api/:path*',
         headers: [

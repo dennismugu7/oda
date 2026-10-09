@@ -98,6 +98,7 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
         .select({
           products: sql<number>`(select count(*)::int from products where shop_id = ${shop.id} and deleted_at is null)`,
           areas: sql<number>`(select count(*)::int from delivery_areas where shop_id = ${shop.id} and deleted_at is null)`,
+          withoutPhoto: sql<number>`(select count(*)::int from products p where p.shop_id = ${shop.id} and p.deleted_at is null and not exists (select 1 from product_photos f where f.product_id = p.id))`,
         })
         .from(t.shops)
         .where(eq(t.shops.id, shop.id));
@@ -149,6 +150,7 @@ export function onboardingUserRepo(db: Db, ctx: UserCtx | SellerCtx) {
           hasLogo: !!shop.logoPath,
           hasSocialHandle: !!(shop.tiktokHandle || shop.instagramHandle),
           deliveryAreaCount: counts?.areas ?? 0,
+          productsWithoutPhoto: counts?.withoutPhoto ?? 0,
           pickupEnabled: shop.pickupEnabled,
           ticks: (shop.checklist ?? {}) as Record<string, string>,
         }),

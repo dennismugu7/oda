@@ -33,6 +33,9 @@ jobs:
     name: Sitting 1 account (${{ inputs.action }})
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    # Staging only (M11 CP2): this Environment holds no production secret or address;
+    # scripts/check-workflows.mjs fails CI if this tool could reach production.
+    environment: staging
     timeout-minutes: 10
     env:
       DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
@@ -117,7 +120,7 @@ jobs:
         if: inputs.action == 'delete'
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          URL: https://oda-eta.vercel.app/api/cron/purge
+          URL: ${{ vars.BASE_URL }}/api/cron/purge
           ACTOR: ${{ github.actor }}
         run: |
           for dry in true false; do

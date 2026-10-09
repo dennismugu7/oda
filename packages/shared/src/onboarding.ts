@@ -52,20 +52,29 @@ export const onboardingPhoto = z.strictObject({
 export const PRODUCT_PHOTOS_MAX = 5;
 
 /** Step 4: the first product. The first photo is the cover; up to 5 photos. */
-export const onboardingProduct = z.strictObject({
-  name: requiredText(1, 80, 'Product name'),
-  price: shillings('Price').min(1, { error: 'Price must be at least KSh 1.' }),
-  // Presets are suggestions: sellers add their own ("One size", "42 wide") and remove any.
-  sizes: z
-    .array(requiredText(1, SIZE_MAX_LENGTH, 'A size'))
-    .max(SIZES_MAX, { error: `Add at most ${SIZES_MAX} sizes.` })
-    .transform((list) => [...new Set(list)])
-    .default([]),
-  photos: z
-    .array(onboardingPhoto)
-    .min(1, { error: 'Add a photo of the product.' })
-    .max(PRODUCT_PHOTOS_MAX, { error: `Add at most ${PRODUCT_PHOTOS_MAX} photos.` }),
-});
+export const onboardingProduct = z
+  .strictObject({
+    name: requiredText(1, 80, 'Product name'),
+    price: shillings('Price').min(1, { error: 'Price must be at least KSh 1.' }),
+    // Presets are suggestions: sellers add their own ("One size", "42 wide") and remove any.
+    sizes: z
+      .array(requiredText(1, SIZE_MAX_LENGTH, 'A size'))
+      .max(SIZES_MAX, { error: `Add at most ${SIZES_MAX} sizes.` })
+      .transform((list) => [...new Set(list)])
+      .default([]),
+    photos: z
+      .array(onboardingPhoto)
+      .max(PRODUCT_PHOTOS_MAX, { error: `Add at most ${PRODUCT_PHOTOS_MAX} photos.` }),
+    /**
+     * The app sends this only while photo uploads are paused (storage stopped, decision #93
+     * D1): the product is saved without a photo and "Add a product photo" stays open.
+     */
+    photoLater: z.literal(true).optional(),
+  })
+  .refine((p) => p.photos.length > 0 || p.photoLater, {
+    error: 'Add a photo of the product.',
+    path: ['photos'],
+  });
 export type OnboardingProduct = z.infer<typeof onboardingProduct>;
 
 /** Step 5: where buyers pay, or Skip (buyers pay on delivery until an account is added). */
@@ -100,6 +109,8 @@ export const FINISH_ITEMS = [
   'reach',
   'delivery',
   'tested_whatsapp',
+  // Only listed while a product has no photo (saved while uploads were paused, #93 D1).
+  'product_photo',
 ] as const;
 export type FinishItem = (typeof FINISH_ITEMS)[number];
 
@@ -111,6 +122,7 @@ const FINISH_LABELS: Record<FinishItem, string> = {
   reach: 'Add more ways buyers reach you',
   delivery: 'Add delivery options',
   tested_whatsapp: 'Test your WhatsApp link',
+  product_photo: 'Add a product photo',
 };
 
 export interface ChecklistFacts {
@@ -121,6 +133,8 @@ export interface ChecklistFacts {
   hasSocialHandle: boolean;
   deliveryAreaCount: number;
   pickupEnabled: boolean;
+  /** Live products without a photo (saved while uploads were paused); 0 when not given. */
+  productsWithoutPhoto?: number;
   /** shops.checklist: items without their own data, ticked with a timestamp. */
   ticks: Partial<Record<'shared_link' | 'tested_whatsapp', string>>;
 }
@@ -141,8 +155,12 @@ export function finishYourShop(facts: ChecklistFacts): FinishYourShop {
     reach: facts.hasSocialHandle,
     delivery: facts.deliveryAreaCount >= 1 || facts.pickupEnabled,
     tested_whatsapp: !!facts.ticks.tested_whatsapp,
+    product_photo: false,
   };
-  const items = FINISH_ITEMS.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
+  const listed = FINISH_ITEMS.filter(
+    (id) => id !== 'product_photo' || (facts.productsWithoutPhoto ?? 0) > 0,
+  );
+  const items = listed.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
   const count = items.filter((i) => i.done).length;
   return { items, done: count, total: items.length, complete: count === items.length };
 }
