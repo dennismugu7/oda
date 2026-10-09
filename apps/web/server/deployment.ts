@@ -9,6 +9,32 @@
 /** Production's public address (the plan's one fixed value; staging may never use it). */
 export const PRODUCTION_BASE_URL = 'https://oda.mugu-labs.com';
 
+/** The branch production deploys from: release-production moves it (decision #95). */
+export const PRODUCTION_BRANCH = 'production';
+
+/**
+ * Every variable the check below reads that Next doesn't inline (NEXT_PUBLIC_*). turbo.json
+ * passes each one to the build (a test checks it): Turborepo hides unlisted variables from the
+ * build, and the check would then fail a correctly configured production (seen 2026-10-09).
+ */
+export const DEPLOYMENT_CHECK_ENV = [
+  'VERCEL',
+  'VERCEL_ENV',
+  'VERCEL_GIT_COMMIT_REF',
+  'PUBLIC_SHOP_BASE_URL',
+  'BETTER_AUTH_URL',
+  'STORAGE_DRIVER',
+  'STORAGE_PUBLIC_BASE_URL',
+  'EMAIL_TRANSPORT',
+  'RESEND_API_KEY',
+  'EMAIL_FROM',
+  'BETTER_AUTH_SECRET',
+  'CRON_SECRET',
+  'OPS_SECRET',
+  'EXPO_ACCESS_TOKEN',
+  'DATABASE_URL',
+] as const;
+
 export type OdaEnvironment = 'production' | 'staging' | 'preview' | 'local';
 
 type Env = Record<string, string | undefined>;
@@ -57,6 +83,11 @@ export function productionConfigProblems(env: Env = process.env): string[] {
   const missing = (name: string) => !env[name]?.trim();
   if (env.VERCEL_ENV && env.VERCEL_ENV !== 'production') {
     problems.push('Production builds only from its own Production environment.');
+  }
+  if (env.VERCEL_GIT_COMMIT_REF && env.VERCEL_GIT_COMMIT_REF !== PRODUCTION_BRANCH) {
+    problems.push(
+      `Production builds only from the ${PRODUCTION_BRANCH} branch (release-production).`,
+    );
   }
   if (shopBase !== PRODUCTION_BASE_URL) {
     problems.push(`PUBLIC_SHOP_BASE_URL must be ${PRODUCTION_BASE_URL}.`);

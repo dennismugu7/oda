@@ -36,6 +36,8 @@ Newest entries at the top.
 - **GitHub `production-jobs`:** variable `BASE_URL=https://oda.mugu-labs.com`; secrets `PRODUCTION_NEON_DATABASE_URL_UNPOOLED`, `PRODUCTION_CRON_SECRET`, `PRODUCTION_OPS_SECRET` (same values as Vercel's), `PRODUCTION_ODA_APP_DB_PASSWORD`, `PRODUCTION_VERCEL_DEPLOY_HOOK`. Values generated and piped, never printed.
 - **Code (this PR):** `production-guard.yml` (red on any change of `production` that isn't release-production's; logic dry-run against the real activity list: no false alarm, and a fake hand push and force push are flagged); release-production's comments and `CLAUDE.md` say who starts a release.
 
+- **Found by PR #83's checks:** oda-production built the PR branch as its *Production* (Vercel's first-deployment rule); the guard failed it (deployment `dpl_7tQKLrwW7AY8BcGo98N2v5aVAZCa`, state Error, nothing served). Fixed: the ignore step and the guard require the `production` branch; `turbo.json` passes the guard's variables to the build (the log showed them hidden). Tests in `server/deployment.test.ts` (13, incl. the ignore script and turbo.json sync). Decision #95 f.
+
 **Next:** the owner's remaining dashboard steps, one at a time.
 
 ## 2026-10-09 · M11 CP2 part 1: production code (Blob stop, config guard, workflows)
