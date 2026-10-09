@@ -2,7 +2,7 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-09, M10 gate)
+## Handoff (keep current; updated 2026-10-09, M11 plan approved)
 
 **Current state**
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
@@ -12,14 +12,27 @@ Newest entries at the top.
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M11 (launch): Claude proposes the M11 plan (`docs/m11-plan.md`) for the owner's approval; nothing starts before that. M11 must include what M10 carried forward (M10 gate entry below), including the hands-on real-device check of the production build (#92 d).
+**Next step:** M11 CP1 (branch `m11-cp1`): the contract migrations (drop `profiles.is_admin` from the code, then migration 0009) and the least-privilege `oda_app` role, then 🛑 review stop A. Plan `docs/m11-plan.md` (approved, decision #93).
 
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
+- **Owner:** tell Claude your Play developer account type, personal or organisation (#93 D13: the answer still had the template text).
+- **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · M11 plan approved (branch `m11-plan`)
+
+- **Catch-up check:** `main` clean = `origin/main` = `af80978`; `m10-done` (annotated) → `af80978`.
+- **Plan:** `docs/m11-plan.md`, approved with the owner's answers, **decision #93**:
+  - **D1:** Vercel Hobby through closed testing, with launch checklist L1. A Blob stop must break nothing (CP2).
+  - **The onboarding change:** while uploads are paused, the seller can finish onboarding without a first photo.
+  - **D2–D12:** as recommended.
+  - **D13:** the gate ends at closed testing live and the real-device check passed. The account type is still to come.
+- `milestones.md` M11 points to the plan.
+- **Next:** CP1.
 
 ## 2026-10-09 · M10 gate passed (branch `m10-gate`)
 

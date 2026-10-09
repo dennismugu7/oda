@@ -99,4 +99,5 @@ Removed by decision #72 (owner Step 77): no `/admin`. Its jobs moved: the till b
 - **Accept:** a written review report in `docs/hardening-report.md` with every issue fixed or consciously deferred; a suspended shop returns 404 and unsuspending restores it, both logged (tests).
 
 ## M11 · Launch
+**Plan: `docs/m11-plan.md`** (approved 2026-10-09, decision #93): CP1 contract migrations + `oda_app` role → CP2 production web (Vercel Blob instead of R2, #93 D2) → CP3 legal text + production build → CP4 closed testing + real-device check. The gate ends at closed testing live and the real-device check passed (#93 D13); the store listing and the production track are the owner's.
 Production Neon + R2 + web on `oda.mugu-labs.com`, DNS + email domain records, production EAS build (AAB), Play Console listing, privacy policy URL, data safety form, closed testing track, then production. Guided step by step outside Claude Code where needed.
