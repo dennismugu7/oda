@@ -120,7 +120,14 @@ describe('ensureAppRole', () => {
     await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
     const again = await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
     expect(again).toEqual({ exists: true, created: false });
-    expect((await checkAppLogin(appRoleUrl(ownerUrl, password, appRole))).user).toBe(appRole);
+    // The updated password works (this role has no grants here, so only log in).
+    const login = new Pool({ connectionString: appRoleUrl(ownerUrl, password, appRole), max: 1 });
+    try {
+      const who = await login.query<{ user: string }>('select current_user as user');
+      expect(who.rows[0]?.user).toBe(appRole);
+    } finally {
+      await login.end();
+    }
   });
 
   it('gives tables created by later migrations the same grants', async () => {
