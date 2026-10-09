@@ -3,8 +3,9 @@
 // The web app connects as `oda_app`: rows only (SELECT / INSERT / UPDATE / DELETE), no DDL, no
 // TRUNCATE, owns nothing, member of no role. Migrations, backups and this script keep the
 // owner role. The role is created here in SQL, never in the Neon console: console roles join
-// `neon_superuser`. The password reaches Postgres only as a SCRAM verifier computed here, so
-// the plain password never appears in a statement (or a server log).
+// `neon_superuser`. Elsewhere the password reaches Postgres only as a SCRAM verifier computed
+// here. Neon refuses verifiers ("Neon only supports being given plaintext passwords"), so on a
+// Neon host the password is sent as-is, over TLS, and Neon stores its own SCRAM hash.
 import { createHash, createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
 import { Pool } from 'pg';
 
@@ -78,10 +79,14 @@ export async function ensureAppRole(opts: {
   ownerUrl: string;
   password?: string;
   role?: string;
+  /** Send the password itself instead of a SCRAM verifier (needed on Neon). */
+  plaintextPassword?: boolean;
 }): Promise<AppRoleReport> {
   const role = opts.role ?? APP_ROLE;
   if (!ROLE_NAME.test(role)) throw new Error('Invalid role name');
   const verifier = opts.password ? scramVerifier(opts.password) : null;
+  // scramVerifier checked the password (24–128 printable ASCII); quotes are doubled.
+  const secret = opts.plaintextPassword ? opts.password?.replaceAll("'", "''") : verifier;
   const pool = new Pool({ connectionString: opts.ownerUrl, max: 1 });
   try {
     const found = await pool.query('select 1 from pg_roles where rolname = $1', [role]);
@@ -94,11 +99,11 @@ export async function ensureAppRole(opts: {
       }
       const attrs = 'login nosuperuser nocreatedb nocreaterole noreplication nobypassrls noinherit';
       if (!exists) {
-        await pool.query(`create role ${role} with ${attrs} password '${verifier}'`);
+        await pool.query(`create role ${role} with ${attrs} password '${secret}'`);
         exists = true;
         created = true;
       } else {
-        await pool.query(`alter role ${role} with ${attrs} password '${verifier}'`);
+        await pool.query(`alter role ${role} with ${attrs} password '${secret}'`);
       }
     }
     if (!exists) return emptyReport(role);
@@ -177,6 +182,11 @@ export function appRoleUrl(ownerUrl: string, password: string, role = APP_ROLE):
   url.username = role;
   url.password = password;
   return url.toString();
+}
+
+/** True for a Neon host (which needs `plaintextPassword`). */
+export function isNeonHost(host: string): boolean {
+  return host.endsWith('.neon.tech');
 }
 
 /** Neon's pooled host for a direct host (`ep-x.region.aws.neon.tech` → `ep-x-pooler.…`). */

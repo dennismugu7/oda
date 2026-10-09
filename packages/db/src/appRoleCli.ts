@@ -4,13 +4,24 @@
 // password and lets it test a login. Without the password and without the role it does
 // nothing. Prints host names and counts, never a password or connection string.
 import { appendFileSync } from 'node:fs';
-import { appRoleOk, appRoleUrl, checkAppLogin, ensureAppRole, neonPooledHost } from './appRole';
+import {
+  appRoleOk,
+  appRoleUrl,
+  checkAppLogin,
+  ensureAppRole,
+  isNeonHost,
+  neonPooledHost,
+} from './appRole';
 
 const ownerUrl = process.env.DATABASE_URL_UNPOOLED;
 if (!ownerUrl) throw new Error('DATABASE_URL_UNPOOLED is not set (the owner role, direct string)');
 const password = process.env.ODA_APP_DB_PASSWORD || undefined;
 
-const report = await ensureAppRole({ ownerUrl, password });
+const report = await ensureAppRole({
+  ownerUrl,
+  password,
+  plaintextPassword: isNeonHost(new URL(ownerUrl).hostname),
+});
 const lines: string[] = [];
 
 if (!report.exists) {
