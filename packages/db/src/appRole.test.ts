@@ -102,6 +102,24 @@ describe('ensureAppRole', () => {
     await ensureAppRole({ ownerUrl, password, role });
   });
 
+  it('re-runs as a non-superuser owner with CREATEROLE, like Neon’s owner role', async () => {
+    const ownerLike = 'oda_owner_like_db_test';
+    const ownerPass = 'owner-like-db-test-password-5h8q';
+    await owner.query(
+      `do $$ begin
+         if not exists (select 1 from pg_roles where rolname = '${ownerLike}') then
+           create role ${ownerLike} login createrole password '${ownerPass}';
+         end if;
+       end $$`,
+    );
+    const asOwnerLike = appRoleUrl(ownerUrl, ownerPass, ownerLike);
+    const appRole = 'oda_app_by_owner_like_db_test';
+    // Creating, then updating the password: the update must not touch superuser-only attributes.
+    await ensureAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    const again = await ensureAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    expect(again).toMatchObject({ created: false, passwordSet: true, elevated: [], memberOf: [] });
+  });
+
   it('gives tables created by later migrations the same grants', async () => {
     await ensureAppRole({ ownerUrl, password, role });
     await owner.query('create table if not exists app_role_probe (x int)');

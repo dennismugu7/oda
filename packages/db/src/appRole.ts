@@ -99,12 +99,15 @@ export async function ensureAppRole(opts: {
       if (!/^SCRAM-SHA-256\$\d+:[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/.test(verifier)) {
         throw new Error('Unexpected verifier format');
       }
-      const attrs = 'login nosuperuser nocreatedb nocreaterole noreplication nobypassrls noinherit';
+      const attrs = 'login nocreatedb nocreaterole noinherit';
       if (!exists) {
-        await pool.query(`create role ${role} with ${attrs} password '${secret}'`);
+        const create = `${attrs} nosuperuser noreplication nobypassrls`;
+        await pool.query(`create role ${role} with ${create} password '${secret}'`);
         exists = true;
         created = true;
       } else {
+        // Only a superuser may even restate nosuperuser / noreplication / nobypassrls (Neon's
+        // owner isn't one); inspect() below fails the check if any of them is on.
         await pool.query(`alter role ${role} with ${attrs} password '${secret}'`);
       }
     }
