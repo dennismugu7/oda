@@ -3,10 +3,13 @@ name: release-production
 # Releases a commit to production (M11 CP2, decision #93 D3/D11). Manual only, from `main`.
 # 1. check: the commit is on `main`, CI passed on it, and staging got it (a green
 #    migrate-staging run for that very commit). Empty input = the newest such commit.
-# 2. approve: GitHub Environment `production-release` asks the owner to approve (GitHub mobile
-#    works). Not `production`: Vercel's deployments already use "Production" (names ignore case).
-# 3. advance: fast-forwards the `production` branch to the commit (never a force push; a
-#    ruleset blocks every other update of that branch).
+# 2. approve: the GitHub Environment `production-release` (from `main` only). GitHub Free
+#    can't require a reviewer on a private repository, so the approval is who starts the run:
+#    only the owner, or Claude on the owner's go for that release (decision #95). Not
+#    `production`: Vercel's deployments already use "Production" (names ignore case).
+# 3. advance: fast-forwards the `production` branch to the commit (never a force push).
+#    GitHub Free can't lock the branch either: production-guard.yml turns red when anything
+#    else moves it.
 # 4. deploy (deploy.yml, target production): migrate production Neon, re-apply the app role's
 #    grants, Vercel Deploy Hook of the oda-production project, wait for /api/health.
 # So production only ever runs reviewed code that has already run on staging.

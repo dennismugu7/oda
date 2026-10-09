@@ -1,0 +1,56 @@
+name: production-guard
+
+# Alerts when the `production` branch moves any other way than through release-production
+# (M11 CP2, decision #95: GitHub Free has no rulesets or required reviewers on a private
+# repository, so the branch can't be locked; this makes a hand push visible instead).
+# release-production moves the branch with the workflow's GITHUB_TOKEN, so its pushes are by
+# `github-actions[bot]`. Any other update, deletion or force push of `production` (by
+# anyone, from any device) turns this run red, and GitHub emails the owner. The owner's
+# one-time creation of the branch (2026-10-09, activity 45975484135) is the only exception.
+# Runs on a push to `production` (a release's own push starts no workflow, so a run there
+# means a hand push), every hour as a backstop (a hand push of a commit without this file
+# starts nothing), and by hand.
+on:
+  push:
+    branches: [production]
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: production-guard
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Only release-production moves production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check who moved the branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BOOTSTRAP_ACTIVITY: '45975484135'
+        run: |
+          activity=$(gh api --paginate "repos/$REPO/activity?ref=refs/heads/production&per_page=100" \
+            --jq '.[] | [.id, .activity_type, .actor.login, .timestamp, .after] | @tsv')
+          bad=$(printf '%s\n' "$activity" | awk -F'\t' -v boot="$BOOTSTRAP_ACTIVITY" \
+            'NF && $1 != boot && ($3 != "github-actions[bot]" || $2 != "push")')
+          {
+            echo "### Production branch"
+            echo "- Moves found: $(printf '%s\n' "$activity" | grep -c . || true)"
+            echo "- Current commit: \`$(gh api "repos/$REPO/commits/production" --jq '.sha[0:7]')\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$bad" ]; then
+            echo "::error::production was changed outside release-production. Check these and release again from main."
+            printf '%s\n' "$bad" | while IFS=$'\t' read -r id type actor at sha; do
+              echo "::error::$type by $actor at $at (commit ${sha:0:7}, activity $id)"
+              echo "- ❌ $type by $actor at $at (commit \`${sha:0:7}\`)" >> "$GITHUB_STEP_SUMMARY"
+            done
+            exit 1
+          fi
+          echo "- ✅ Only release-production has moved it." >> "$GITHUB_STEP_SUMMARY"

@@ -5,7 +5,7 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-09, M11 CP2 in progress)
 
 **Current state**
-- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 in progress:** the code (PR "M11 CP2") is merged first; then the owner's dashboard steps, one at a time; then Claude's config, the first release and the smoke check; then review stop B.
+- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 in progress:** the code is merged (PR #82); owner steps 1 (Neon) and 2 (the `production` branch) done; Claude set up Vercel `oda-production`, its Blob stores, domain, settings, secrets and Deploy Hook (#95). Next: the owner's remaining dashboard steps, one at a time (backups token, Cloudflare DNS, Resend, Sentry, backup passphrase, Expo token); then db-app-role (production), `DATABASE_URL`, the first release (started by the owner, #95 a), `PRODUCTION_LIVE`, the smoke check; then review stop B.
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup** (02:30 staging; production at 02:50 once `PRODUCTION_LIVE`), **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
@@ -19,11 +19,24 @@ Newest entries at the top.
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
-- **Owner:** tell Claude your Play developer account type, personal or organisation (#93 D13: the answer still had the template text).
+- **Owner:** confirm the Play developer account type before CP4 (#93 D13); until then the plan assumes a personal account: 12 testers for 14 days (#95 e).
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · M11 CP2 part 2: production setup (owner steps 1–2, Vercel by CLI, production-guard)
+
+**Owner's answers (decision #95):** A, free: only the owner starts release-production (Claude only on the owner's go for that release), plus a guard on the `production` branch; yes to Vercel by the laptop's CLI; D13 open, plan for a personal Play account.
+
+**Done:**
+- **Owner step 1 (Neon `oda-production`):** `PRODUCTION_NEON_DATABASE_URL_UNPOOLED` exists in `production-jobs` and not as a repository secret (checked by name).
+- **Owner step 2:** branch `production` created from `main` at `68599a6` (2026-10-09 15:16 UTC, activity 45975484135); the laptop wasn't allowed to create it, and Vercel needs it for the production branch and the Deploy Hook.
+- **Claude, Vercel CLI (#95 d):** project `oda-production` (`prj_AOMklSRbxKajxgKOe0JiAzOCp0Q9`; root `apps/web`, Node 24.x, fra1, fluid, production branch `production`, protection as staging's); env `ODA_VERCEL_PROJECT=production` (all), `NEXT_PUBLIC_ODA_ENV=production`, `ENABLE_EXPERIMENTAL_COREPACK=1`, `PUBLIC_SHOP_BASE_URL`, `BETTER_AUTH_URL`, `EMAIL_FROM`, `STORAGE_DRIVER=vercel-blob`, `STORAGE_PUBLIC_BASE_URL`, `ODA_SUPPORT_EMAIL`, secrets `BETTER_AUTH_SECRET`, `CRON_SECRET`, `OPS_SECRET` (Production, Sensitive). Blob (fra1): `oda-production-images` public → `BLOB_READ_WRITE_TOKEN`; `oda-production-feedback` private → `FEEDBACK_BLOB_READ_WRITE_TOKEN`; `oda-production-backups` private, unconnected. Domain `oda.mugu-labs.com` added (waits for the Cloudflare CNAME). Deploy Hook `production-after-migrate` (ref `production`) → `PRODUCTION_VERCEL_DEPLOY_HOOK`.
+- **GitHub `production-jobs`:** variable `BASE_URL=https://oda.mugu-labs.com`; secrets `PRODUCTION_NEON_DATABASE_URL_UNPOOLED`, `PRODUCTION_CRON_SECRET`, `PRODUCTION_OPS_SECRET` (same values as Vercel's), `PRODUCTION_ODA_APP_DB_PASSWORD`, `PRODUCTION_VERCEL_DEPLOY_HOOK`. Values generated and piped, never printed.
+- **Code (this PR):** `production-guard.yml` (red on any change of `production` that isn't release-production's; logic dry-run against the real activity list: no false alarm, and a fake hand push and force push are flagged); release-production's comments and `CLAUDE.md` say who starts a release.
+
+**Next:** the owner's remaining dashboard steps, one at a time.
 
 ## 2026-10-09 · M11 CP2 part 1: production code (Blob stop, config guard, workflows)
 
