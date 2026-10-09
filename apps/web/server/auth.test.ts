@@ -46,7 +46,7 @@ describe('Better Auth against oda_test', () => {
     const profile = await getDb().query.profiles.findFirst({
       where: eq(schema.profiles.id, res.userId),
     });
-    expect(profile).toMatchObject({ id: res.userId, isAdmin: false });
+    expect(profile).toMatchObject({ id: res.userId });
 
     const session = await getAuth().api.getSession({
       headers: new Headers({ authorization: `Bearer ${res.token}` }),

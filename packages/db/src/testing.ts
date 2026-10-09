@@ -2,6 +2,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
+import { APP_ROLE, appRoleUrl, ensureAppRole } from './appRole';
 import type { Db } from './client';
 import { runMigrations } from './migrator';
 import * as schema from './schema';
@@ -38,20 +39,53 @@ async function ensureDatabase(url: string): Promise<void> {
 }
 
 /** Vitest globalSetup: make sure the test database exists and is fully migrated. */
-export async function prepareTestDatabase(name?: string): Promise<string> {
+export async function prepareTestDatabase(
+  name?: string,
+  opts: { appRole?: boolean } = {},
+): Promise<string> {
   const url = testDatabaseUrl(name);
   await ensureDatabase(url);
   await runMigrations(url);
+  // apps/web's server tests run as the app's least-privilege role, like production (#93 D5),
+  // so a query that needs more than row access fails here first.
+  if (opts.appRole) await ensureAppRole({ ownerUrl: url, password: TEST_APP_ROLE_PASSWORD });
   return url;
+}
+
+/** Local and CI only: the password of the app role on the test server. */
+const TEST_APP_ROLE_PASSWORD = 'oda-app-role-local-test-only-7f3k2';
+
+/** The test database URL as the app role (see prepareTestDatabase). */
+export function testAppRoleUrl(ownerUrl: string): string {
+  return appRoleUrl(ownerUrl, TEST_APP_ROLE_PASSWORD, APP_ROLE);
+}
+
+let ownerPool: Pool | undefined;
+
+/**
+ * Test clean-up needs the owner role (TRUNCATE): when apps/web's setup sets
+ * ODA_TEST_OWNER_DATABASE_URL, truncateAll uses that instead of the app-role connection.
+ */
+function cleanupDb(db: Db): Db | Pool {
+  const owner = process.env.ODA_TEST_OWNER_DATABASE_URL;
+  if (!owner) return db;
+  ownerPool ??= new Pool({ connectionString: owner, max: 1, allowExitOnIdle: true });
+  return ownerPool;
 }
 
 /** Empties every application and auth table (keeps the schema and migration history). */
 export async function truncateAll(db: Db): Promise<void> {
-  const tables = await db.execute<{ name: string }>(sql`
-    select quote_ident(tablename) as name from pg_tables where schemaname = 'public'`);
-  if (tables.rows.length === 0) return;
-  const list = tables.rows.map((r) => r.name).join(', ');
-  await db.execute(sql.raw(`truncate ${list} restart identity cascade`));
+  const target = cleanupDb(db);
+  const run = async <T extends Record<string, unknown>>(text: string) =>
+    target instanceof Pool
+      ? (await target.query<T>(text)).rows
+      : (await target.execute<T>(sql.raw(text))).rows;
+  const tables = await run<{ name: string }>(
+    `select quote_ident(tablename) as name from pg_tables where schemaname = 'public'`,
+  );
+  if (tables.length === 0) return;
+  const list = tables.map((r) => r.name).join(', ');
+  await run(`truncate ${list} restart identity cascade`);
 }
 
 /** A seller (auth user + profile) with a shop, inserted directly (no Better Auth). */

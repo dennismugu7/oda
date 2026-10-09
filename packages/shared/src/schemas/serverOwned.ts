@@ -10,7 +10,7 @@ export const SERVER_OWNED_FIELDS = [
   'createdAt',
   'updatedAt',
   'deletedAt',
-  // profiles
+  // profiles (`is_admin` was dropped in M11, decision #93; the key stays refused)
   'isAdmin',
   'expoPushTokens',
   // shops

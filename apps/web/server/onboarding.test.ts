@@ -135,7 +135,7 @@ describe('steps 1–2: answers in the draft', () => {
     const profile = await db().query.profiles.findFirst({
       where: eq(schema.profiles.id, s.userId),
     });
-    expect(profile).toMatchObject({ onboardingDraft: null, isAdmin: false });
+    expect(profile).toMatchObject({ onboardingDraft: null });
   });
 });
 

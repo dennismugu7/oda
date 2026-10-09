@@ -74,6 +74,13 @@ jobs:
           DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
         run: pnpm db:migrate
 
+      # Grants for the app role `oda_app` on any table the migration added (decision #93 D5).
+      # No password here: if the role doesn't exist yet, this does nothing.
+      - name: App role grants
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.NEON_STAGING_DATABASE_URL_UNPOOLED }}
+        run: pnpm --filter @oda/db db:app-role
+
       - name: Deploy (Vercel Deploy Hook for main)
         env:
           DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}

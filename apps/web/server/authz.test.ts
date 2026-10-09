@@ -485,9 +485,10 @@ describe('2. anon lockout', () => {
   });
 });
 
-// 3. admin: no back office (decision #72); the column stays until a later contract migration.
+// 3. admin: no back office (decision #72); `profiles.is_admin` is dropped in M11 (#93), and
+// every whitelist still refuses the key.
 describe('3. is_admin', () => {
-  it('is_admin can’t be set through any whitelist', async () => {
+  it('is_admin can’t be sent through any whitelist, and profiles have no such field', async () => {
     for (const [name, s] of Object.entries(WRITE_SCHEMAS)) {
       for (const key of ['isAdmin', 'is_admin']) {
         expect(await status(() => parseInput(s, { [key]: true })), `${name}.${key}`).toBe(422);
@@ -497,7 +498,8 @@ describe('3. is_admin', () => {
       await status(() => parseInput(profileUpdate, { firstName: 'Amani', isAdmin: true })),
     ).toBe(422);
     const profile = await db.query.profiles.findFirst({ where: eq(t.profiles.id, A.userId) });
-    expect(profile?.isAdmin).toBe(false);
+    expect(profile).toBeDefined();
+    expect(profile).not.toHaveProperty('isAdmin');
   });
 });
 
