@@ -2,17 +2,19 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-09, M11 plan approved)
+## Handoff (keep current; updated 2026-10-09, M11 CP1 at review stop A)
 
 **Current state**
+- **M11:** plan approved (#93); CP1 done, at review stop A.
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
+- **Database role (#93 D5):** staging's web app connects as **`oda_app`** (rows only) through Neon's pooler; migrations, backups and the workflows' psql steps keep the owner role (`NEON_STAGING_DATABASE_URL_UNPOOLED`). Its password is in GitHub Environment `staging` → `ODA_APP_DB_PASSWORD` and in Vercel `DATABASE_URL` (Production + Preview, Sensitive). **Actions → db-app-role** re-applies and checks it; migrate-staging re-applies the grants after each migration. **Rollback** if ever needed: the owner pastes Neon's pooled owner string into Vercel `DATABASE_URL` and redeploys.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** M11 CP1 (branch `m11-cp1`): the contract migrations (drop `profiles.is_admin` from the code, then migration 0009) and the least-privilege `oda_app` role, then 🛑 review stop A. Plan `docs/m11-plan.md` (approved, decision #93).
+**Next step:** 🛑 **review stop A** (M11 CP1, entry below). Nothing in CP2 starts before the owner's go-ahead. Plan `docs/m11-plan.md` (decision #93).
 
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
@@ -22,6 +24,45 @@ Newest entries at the top.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · M11 CP1: contract migrations + the `oda_app` role (review stop A)
+
+**Contract (expand → deploy → contract):**
+- **Release 1, PR #77:** `profiles.is_admin` was taken out of the Drizzle schema and the tests (whitelists still refuse the key). Live on staging at `8fe4f77` before release 2.
+- **Release 2, PR #79:** migration **0009** drops `orders_idempotency_key_unique` and `profiles.is_admin`. migrate-staging run 37891143717 applied it; staging runs `5da68a1`.
+- A key another shop used now makes a new order (test updated). `data-model.md` follows.
+
+**App role (#93 D5, S11):**
+- `packages/db/src/appRole.ts` and `db:app-role`:
+  - the role logs in; no superuser / createdb / createrole / replication / bypassrls; noinherit;
+  - row access only on every table, plus sequences, functions and default privileges; CREATE on `public` taken back;
+  - the report covers grants, memberships, attributes, objects owned and open connections per role;
+  - a login check over the direct and pooled hosts confirms create, drop and truncate are refused.
+- **apps/web's server tests run as `oda_app`.** Clean-up uses the owner.
+- Workflows: **db-app-role** (manual, staging; secret in GitHub Environment `staging`); migrate-staging re-applies the grants; CI runs the script on the reduced install.
+
+**Fixes found on the way:**
+- **PR #78:** Neon refuses SCRAM verifiers ("Neon only supports being given plaintext passwords", run 37888790766, nothing created). On Neon hosts the password is now sent as-is over TLS.
+- **PR #80:** re-runs failed at `ALTER ROLE` (run 37891398771). Neon's owner isn't a superuser, and restating `nosuperuser` / `nocreatedb` needs those attributes. An update now sets only the password, `login` and `noinherit`; the report still fails the run on any elevated attribute. New test as a non-superuser `CREATEROLE` owner (CI's own user is a superuser, which hid it).
+
+**Staging switch:**
+- **Role created:** db-app-role run **37889477061**: 28/28 tables, member of no role, nothing elevated, no CREATE, owns nothing, create / drop / truncate refused over both hosts.
+- **Vercel:** `DATABASE_URL` (Production + Preview) replaced by `oda_app` on the pooled host. Written from a password generated on the laptop and piped without printing; the local copy deleted.
+- **Checks after the switch:**
+  - migrate-staging run 37889633350 redeployed, `/api/health` ok;
+  - cron-expire-orders run 37889812927 green;
+  - a failed sign-in answers 401, so the rate-limit write works.
+- **Evidence:** run **37893301481**, right after traffic: open connections **`oda_app` 3**, none as the owner.
+
+**Docs:** `hardening-report.md` S11 (fixed on staging; production in CP2), S12 and S17 (contract done).
+
+**Not run locally:** the database tests (Docker is off; starting it would restart bookflow's containers). CI ran them on every PR.
+
+**🛑 Review stop A, for the owner:**
+1. Actions → **db-app-role** run 37893301481 → summary: 28 of 28, "member of: no role", "elevated attributes: none", `oda_app 3` connections, "refused" ×3 on both logins.
+2. Actions → **migrate-staging** run 37891143717: green; its "App role grants" step shows the same report.
+3. https://oda-eta.vercel.app/api/health shows `"ok":true` (commit `5da68a1` or newer).
+4. Optional: Neon console → oda-staging → Roles: `oda_app` is listed.
 
 ## 2026-10-09 · M11 plan approved (branch `m11-plan`)
 
