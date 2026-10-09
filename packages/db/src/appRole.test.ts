@@ -6,6 +6,7 @@ import {
   appRoleUrl,
   checkAppLogin,
   ensureAppRole,
+  isNeonHost,
   neonPooledHost,
   scramVerifier,
 } from './appRole';
@@ -48,6 +49,8 @@ describe('neonPooledHost', () => {
       'ep-calm-sun-a1b2c3-pooler.eu-central-1.aws.neon.tech',
     );
     expect(neonPooledHost('localhost')).toBeNull();
+    expect(isNeonHost('ep-calm-sun-a1b2c3.eu-central-1.aws.neon.tech')).toBe(true);
+    expect(isNeonHost('localhost')).toBe(false);
   });
 });
 
@@ -90,6 +93,13 @@ describe('ensureAppRole', () => {
     } finally {
       await app.end();
     }
+  });
+
+  it('also works with the password sent as-is (as on Neon)', async () => {
+    const plain = "plain-db-test-role-pass-with-quote-'-4k";
+    await ensureAppRole({ ownerUrl, password: plain, role, plaintextPassword: true });
+    expect((await checkAppLogin(appRoleUrl(ownerUrl, plain, role))).user).toBe(role);
+    await ensureAppRole({ ownerUrl, password, role });
   });
 
   it('gives tables created by later migrations the same grants', async () => {

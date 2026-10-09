@@ -3,8 +3,8 @@ name: db-app-role
 # Creates or updates the web app's least-privilege database role `oda_app` (decision #93 D5,
 # hardening report S11): rows only (select, insert, update, delete), no DDL, no truncate, owns
 # nothing, in no role (so not in neon_superuser: it's created in SQL, never in the Neon
-# console). It sets the password from the Environment secret ODA_APP_DB_PASSWORD (sent to
-# Postgres only as a SCRAM verifier), applies the grants, then logs in as the role over the
+# console). It sets the password from the Environment secret ODA_APP_DB_PASSWORD (Neon accepts
+# only the password itself, sent over TLS; Neon stores a SCRAM hash), applies the grants, then logs in as the role over the
 # direct and the pooled host and checks that create / drop / truncate are refused. The summary
 # shows host names and counts, never a password or connection string. migrate-staging re-applies
 # the grants after every migration (without the password). Production joins in M11 CP2.
