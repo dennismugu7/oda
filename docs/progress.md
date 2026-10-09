@@ -2,22 +2,66 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-09, review stop C)
+## Handoff (keep current; updated 2026-10-09, M10 gate)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93). **CP6 regression green** (automated, decision #92: Actions → staging-regression run 37830669952, 15/15 sections, 87 steps); **review stop C passed** (2026-10-09). Next: the M10 gate.
+- **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** the owner deletes the Resend key `oda-staging-regression`, then the GitHub secret `RESEND_API_KEY` (CP6 is closed, decision #92 b). Then the M10 gate (✅/❌ per exit criterion with evidence) → 🛑 the owner reviews it → tag `m10-done`.
+**Next step:** M11 (launch): Claude proposes the M11 plan (`docs/m11-plan.md`) for the owner's approval; nothing starts before that. M11 must include what M10 carried forward (M10 gate entry below), including the hands-on real-device check of the production build (#92 d).
+
+**Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · M10 gate passed (branch `m10-gate`)
+
+**Owner (gate review):** the gate list was read item by item. CI run 37881126084 (`main` `0f0498e`: format, lint, typecheck, unit tests, web build, Playwright, Expo dependency check, expo-doctor) is accepted in place of a local `check:all` (Docker left off). Two items needed fresh evidence. Claude started these runs at the owner's request:
+- **Item 11 (suspend through the Actions workflow):**
+  - **Actions → shop-suspend** run **37882467746** (`main` `0f0498e`, suspend `demo-duka`, reason "M10 gate check"): green, `{"shop":"demo-duka","suspended":true,"changed":true,"since":"2026-10-09T04:08:22.700Z"}`. `/demo-duka` answered **404** (200 before).
+  - Run **37882509339** (unsuspend, same reason): green, `{"shop":"demo-duka","suspended":false,"changed":true,"since":null}`. `/demo-duka` answered **200** again.
+  - **The two `ops_events` rows:** `changed: true` is returned only after the shop update and the `ops_events` insert commit together in one transaction (`server/suspension.ts`). The rows are `shop_suspended`, then `shop_unsuspended`, with shop `demo-duka`, actor `dennismugu7` (the GitHub user who started the run), reason "M10 gate check", and a snapshot (slug, name, previous `suspended_at`). There are no DB credentials on the laptop, so the rows were not read back directly.
+- **Item 7 (backup check):** **Actions → backup-restore-check** run **37882544482**: green. Newest backup `oda-staging-20261009T0303Z` (1.1 h old, 6 stored), restored into Postgres 18. Rows: shops 4, profiles 6, products 15, orders 9, order_items 9, reviews 0, ops_events 25. **Migrations: 9 in the backup, 9 in the repository.**
+
+**M10 exit criteria:** all ✅:
+- Security review: PR #53, `docs/hardening-report.md` S1–S18, #91.
+- States: PR #57, #84, A3.
+- Accessibility: PR #57, #65; #84, #88, #89; TalkBack at stop B.
+- Performance: P1, P2; PageSpeed ≥ 85 at stop B.
+- Sentry web and app: PR #58, #60, #63, #64, #66; #85, #87, #90; sentry-test run 37750021878.
+- Push receipts: PR #58; hourly cron green.
+- Backup check: run 37882544482.
+- App UI tests 71: PR #59, #70; #86.
+- eas-cli 24.11.0: PR #61.
+- Regression: run 37830669952 as amended by #92, review stop C passed (PR #74).
+- Suspend / unsuspend workflow + `ops_events`: runs 37882467746, 37882509339; `server/suspension.test.ts`.
+- Admin code removed: PR #54, S17.
+- Report complete, nothing open.
+
+**Definition of done:** CI green on `main`; tests per checkpoint; the suspended banner (new) and the colour change (#88, #89) are recorded in `design-changes.md`; staging = `main` (migrate-staging run 37881691901); Redmi on 0.3.1 + update `01a11b05`.
+
+**Clean-up after CP6:** the owner deleted the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY`. Claude confirmed by name that the secret is gone (9 repository secrets remain; no environment secrets).
+
+**Carried to M11:**
+- the S11 least-privilege Neon app role;
+- the contract migrations: drop the global `orders.idempotency_key` unique (S12) and `profiles.is_admin`;
+- the hands-on real-device check of the production build (#92 d);
+- the native-only colours (splash, adaptive icon, notification accent, `assets/icon.png`);
+- `pnpm audit` re-run before the production build (#91).
+
+## 2026-10-09 · Correction: two M10 review-stop records had no matching GitHub run
+
+Older entries stay as written; this corrects them:
+- **Review stop A (2026-10-07):** the entry records "suspend / unsuspend from Actions" as passed, but GitHub has **no run of Actions → shop-suspend** before 2026-10-09 (the workflow's run count was 0). The suspend / unsuspend behaviour was covered by `server/suspension.test.ts` and staging-regression steps 3.20 and 3.21 (the same endpoint and secret), but not by the workflow itself.
+- **Review stop B step 4 (2026-10-08):** the entry records "backup-restore-check green, migrations 9 of 9", but the only run before 2026-10-09 was **37596509660** (2026-10-07), whose backup held **7 of 9** migrations (expected that day).
+- **The evidence now:** shop-suspend runs **37882467746** (suspend) and **37882509339** (unsuspend), and backup-restore-check run **37882544482** (9 of 9). Details in the M10 gate entry above.
 
 ## 2026-10-09 · Review stop C passed
 

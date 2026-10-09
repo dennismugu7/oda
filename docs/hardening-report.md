@@ -5,7 +5,7 @@ The written review that M10's acceptance asks for (`milestones.md` → M10, plan
 **deferred** (why, and to when) or **accepted** (why it's fine). Nothing is left open at the
 gate. Each section also lists what was checked and found fine, so the review can be repeated.
 
-Status on 2026-10-08: **CP1–CP5 done** (security; suspend / unsuspend; states, accessibility, performance; Sentry, push receipts, backups; app UI tests, Expo patches, 0.3.1); **review stop B passed** (owner Step 93); **CP6 regression green** (decision #92; section below), waiting for 🛑 review stop C.
+Status on 2026-10-09: **M10 gate passed** (`docs/progress.md`). CP1–CP6 done (security; suspend / unsuspend; states, accessibility, performance; Sentry, push receipts, backups; app UI tests, Expo patches, 0.3.1; the automated regression, decision #92); review stops A, B and C passed. Nothing is open: S11 and the S12 contract are deferred to M11.
 
 ## Findings
 
