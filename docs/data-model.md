@@ -10,7 +10,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 - Verify locks the attempt (`SELECT … FOR UPDATE`, plus a per-email advisory lock) and, in one transaction, creates `auth_user` (verified), the credential `auth_account` with this attempt's `password_hash`, and `profiles`, then deletes this attempt. Any other attempt for the email is refused ("already has a shop") and deleted when it is used. Attempts older than 7 days are deleted lazily on each sign-up start (batches of 100) and by `/api/cron/purge` (M8). Indexes: `email`, `created_at`.
 
 **profiles**: one per auth user
-- `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `is_admin bool default false`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists: `{ step: 1–3 (next step to show), businessType?, channels? }`, decision #51), `deleted_at`
+- `id` (= Better Auth `user.id`), `first_name`, `last_name`, `recovery_phone`, `expo_push_tokens text[]`, `onboarding_draft jsonb` (answers to onboarding steps 1–2 before the shop row exists: `{ step: 1–3 (next step to show), businessType?, channels? }`, decision #51), `deleted_at`
 
 **shops**: one per seller in v1
 - `id`, `owner_id → profiles`, `name`, `slug unique`, `logo_path`, `about`, `location_label` (for example "Kilimani, Nairobi"), `business_type` (enum: fashion, shoes_bags, beauty_hair, food_drinks, phones_electronics, home_decor, baby_kids, other), `channels text[]`, `whatsapp_phone`, `calls_enabled bool`, `tiktok_handle`, `instagram_handle`
@@ -42,7 +42,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 ## Orders
 
 **orders**
-- `id`, `shop_id`, `number int` (unique per shop), `public_token text unique`, `idempotency_key text unique`
+- `id`, `shop_id`, `number int` (unique per shop), `public_token text unique`, `idempotency_key text` (unique per shop: `(shop_id, idempotency_key)`, decisions #84 a, #93)
 - `status` (see order-lifecycle.md), `payment_method` (enum: pay_before, pay_on_delivery), `payment_status` (enum: unpaid, claimed, paid, refund_due, refunded)
 - Buyer snapshot: `buyer_name`, `buyer_phone`, `buyer_whatsapp bool`, `buyer_email null`
 - Fulfilment: `fulfilment` (enum: delivery, pickup), `delivery_area_id null`, `delivery_area_name`, `address_text`, `sent_method` (rider, parcel, pickup), `rider_phone`
@@ -88,9 +88,9 @@ Uploads: the client asks the API for a **presigned PUT URL** (`POST /api/uploads
 - **Every** data access goes through one authorization layer in `apps/web/server/authz.ts`:
   - `requireSeller(req)` → session → `shopId`; every seller query is scoped with `WHERE shop_id = ctx.shopId` via helper repositories (no raw unscoped queries in route handlers).
   - `requireOrderToken(token)` for buyer order actions.
-  - `requireAdmin(req)` and `adminRepo`: **removed in M10** (no back office, decision #72 f). `profiles.is_admin` stays unread until a later contract migration. A suspended shop's seller context carries `suspended`; `assertCanEditShop(ctx)` refuses shop and catalogue edits with 403 `shop_suspended` (decision #82). Job and ops endpoints instead require a Bearer secret (`CRON_SECRET`, `OPS_SECRET`; constant-time; 404 otherwise; decisions #69, #72).
+  - `requireAdmin(req)` and `adminRepo`: **removed in M10** (no back office, decision #72 f). `profiles.is_admin` was dropped in M11 (migration 0009, decision #93). A suspended shop's seller context carries `suspended`; `assertCanEditShop(ctx)` refuses shop and catalogue edits with 403 `shop_suspended` (decision #82). Job and ops endpoints instead require a Bearer secret (`CRON_SECRET`, `OPS_SECRET`; constant-time; 404 otherwise; decisions #69, #72).
 - Public buyer pages read through server-side query functions that return **only public fields** (never buyer data of other orders, never the seller's email or recovery phone).
-- **Server-owned columns are never writable from seller input**: `profiles.is_admin`, `shops.suspended_at`, `shops.order_counter`, all rating/count aggregates, `payment_accounts.verification_*`. Enforce this with explicit zod schemas per endpoint (whitelist fields), never by spreading request bodies into updates.
+- **Server-owned columns are never writable from seller input**: `shops.suspended_at`, `shops.order_counter`, all rating/count aggregates, `payment_accounts.verification_*`. Enforce this with explicit zod schemas per endpoint (whitelist fields), never by spreading request bodies into updates.
 - **As built (M1):** contexts `requireUser` / `requireSeller` / `requireOrderToken` (`requireAdmin` removed in M10) in `apps/web/server/authz.ts`; repositories in `apps/web/server/repos/` (`sellerRepo`, `userRepo`, `publicRepo`, `orderTokenRepo`; `adminRepo` removed in M10); write whitelists and the full server-owned list (`SERVER_OWNED_FIELDS`, which also covers `payment_accounts.is_active`, `profiles.expo_push_tokens` and ids/ownership) in `packages/shared/src/schemas/`; an ESLint rule keeps `@oda/db`, `drizzle-orm` and `pg` out of everything but `apps/web/server/**`. Decisions #34, #36.
 - **Automated authorization tests** (Vitest against a real Postgres): seller A cannot read or modify seller B's shop, products, orders, customers or uploads; anon cannot read orders without the token; job and ops endpoints are 404 without their secret; server-owned columns can't be changed through any seller endpoint.
 
