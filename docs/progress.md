@@ -2,22 +2,29 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-08, owner Step 93)
+## Handoff (keep current; updated 2026-10-09, review stop C)
 
 **Current state**
-- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93). **CP6 regression green** (automated, decision #92: Actions → staging-regression run 37830669952, 15/15 sections, 87 steps); 🛑 **review stop C** next, then the gate.
-- **Staging:** https://oda-eta.vercel.app = `main` (`bfcdee6`, PR #66); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
+- **Milestones:** M0–M8 closed; latest tags **`m8b-done`**, **`m8-done`** (`m8a-done` before). **M9 removed** (decision #72). **M10 in progress** (plan `docs/m10-plan.md`, approved in Step 89, decision #81): CP1 security review and CP2 suspend / unsuspend done (`docs/hardening-report.md`); **review stop A passed** (Step 90) with one fix (decision #83: a suspended shop takes no payments). CP3, CP4 and CP5 done; **review stop B passed** (Step 93). **CP6 regression green** (automated, decision #92: Actions → staging-regression run 37830669952, 15/15 sections, 87 steps); **review stop C passed** (2026-10-09). Next: the M10 gate.
+- **Staging:** https://oda-eta.vercel.app = `main` (`d5afe3d`, PR #73); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup-staging**, **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
 - **App:** EAS preview build **0.3.1** (`da329ea4`, runtime 0.3.1, Expo SDK patches) on the Redmi; latest EAS Update **`01a11b05`** (group `ce15b170`: orange #C44323, outlined stars; before it `feb0b16f`: Sentry on, CP3–CP5). Updates are published by Actions → eas-update-preview (#90). Updates for 0.3.0 phones stopped with the merge (#85 e). JS changes: `pnpm update:preview "…"`.
 - **Config:** support contact email only (`ODA_SUPPORT_EMAIL`, optional `ODA_SUPPORT_WHATSAPP`, #77); feedback screenshots in the private Blob store `oda-staging-feedback` (`FEEDBACK_BLOB_READ_WRITE_TOKEN`, #74 b).
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** 🛑 **review stop C**: the owner reads staging-regression run 37830669952 (Summary + `regression-screens`). After a yes: the M10 gate → `m10-done`. Owner: delete the Resend key `oda-staging-regression` (and the GitHub secret `RESEND_API_KEY`) once CP6 is closed.
+**Next step:** the owner deletes the Resend key `oda-staging-regression`, then the GitHub secret `RESEND_API_KEY` (CP6 is closed, decision #92 b). Then the M10 gate (✅/❌ per exit criterion with evidence) → 🛑 the owner reviews it → tag `m10-done`.
 
 **Open items**
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-09 · Review stop C passed
+
+- **Owner:** review stop C **passed**. The owner read **Actions → staging-regression** run 37830669952 (manual run from `main`, `99f174d`): **87 steps, 0 failed**, 15/15 sections; the `regression-screens` screenshots look right.
+- **CP6 closed.** M10's checkpoints CP1–CP6 are all done.
+- **Staging:** `/api/health` = `d5afe3d` (PR #73).
+- **Next:** the owner deletes the Resend key `oda-staging-regression`, then the GitHub secret `RESEND_API_KEY` (decision #92 b); then the M10 gate for the owner's review. `m10-done` is tagged only after that review.
 
 ## 2026-10-08 · Review stop B passed (owner Step 93)
 
