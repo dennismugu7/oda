@@ -289,16 +289,17 @@ describe('insertOrder', () => {
     expect(await db.select().from(t.orders)).toHaveLength(1);
   });
 
-  it('a key another shop used is a 409, never that shop’s order or a 500 (decision #84)', async () => {
+  it('a key another shop used makes a new order in this shop, never that shop’s (decisions #84, #93)', async () => {
     const a = await world();
     const b = await world();
     const { order } = await insertOrder(db, newOrder(a, { idempotencyKey: 'shared-key-123456' }));
-    await expect(
-      insertOrder(db, newOrder(b, { idempotencyKey: 'shared-key-123456' })),
-    ).rejects.toMatchObject({ status: 409, code: 'idempotency_key_taken' });
-    const fresh = await insertOrder(db, newOrder(b, { idempotencyKey: 'fresh-key-1234567' }));
-    expect(fresh.order.shopId).toBe(b.shopId);
-    expect(fresh.order.id).not.toBe(order.id);
+    const other = await insertOrder(db, newOrder(b, { idempotencyKey: 'shared-key-123456' }));
+    expect(other.replayed).toBe(false);
+    expect(other.order.shopId).toBe(b.shopId);
+    expect(other.order.id).not.toBe(order.id);
+    // A retry in shop B still finds B's order.
+    const again = await insertOrder(db, newOrder(b, { idempotencyKey: 'shared-key-123456' }));
+    expect(again).toMatchObject({ replayed: true, order: { id: other.order.id } });
   });
 
   it('order numbers are sequential per shop under concurrency', async () => {

@@ -36,6 +36,11 @@ if (!report.exists) {
     `- elevated attributes: ${report.elevated.join(', ') || 'none'}`,
     `- can create in schema public: ${report.canCreateInPublic ? 'yes' : 'no'}`,
     `- objects owned: ${report.ownsObjects}`,
+    `- open connections by role (others than this script): ${
+      Object.entries(report.connections)
+        .map(([name, n]) => `${name} ${n}`)
+        .join(', ') || 'none'
+    }`,
   );
 
   if (password) {

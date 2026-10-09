@@ -56,6 +56,8 @@ export interface AppRoleReport {
   elevated: string[];
   canCreateInPublic: boolean;
   ownsObjects: number;
+  /** Open connections to this database per role (evidence of which role the app uses). */
+  connections: Record<string, number>;
 }
 
 /** True when the report shows a role with exactly the rights it should have. */
@@ -126,6 +128,7 @@ function emptyReport(role: string): AppRoleReport {
     elevated: [],
     canCreateInPublic: false,
     ownsObjects: 0,
+    connections: {},
   };
 }
 
@@ -164,9 +167,15 @@ async function inspect(
     `select count(*) as n from pg_class c join pg_roles r on r.oid = c.relowner where r.rolname = $1`,
     [role],
   );
+  const conns = await pool.query<{ name: string; n: string }>(
+    `select usename as name, count(*) as n from pg_stat_activity
+      where datname = current_database() and usename is not null and pid <> pg_backend_pid()
+      group by 1 order by 1`,
+  );
   return {
     role,
     exists: true,
+    connections: Object.fromEntries(conns.rows.map((r) => [r.name, Number(r.n)])),
     tables: tables.rowCount ?? 0,
     missingGrants: tables.rows.filter((t) => !t.ok).map((t) => t.name),
     memberOf: memberOf.rows.map((r) => r.name),

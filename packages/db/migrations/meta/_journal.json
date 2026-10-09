@@ -64,6 +64,13 @@
       "when": 1791360938006,
       "tag": "0008_push_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791523586479,
+      "tag": "0009_m11_contract",
+      "breakpoints": true
     }
   ]
 }

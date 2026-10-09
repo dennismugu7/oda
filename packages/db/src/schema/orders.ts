@@ -42,8 +42,8 @@ export const orders = pgTable(
     number: integer('number').notNull(),
     /** 12 random URL-safe characters: the only way a buyer reaches an order. */
     publicToken: text('public_token').notNull().unique(),
-    /** Global unique: dropped in M11 (contract, decision #84); per shop below. */
-    idempotencyKey: text('idempotency_key').unique(),
+    /** Unique per shop (below); the global unique was dropped in M11 (decisions #84 a, #93). */
+    idempotencyKey: text('idempotency_key'),
     status: orderStatus('status').notNull(),
     paymentMethod: paymentMethod('payment_method').notNull(),
     paymentStatus: paymentStatus('payment_status').notNull().default('unpaid'),
