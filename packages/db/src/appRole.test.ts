@@ -2,6 +2,7 @@ import { createHash, createHmac, pbkdf2Sync } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
+  appLoginOk,
   appRoleOk,
   appRoleUrl,
   checkAppLogin,
@@ -79,8 +80,10 @@ describe('ensureAppRole', () => {
     const check = await checkAppLogin(url);
     expect(check).toEqual({
       user: role,
+      migrated: true,
       refused: { createTable: true, dropTable: true, truncate: true },
     });
+    expect(appLoginOk(check, role)).toBe(true);
     const app = new Pool({ connectionString: url, max: 1 });
     try {
       await app.query('begin');
@@ -93,6 +96,34 @@ describe('ensureAppRole', () => {
       });
     } finally {
       await app.end();
+    }
+  });
+
+  it('sets up and checks the role on a database before its first migration', async () => {
+    // Production's first release (M11 CP2): the role and DATABASE_URL come before the tables.
+    const fresh = 'oda_app_fresh_db_test';
+    await owner.query(`drop database if exists ${fresh} with (force)`);
+    await owner.query(`create database ${fresh}`);
+    const freshUrl = new URL(ownerUrl);
+    freshUrl.pathname = `/${fresh}`;
+    try {
+      const report = await ensureAppRole({ ownerUrl: freshUrl.toString(), password, role });
+      expect(report.tables).toBe(0);
+      expect(appRoleOk(report)).toBe(true);
+      const check = await checkAppLogin(appRoleUrl(freshUrl.toString(), password, role));
+      expect(check).toEqual({
+        user: role,
+        migrated: false,
+        refused: { createTable: true, dropTable: false, truncate: false },
+      });
+      expect(appLoginOk(check, role)).toBe(true);
+      expect(
+        appLoginOk({ ...check, refused: { ...check.refused, createTable: false } }, role),
+      ).toBe(false);
+      // Once migrated, drop and truncate count again.
+      expect(appLoginOk({ ...check, migrated: true }, role)).toBe(false);
+    } finally {
+      await owner.query(`drop database if exists ${fresh} with (force)`);
     }
   });
 

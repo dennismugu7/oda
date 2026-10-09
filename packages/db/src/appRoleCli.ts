@@ -5,6 +5,7 @@
 // nothing. Prints host names and counts, never a password or connection string.
 import { appendFileSync } from 'node:fs';
 import {
+  appLoginOk,
   appRoleOk,
   appRoleUrl,
   checkAppLogin,
@@ -55,13 +56,14 @@ if (!report.exists) {
     lines.push(`- database: \`${decodeURIComponent(direct.pathname.slice(1))}\``);
     for (const [label, url] of targets) {
       const check = await checkAppLogin(url);
-      const ok = check.user === report.role && Object.values(check.refused).every(Boolean);
-      if (!ok) process.exitCode = 1;
+      if (!appLoginOk(check, report.role)) process.exitCode = 1;
       lines.push(
         `- login (${label}, host \`${new URL(url).hostname}\`): as \`${check.user}\`; ` +
           `create table ${check.refused.createTable ? 'refused' : 'ALLOWED'}, ` +
-          `drop table ${check.refused.dropTable ? 'refused' : 'ALLOWED'}, ` +
-          `truncate ${check.refused.truncate ? 'refused' : 'ALLOWED'}`,
+          (check.migrated
+            ? `drop table ${check.refused.dropTable ? 'refused' : 'ALLOWED'}, ` +
+              `truncate ${check.refused.truncate ? 'refused' : 'ALLOWED'}`
+            : 'no tables yet: reading, drop and truncate are checked after the first migration'),
       );
     }
   }
