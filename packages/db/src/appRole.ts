@@ -226,8 +226,20 @@ export function neonPooledHost(host: string): string | null {
 
 export interface LoginCheck {
   user: string;
-  /** Each must be refused (42501 insufficient privilege, or 42P01 for a missing table). */
+  /**
+   * False on a database before its first migration (production's first release, M11 CP2): the
+   * role is set up before it so the first build has its DATABASE_URL. Reading, drop and
+   * truncate need the tables, so they are checked on the next run after the migration.
+   */
+  migrated: boolean;
+  /** Each must be refused (42501 insufficient privilege). Unmigrated: only createTable counts. */
   refused: Record<'createTable' | 'dropTable' | 'truncate', boolean>;
+}
+
+/** The checks a login must pass (see LoginCheck.migrated). */
+export function appLoginOk(check: LoginCheck, role = APP_ROLE): boolean {
+  if (check.user !== role || !check.refused.createTable) return false;
+  return !check.migrated || (check.refused.dropTable && check.refused.truncate);
 }
 
 /** Logs in as the app role and checks it can read but can't create, drop or truncate. */
@@ -235,7 +247,11 @@ export async function checkAppLogin(appUrl: string): Promise<LoginCheck> {
   const pool = new Pool({ connectionString: appUrl, max: 1 });
   try {
     const who = await pool.query<{ user: string }>('select current_user as user');
-    await pool.query('select count(*) from shops');
+    const found = await pool.query<{ migrated: boolean }>(
+      "select to_regclass('public.shops') is not null as migrated",
+    );
+    const migrated = found.rows[0]?.migrated === true;
+    if (migrated) await pool.query('select count(*) from shops');
     const refused = async (statement: string) => {
       try {
         await pool.query('begin');
@@ -250,10 +266,11 @@ export async function checkAppLogin(appUrl: string): Promise<LoginCheck> {
     };
     return {
       user: who.rows[0]?.user ?? '',
+      migrated,
       refused: {
         createTable: await refused('create table oda_app_probe (x int)'),
-        dropTable: await refused('drop table ops_events'),
-        truncate: await refused('truncate ops_events'),
+        dropTable: migrated && (await refused('drop table ops_events')),
+        truncate: migrated && (await refused('truncate ops_events')),
       },
     };
   } finally {

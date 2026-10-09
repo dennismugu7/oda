@@ -38,7 +38,11 @@ Newest entries at the top.
 
 - **Found by PR #83's checks:** oda-production built the PR branch as its *Production* (Vercel's first-deployment rule); the guard failed it (deployment `dpl_7tQKLrwW7AY8BcGo98N2v5aVAZCa`, state Error, nothing served). Fixed: the ignore step and the guard require the `production` branch; `turbo.json` passes the guard's variables to the build (the log showed them hidden). Tests in `server/deployment.test.ts` (13, incl. the ignore script and turbo.json sync). Decision #95 f.
 
-**Next:** the owner's remaining dashboard steps, one at a time.
+- **PR #83 merged** (`0cf7145`): CI 37954157862, migrate-staging 37955143480 green, staging health `0cf7145`, still `noindex`; production-guard run 37954255745 green (the owner's creation of the branch is excepted).
+- **Owner steps 3–8 done, each checked by name:** `PRODUCTION_BACKUP_BLOB_READ_WRITE_TOKEN` and `PRODUCTION_BACKUP_PASSPHRASE` in `production-jobs` (now all 7 production secrets; none at repository level); Cloudflare CNAME `oda` → `9c91c6c64dc71876.vercel-dns-017.com`, DNS only (resolves; Vercel: configured by CNAME, verified; no certificate yet, expected with the first deployment); Vercel oda-production `RESEND_API_KEY` (key `oda-production`, sending only), `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` (org token `oda-production-sourcemaps`), `EXPO_ACCESS_TOKEN` (`oda-production-push`), all Production only.
+- **db-app-role (production) run 37968742488 failed:** `relation "shops" does not exist`. The role was created and its password set, but the login check reads `shops`, and production has no tables until the first release migrates it (the role must come first so the first build has `DATABASE_URL`). Fixed (this PR): on a database without tables the check still logs in over the direct and pooled hosts and checks that create table is refused, and says reading, drop and truncate are checked after the first migration (`LoginCheck.migrated`, `appLoginOk`); test "sets up and checks the role on a database before its first migration".
+
+**Next:** merge, rerun db-app-role (production), pipe `DATABASE_URL` (`oda_app`, pooled host) into oda-production, then the owner starts release-production.
 
 ## 2026-10-09 · M11 CP2 part 1: production code (Blob stop, config guard, workflows)
 
