@@ -9,6 +9,7 @@ import {
   isNeonHost,
   neonPooledHost,
   scramVerifier,
+  upsertAppRole,
 } from './appRole';
 
 // A role of its own: apps/web's tests set up `oda_app` on the same server at the same time.
@@ -100,6 +101,33 @@ describe('ensureAppRole', () => {
     await ensureAppRole({ ownerUrl, password: plain, role, plaintextPassword: true });
     expect((await checkAppLogin(appRoleUrl(ownerUrl, plain, role))).user).toBe(role);
     await ensureAppRole({ ownerUrl, password, role });
+  });
+
+  it('re-runs as a non-superuser owner with CREATEROLE, like Neon’s owner role', async () => {
+    const ownerLike = 'oda_owner_like_db_test';
+    const ownerPass = 'owner-like-db-test-password-5h8q';
+    await owner.query(
+      `do $$ begin
+         if not exists (select 1 from pg_roles where rolname = '${ownerLike}') then
+           create role ${ownerLike} login createrole createdb password '${ownerPass}';
+         end if;
+       end $$`,
+    );
+    const asOwnerLike = appRoleUrl(ownerUrl, ownerPass, ownerLike);
+    const appRole = 'oda_app_by_owner_like_db_test';
+    // Creating, then updating the password: the update must not touch superuser-only attributes.
+    // (Only the role step: this stand-in doesn't own the tables, Neon's owner does.)
+    await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    const again = await upsertAppRole({ ownerUrl: asOwnerLike, password, role: appRole });
+    expect(again).toEqual({ exists: true, created: false });
+    // The updated password works (this role has no grants here, so only log in).
+    const login = new Pool({ connectionString: appRoleUrl(ownerUrl, password, appRole), max: 1 });
+    try {
+      const who = await login.query<{ user: string }>('select current_user as user');
+      expect(who.rows[0]?.user).toBe(appRole);
+    } finally {
+      await login.end();
+    }
   });
 
   it('gives tables created by later migrations the same grants', async () => {

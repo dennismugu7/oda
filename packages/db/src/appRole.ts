@@ -72,48 +72,68 @@ export function appRoleOk(r: AppRoleReport): boolean {
   );
 }
 
-/**
- * Creates or updates the role (when `password` is given), applies the grants and reports what
- * the role can do. Without a password and without the role, it does nothing (`exists: false`).
- * `ownerUrl` must be the direct (unpooled) owner connection.
- */
-export async function ensureAppRole(opts: {
+interface RoleOptions {
   ownerUrl: string;
   password?: string;
   role?: string;
   /** Send the password itself instead of a SCRAM verifier (needed on Neon). */
   plaintextPassword?: boolean;
-}): Promise<AppRoleReport> {
+}
+
+/**
+ * Creates or updates the role (when `password` is given), applies the grants and reports what
+ * the role can do. Without a password and without the role, it does nothing (`exists: false`).
+ * `ownerUrl` must be the direct (unpooled) owner connection.
+ */
+export async function ensureAppRole(opts: RoleOptions): Promise<AppRoleReport> {
   const role = opts.role ?? APP_ROLE;
-  if (!ROLE_NAME.test(role)) throw new Error('Invalid role name');
-  const verifier = opts.password ? scramVerifier(opts.password) : null;
-  // scramVerifier checked the password (24–128 printable ASCII); quotes are doubled.
-  const secret = opts.plaintextPassword ? opts.password?.replaceAll("'", "''") : verifier;
   const pool = new Pool({ connectionString: opts.ownerUrl, max: 1 });
   try {
-    const found = await pool.query('select 1 from pg_roles where rolname = $1', [role]);
-    let exists = found.rowCount === 1;
-    let created = false;
-    if (verifier) {
-      // The verifier is base64 plus `$` and `:`; checked before it goes into the statement.
-      if (!/^SCRAM-SHA-256\$\d+:[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/.test(verifier)) {
-        throw new Error('Unexpected verifier format');
-      }
-      const attrs = 'login nosuperuser nocreatedb nocreaterole noreplication nobypassrls noinherit';
-      if (!exists) {
-        await pool.query(`create role ${role} with ${attrs} password '${secret}'`);
-        exists = true;
-        created = true;
-      } else {
-        await pool.query(`alter role ${role} with ${attrs} password '${secret}'`);
-      }
-    }
+    const { exists, created } = await upsertRole(pool, { ...opts, role });
     if (!exists) return emptyReport(role);
     await pool.query(appRoleGrants(role));
-    return { ...(await inspect(pool, role)), created, passwordSet: verifier !== null };
+    return { ...(await inspect(pool, role)), created, passwordSet: Boolean(opts.password) };
   } finally {
     await pool.end();
   }
+}
+
+/** Only the create / update of the role itself (exported for a test). */
+export async function upsertAppRole(opts: RoleOptions & { role: string }) {
+  const pool = new Pool({ connectionString: opts.ownerUrl, max: 1 });
+  try {
+    return await upsertRole(pool, opts);
+  } finally {
+    await pool.end();
+  }
+}
+
+async function upsertRole(
+  pool: Pool,
+  opts: RoleOptions & { role: string },
+): Promise<{ exists: boolean; created: boolean }> {
+  const { role } = opts;
+  if (!ROLE_NAME.test(role)) throw new Error('Invalid role name');
+  const found = await pool.query('select 1 from pg_roles where rolname = $1', [role]);
+  const exists = found.rowCount === 1;
+  if (!opts.password) return { exists, created: false };
+  const verifier = scramVerifier(opts.password);
+  // The verifier is base64 plus `$` and `:`; checked before it goes into the statement.
+  if (!/^SCRAM-SHA-256\$\d+:[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/.test(verifier)) {
+    throw new Error('Unexpected verifier format');
+  }
+  // scramVerifier checked the password (24–128 printable ASCII); quotes are doubled.
+  const secret = opts.plaintextPassword ? opts.password.replaceAll("'", "''") : verifier;
+  if (!exists) {
+    const attrs = 'login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls';
+    await pool.query(`create role ${role} with ${attrs} password '${secret}'`);
+    return { exists: true, created: true };
+  }
+  // Restating an attribute needs that attribute (superuser, createdb, replication, bypassrls),
+  // which Neon's owner may not have; so an update sets only the password, and inspect() fails
+  // the check if any elevated attribute is on.
+  await pool.query(`alter role ${role} with login noinherit password '${secret}'`);
+  return { exists: true, created: false };
 }
 
 function emptyReport(role: string): AppRoleReport {
