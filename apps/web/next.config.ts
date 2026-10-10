@@ -1,6 +1,7 @@
 import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
-import { assertDeploymentConfig, indexable } from './server/deployment';
+import { homeRedirects } from './lib/home';
+import { assertDeploymentConfig, indexable, odaEnvironment } from './server/deployment';
 import { staticSecurityHeaders } from './server/securityHeaders';
 
 const dev = process.env.NODE_ENV === 'development';
@@ -22,6 +23,12 @@ const config: NextConfig = {
     '/\\[slug\\]/p/\\[id\\]/opengraph-image': ['./assets/fonts/*.ttf'],
   },
   reactStrictMode: true,
+  // Production's root goes to oda's product page on mugu-labs.com (decision #99): "/" only,
+  // so shop pages, /privacy, /terms, /delete-account and /api are untouched. Staging keeps
+  // its landing page.
+  async redirects() {
+    return homeRedirects(odaEnvironment());
+  },
   // Security headers (M10 CP1, decision #81 c). Pages get their nonce CSP from proxy.ts; API
   // answers are data, never rendered, so their CSP allows nothing at all.
   async headers() {

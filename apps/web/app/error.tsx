@@ -3,6 +3,7 @@
 // The branded error state for every page (CLAUDE.md: every screen handles errors): a short
 // explanation and "Try again", which re-fetches the page (Next 16's retry()).
 import Link from 'next/link';
+import { HOME_HREF } from '@/lib/home';
 
 export default function ErrorPage({
   retry,
@@ -31,7 +32,7 @@ export default function ErrorPage({
         Try again
       </button>
       <Link
-        href="/"
+        href={HOME_HREF}
         className="mt-2 inline-flex min-h-11 items-center text-body-strong text-navy underline"
       >
         Go to oda
