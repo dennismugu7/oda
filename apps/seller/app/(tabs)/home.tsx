@@ -38,6 +38,7 @@ import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderList, type OrderRow } from '@/orders/api';
 import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
+import { ShopLinkText } from '@/ui/shopLink';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, radii, spacing, text } from '@/theme';
 
@@ -90,7 +91,6 @@ export default function HomeTab() {
 
   const shop = me?.shop;
   const url = shop ? displayUrl(SHOP_BASE_URL, shop.slug) : '';
-  const slash = url.lastIndexOf('/');
 
   async function copy() {
     if (!shop) return;
@@ -141,10 +141,7 @@ export default function HomeTab() {
           </View>
           {shop ? (
             <View style={styles.linkPill}>
-              <Text style={styles.link} numberOfLines={1} selectable>
-                {url.slice(0, slash + 1)}
-                <Text style={styles.linkSlug}>{url.slice(slash + 1)}</Text>
-              </Text>
+              <ShopLinkText url={url} style={styles.link} slugStyle={styles.linkSlug} />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Copy your shop link"
