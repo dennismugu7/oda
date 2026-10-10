@@ -1,0 +1,102 @@
+name: eas-update-production
+
+# Publishes the seller app's JavaScript as an EAS Update to the production channel (the Play
+# app) and uploads its source maps to Sentry (oda-seller), all on the runner (decisions #90,
+# #93 D11). The same steps as eas-update-preview, plus:
+# - from `main` only, and only commits CI passed on;
+# - the `production-release` Environment job first (GitHub Free can't require a reviewer, so
+#   as for release-production only the owner starts it, or Claude on the owner's go for that
+#   update: decision #95);
+# - the EAS "production" environment (EXPO_PUBLIC_* = https://oda.mugu-labs.com).
+# Phones with the production app on the same runtime (app version) get it after closing and
+# reopening the app twice. Native changes need a new build instead.
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: What changed (shown in EAS)
+        required: true
+        type: string
+
+concurrency:
+  group: eas-update-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check the commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Run from main only, on a commit CI passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          [ "$GITHUB_REF" = refs/heads/main ] || { echo "::error::Run eas-update-production from main."; exit 1; }
+          ci=$(gh run list -R "$REPO" --workflow ci.yml --commit "$GITHUB_SHA" --status success --limit 1 --json databaseId --jq 'length')
+          [ "$ci" = 1 ] || { echo "::error::CI didn't pass on $GITHUB_SHA."; exit 1; }
+
+  approve:
+    name: Owner approval
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production-release
+    steps:
+      - run: echo "Approved production update from ${GITHUB_SHA::7}."
+
+  publish:
+    name: Publish and upload source maps
+    needs: approve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TURBO_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check the secrets exist
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          [ -n "$EXPO_TOKEN" ] || { echo "::error::Repository secret EXPO_TOKEN is not set."; exit 1; }
+          [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Repository secret SENTRY_AUTH_TOKEN is not set."; exit 1; }
+
+      # The version eas.json asks for (cli.version), pinned.
+      - name: Install eas-cli
+        run: npm install --global eas-cli@24.11.0
+
+      - name: Publish the update
+        working-directory: apps/seller
+        env:
+          CHANNEL: production
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          MESSAGE: ${{ inputs.message }}
+        run: node scripts/eas-update-publish.mjs
+
+      # As in eas-update-preview (debug IDs tie each bundle to its map; SENTRY_URL must stay).
+      - name: Upload the source maps to Sentry
+        working-directory: apps/seller
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: mugu-labs
+          SENTRY_PROJECT: oda-seller
+          SENTRY_URL: https://sentry.io/
+        run: node node_modules/@sentry/react-native/scripts/expo-upload-sourcemaps.js dist

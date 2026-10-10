@@ -1,6 +1,6 @@
 {
-  "version": "0.3.1",
-  "appConfigSha256": "ee877090c64da9f13275a81bd221aa7896608c7e7ef6cf8892250225d7f5365d",
+  "version": "0.4.0",
+  "appConfigSha256": "eff1efb7e77b2dc8b98ae3765d9dd2021e4e0faed86b31ac78adc2647c452944",
   "nativeModules": {
     "@sentry/react-native": "7.11.0",
     "expo": "57.0.27",

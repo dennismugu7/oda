@@ -54,6 +54,7 @@ jobs:
       - name: Publish the update
         working-directory: apps/seller
         env:
+          CHANNEL: preview
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           MESSAGE: ${{ inputs.message }}
         run: node scripts/eas-update-publish.mjs

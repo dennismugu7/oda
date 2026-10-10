@@ -1,8 +1,9 @@
-// Runs on the eas-update-preview workflow's runner (decision #90), from apps/seller: checks the
-// EAS "preview" environment, publishes the update to the preview channel (bundles and source
-// maps land in dist/ for the Sentry upload step) and writes the update to the job summary.
-// Reads EXPO_TOKEN and MESSAGE from the environment. Never run on the laptop: use
-// `pnpm update:preview "What changed"`, which starts the workflow.
+// Runs on the eas-update-preview and eas-update-production workflows' runners (decision #90),
+// from apps/seller: checks the EAS environment of the same name, publishes the update to that
+// channel (bundles and source maps land in dist/ for the Sentry upload step) and writes the
+// update to the job summary. Reads CHANNEL (preview, the default, or production), EXPO_TOKEN
+// and MESSAGE from the environment. Never run on the laptop: use `pnpm update:preview "What
+// changed"` (or Actions → eas-update-production), which starts the workflow.
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -11,6 +12,8 @@ import { strayRootFiles } from '../../../scripts/check-repo-root.mjs';
 import { parseEnvList, publicUrlProblems } from './public-urls.mjs';
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const channel = process.env.CHANNEL || 'preview';
+if (channel !== 'preview' && channel !== 'production') fail(`Unknown channel '${channel}'.`);
 const message = (process.env.MESSAGE ?? '').trim();
 if (!message) fail('The update needs a message.');
 if (!process.env.EXPO_TOKEN) fail('EXPO_TOKEN is not set.');
@@ -18,24 +21,24 @@ if (!process.env.EXPO_TOKEN) fail('EXPO_TOKEN is not set.');
 const before = strayRootFiles();
 if (before.length > 0) fail(`Stray files at the repo root: ${before.join(', ')}`);
 
-// The update is built with the EAS "preview" environment: its URLs must be public https.
-const envList = eas(['env:list', '--environment', 'preview']);
+// The update is built with the EAS environment of the same name: its URLs must be public https.
+const envList = eas(['env:list', '--environment', channel]);
 if (envList.status !== 0)
-  fail('Could not read the EAS "preview" environment; nothing was published.');
+  fail(`Could not read the EAS "${channel}" environment; nothing was published.`);
 const problems = publicUrlProblems(parseEnvList(envList.stdout));
 if (problems.length > 0) {
   for (const problem of problems) console.error(problem);
   fail(
-    'Fix the EAS "preview" environment (expo.dev → Environment variables); nothing was published.',
+    `Fix the EAS "${channel}" environment (expo.dev → Environment variables); nothing was published.`,
   );
 }
 
 const published = eas([
   'update',
   '--channel',
-  'preview',
+  channel,
   '--environment',
-  'preview',
+  channel,
   '--non-interactive',
   '--json',
   '--message',
@@ -49,7 +52,7 @@ if (after.length > 0) fail(`eas-cli left files at the repo root: ${after.join(',
 // --json prints one entry per platform of the same update group.
 const updates = JSON.parse(published.stdout);
 const lines = [
-  '### EAS Update (preview)',
+  `### EAS Update (${channel})`,
   '',
   `Message: ${message}`,
   ...updates.map(
@@ -66,6 +69,8 @@ function eas(args) {
     cwd: app,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
+    // Preview builds are the separate "oda staging" app (app.config.ts, decision #93 D6).
+    env: channel === 'preview' ? { ...process.env, APP_VARIANT: 'preview' } : process.env,
   });
   if (result.error) fail(String(result.error));
   return result;

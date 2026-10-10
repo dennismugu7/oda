@@ -1,5 +1,5 @@
 // Error reporting with Sentry (M10 CP4, decisions #70, #81 b, #85). Off unless the build has
-// EXPO_PUBLIC_SENTRY_DSN (the EAS "preview" environment; a DSN is a public key, not a secret)
+// EXPO_PUBLIC_SENTRY_DSN (EAS "preview" and "production" environments; a DSN is a public key)
 // and is not a development build. sendDefaultPii is off and every event and breadcrumb goes
 // through the shared scrubber first (no emails, phones, M-Pesa codes, tokens, bodies). The
 // native module is in build 0.3.0 already; this is JavaScript only (an EAS Update).
@@ -27,7 +27,7 @@ export function initSentry(): void {
   Sentry.init({
     dsn: DSN!,
     sendDefaultPii: false,
-    environment: channel,
+    environment: channel, // preview or production (the EAS Update channel)
     // Errors point at the exact JavaScript: the native version plus the EAS Update id (source
     // maps for each update are uploaded under the same release and dist).
     release: `oda-seller@${version}`,
