@@ -612,7 +612,12 @@ export function CheckoutForm({
               strokeLinejoin="round"
             />
           </svg>
-          {shopName} will use these details only to contact you about this order.
+          {/* Matches what sellers can do (Customers list, WhatsApp) and /privacy (#98). */}
+          {shopName} sees these details to handle your orders and may contact you on WhatsApp or by
+          phone.{' '}
+          <Link href="/privacy" className="underline">
+            Privacy
+          </Link>
         </p>
       </section>
 

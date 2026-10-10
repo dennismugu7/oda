@@ -72,6 +72,8 @@ jobs:
                        "- Failed deletes retried: \(.retried)",
                        "- Unreferenced files: \(.unreferenced)",
                        "- Old sign-up attempts: \(.signupAttempts)",
+                       "- Expired records: \(.rateLimits // 0) rate-limit counters, \(.deletionRequests // 0) delete-account requests, \(.verifications // 0) reset tokens",
+                       "- Payment claims with M-Pesa message text cleared: \(.claimMessages // 0)",
                        "- Files that failed (queued for next run): \(.failedFiles)",
                        "- Storage not answering (accounts kept, sweep skipped): \(.storageUnavailable // false)",
                        "- More left for the next run: \(.more)"' result.json

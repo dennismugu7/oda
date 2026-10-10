@@ -344,7 +344,7 @@ describe('transitionOrder: each action end to end', () => {
     expect(claimed.order.claimedAt).toBeInstanceOf(Date);
     expect(claimed.duplicateOfOrderNumber).toBeUndefined();
     expect(await claims(order.id)).toMatchObject([
-      { mpesaCode: 'SFK7Q2M9TX', outcome: 'pending', rawMessage: SMS },
+      { mpesaCode: 'SFK7Q2M9TX', outcome: 'pending', rawMessage: null }, // only the code (#98)
     ]);
     expect((await product(w.dress.id)).unitsSold).toBe(0);
 
