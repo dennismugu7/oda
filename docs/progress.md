@@ -2,10 +2,10 @@
 
 Newest entries at the top.
 
-## Handoff (keep current; updated 2026-10-10, M11 at review stop C)
+## Handoff (keep current; updated 2026-10-10, M11 review stop C passed, before CP4)
 
 **Current state**
-- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, review stop B passed** (2026-10-10): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Shops stay out of search engines until launch (#96, L2). **CP3 done: waiting at 🛑 review stop C** (privacy/terms approval on staging, the "oda staging" APK on the Redmi, the upload keystore backup).
+- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, review stop B passed** (2026-10-10): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Shops stay out of search engines until launch (#96, L2). **CP3 done, review stop C passed** (2026-10-10: privacy and terms approved; the "oda staging" APK check deferred). Before CP4: two JS-only app fixes (Home link: PR #93 merged; state restoration: scope proposed, waiting for the owner's yes).
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Production:** https://oda.mugu-labs.com = branch `production` (`68e31fb`), Vercel project `oda-production`, Neon `oda-production` (Frankfurt), app role `oda_app`; released only by **Actions → release-production** (started by the owner, #95); **production-guard** watches the branch. No demo shop, no seed.
 - **Staging:** https://oda-eta.vercel.app = `main` (PR #90 `0d03dc4`); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup** (02:30 staging; production at 02:50 once `PRODUCTION_LIVE`), **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
@@ -16,19 +16,27 @@ Newest entries at the top.
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** 🛑 **review stop C** (owner); then CP4 (Play internal testing). Production gets noindex (#96), the legal pages (#98) and the root redirect (#99) with the owner's next release-production. Native builds (EAS) only after the owner's go. Plan #93, layout #94, releases and setup #95, search engines #96.
+**Next step:** state restoration (after the owner's yes), the owner's release-production, then CP4 (closed testing on Play; answer sheet `docs/play-data-safety.md`). App fixes reach the Play build through **Actions → eas-update-production** (owner-started) after it's installed: the 0.4.0 AAB was built before them. Production gets noindex (#96), the legal pages (#98) and the root redirect (#99) with the owner's next release-production. Native builds (EAS) only after the owner's go. Plan #93, layout #94, releases and setup #95, search engines #96.
 
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
 - **Owner:** confirm the Play developer account type before CP4 (#93 D13); until then the plan assumes a personal account: 12 testers for 14 days (#95 e).
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
+- **Open (investigate later, no new build for it):** the "oda staging" APK (`c3517d59`) downloads on the Redmi but the install doesn't seem to take: Help still shows 0.3.1. First check: it installs as a *separate* app named "oda staging" (orange icon), so Help in the old oda app always shows 0.3.1; then Play Protect / "install unknown apps" for the browser. The real-device check runs on the Play build in CP4.
 - **Launch checklist L3 (owner, before the M11 gate; doesn't block review stop C or CP4):** copy the upload keystore + credentials (`C:\Users\denni\oda-keystore-backup`, written 2026-10-10 from EAS build credentials `wZQg7G2ndc`, read-only, verified with keytool) into the password manager, then delete the local folder. Claude doesn't move, upload or delete it.
 - **Launch checklist L2 (at the public launch):** set `ODA_SHOPS_INDEXABLE=true` on Vercel oda-production and run release-production; until then shop and product pages send `noindex` (#96).
 - **Owner (before CP4):** uninstall the 0.3.1 app (`com.mugulabs.oda`) before installing from Play; "oda staging" can stay.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-10 · Review stop C passed; Home link fix; CP4 preparation
+
+- **Review stop C passed** (owner): privacy policy and terms approved on staging. The "oda staging" APK check is deferred (install didn't take on the Redmi; open item, no new build). Keystore backup: launch checklist L3 (PR #92).
+- **Home link (PR #93, `24a3bb8`):** the shop link pill wrapped onto a clipped second line (stray dashes under `oda-eta.vercel.app/`). On Android a `selectable` Text ignores `numberOfLines`; `src/ui/shopLink.tsx` keeps it on one line ending in "…", not selectable (Copy and Share cover copying). Test `shopLink.ui.test.tsx`. JS only.
+- **State restoration:** scope proposed to the owner; building after the yes.
+- **CP4 prep:** `docs/play-data-safety.md` (D12), the data safety answer sheet.
 
 ## 2026-10-10 · M11 CP3 part 3: root redirect, audit, the 0.4.0 builds
 
