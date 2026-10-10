@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { sentryIngestOrigin } from '@/lib/sentryOptions';
+import { pageRobotsTag } from '@/server/deployment';
 import { contentSecurityPolicy, newNonce, type CspConfig } from '@/server/securityHeaders';
 import { storageDriver } from '@/server/storage';
 
@@ -38,6 +39,9 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('content-security-policy', csp);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('content-security-policy', csp);
+  // Before the public launch only the landing and legal pages may be indexed (decision #96).
+  const robots = pageRobotsTag(request.nextUrl.pathname);
+  if (robots) response.headers.set('x-robots-tag', robots);
   return response;
 }
 

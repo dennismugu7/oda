@@ -5,7 +5,7 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-09, M11 CP2 in progress)
 
 **Current state**
-- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, at 🛑 review stop B** (2026-10-09): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Owner open: the Sentry alert rule for environment `production`, then review stop B's checks.
+- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, review stop B passed** (2026-10-10): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Shops stay out of search engines until launch (#96, L2). **CP3 in progress** (legal pages + the production app build), then 🛑 review stop C.
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Production:** https://oda.mugu-labs.com = branch `production` (`68e31fb`), Vercel project `oda-production`, Neon `oda-production` (Frankfurt), app role `oda_app`; released only by **Actions → release-production** (started by the owner, #95); **production-guard** watches the branch. No demo shop, no seed.
 - **Staging:** https://oda-eta.vercel.app = `main` (`68e31fb`, PR #84); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup** (02:30 staging; production at 02:50 once `PRODUCTION_LIVE`), **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
@@ -15,13 +15,14 @@ Newest entries at the top.
 - **Git:** everything merged through PRs. GitHub shows Vercel's preview as a commit **status** (`state`), not a check run: read it with `gh pr checks`, not `statusCheckRollup[].status` (empty for statuses). **Owner rule:** every change reaches `main` through a PR (docs-only included), merged only after every check has finished and passed.
 - **This laptop:** `~/.wslconfig` 12 GB / 8 GB swap. If port 3100 is taken, `E2E_PORT=3200 pnpm check:all`. Running Playwright on its own reuses the last web build (`pnpm --filter @oda/web build` first). When the laptop is slow a Vitest test can hit its 5 s timeout: rerun before chasing it. eas-cli 24.8.0 (24.11 available; upgrade is in the M10 plan).
 
-**Next step:** 🛑 **review stop B** (owner, on the phone; list in `docs/m11-plan.md` → CP2). CP3 (legal pages + the production app build) starts only after the owner's go. Plan `docs/m11-plan.md` (#93), layout #94, releases and setup #95.
+**Next step:** M11 CP3 (`docs/m11-plan.md` → CP3), then 🛑 **review stop C**. Native builds (EAS) only after the owner's go. Plan #93, layout #94, releases and setup #95, search engines #96.
 
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
 - **Owner:** confirm the Play developer account type before CP4 (#93 D13); until then the plan assumes a personal account: 12 testers for 14 days (#95 e).
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
+- **Launch checklist L2 (at the public launch):** set `ODA_SHOPS_INDEXABLE=true` on Vercel oda-production and run release-production; until then shop and product pages send `noindex` (#96).
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
