@@ -44,15 +44,30 @@ import {
   stepQty,
   type DraftLine,
 } from '@/orders/newOrder';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
 
 type Choice = { kind: 'pickup' } | { kind: 'delivery'; areaId: string } | null;
 
+/** A manual order's draft (decision #100), with its idempotency key so a retry can't double it. */
+interface SavedOrderDraft {
+  key: string;
+  name: string;
+  phone: string;
+  whatsapp: boolean;
+  lines: DraftLine[];
+  choice: Choice;
+  address: string;
+  feeText: string | null;
+  payment: ManualPayment;
+}
+
 export default function NewOrder() {
   const insets = useSafeAreaInsets();
-  const [key] = useState(() => newIdempotencyKey());
+  const [key, setKey] = useState(() => newIdempotencyKey());
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState(true);
@@ -189,6 +204,44 @@ export default function NewOrder() {
     setCreated(data);
   }
 
+  // Unsaved order survives Android closing the app (decision #100).
+  const restoredDraft = useDraft<SavedOrderDraft>('order.new', {
+    value: { key, name, phone, whatsapp, lines, choice, address, feeText, payment },
+    worthSaving:
+      !created &&
+      (!!name.trim() ||
+        !!phone.trim() ||
+        lines.length > 0 ||
+        !!address.trim() ||
+        choice !== null ||
+        feeText !== null),
+    restore: (saved) => {
+      setKey(saved.key);
+      setName(saved.name);
+      setPhone(saved.phone);
+      setWhatsapp(saved.whatsapp);
+      setLines(saved.lines);
+      setChoice(saved.choice);
+      setAddress(saved.address);
+      setFeeText(saved.feeText);
+      setPayment(saved.payment);
+    },
+  });
+
+  function discardDraft() {
+    restoredDraft.discard();
+    setKey(newIdempotencyKey());
+    setName('');
+    setPhone('');
+    setWhatsapp(true);
+    setLines([]);
+    setChoice(null);
+    setAddress('');
+    setFeeText(null);
+    setPayment('paid');
+    setError(null);
+  }
+
   const close = () => (router.canGoBack() ? router.back() : router.replace('/orders'));
 
   if (created) return <Created order={created} onClose={close} />;
@@ -220,6 +273,7 @@ export default function NewOrder() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <DraftBanner visible={restoredDraft.restored} onDiscard={discardDraft} />
         <View style={styles.card}>
           <Text style={styles.overline}>BUYER</Text>
           <Field

@@ -1,5 +1,5 @@
 // Jest setup for the *.ui.test.tsx files (decision #86): quiet, predictable native modules.
-import { jest } from '@jest/globals';
+import { beforeEach, jest } from '@jest/globals';
 
 jest.mock('expo-router', () => {
   const router = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: () => true };
@@ -48,3 +48,15 @@ jest.mock('expo-sharing', () => ({
 jest.mock('react-native-view-shot', () => ({
   captureRef: jest.fn(async () => 'file:///tmp/poster.png'),
 }));
+// SecureStore (sessions, drafts: decision #100): an in-memory stand-in, emptied before each test.
+const mockSecureValues = new Map<string, string>();
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(async (key: string) => mockSecureValues.get(key) ?? null),
+  setItemAsync: jest.fn(async (key: string, value: string) => {
+    mockSecureValues.set(key, value);
+  }),
+  deleteItemAsync: jest.fn(async (key: string) => {
+    mockSecureValues.delete(key);
+  }),
+}));
+beforeEach(() => mockSecureValues.clear());

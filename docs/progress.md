@@ -5,7 +5,7 @@ Newest entries at the top.
 ## Handoff (keep current; updated 2026-10-10, M11 review stop C passed, before CP4)
 
 **Current state**
-- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, review stop B passed** (2026-10-10): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Shops stay out of search engines until launch (#96, L2). **CP3 done, review stop C passed** (2026-10-10: privacy and terms approved; the "oda staging" APK check deferred). Before CP4: two JS-only app fixes (Home link: PR #93 merged; state restoration: scope proposed, waiting for the owner's yes).
+- **M11:** plan approved (#93); CP1 done, review stop A passed (2026-10-09). **CP2 done, review stop B passed** (2026-10-10): production **https://oda.mugu-labs.com** runs `68e31fb` (release-production runs 37972383792 and 37973371713, both started by the owner); all production jobs green; `PRODUCTION_LIVE=true` (scheduled jobs now run for production too). Shops stay out of search engines until launch (#96, L2). **CP3 done, review stop C passed** (2026-10-10: privacy and terms approved; the "oda staging" APK check deferred). Before CP4: two JS-only app fixes (Home link: PR #93 merged; state restoration: approved (#100), PR from branch `app-state-restoration`).
 - **Milestones:** M0–M8 and **M10 closed**; latest tag **`m10-done`** (before it `m8-done`, `m8b-done`, `m8a-done`). **M9 removed** (decision #72). M10: plan `docs/m10-plan.md` (#81), report `docs/hardening-report.md`, review stops A, B and C passed, gate passed 2026-10-09. **Next milestone: M11 (launch)**, not started.
 - **Production:** https://oda.mugu-labs.com = branch `production` (`68e31fb`), Vercel project `oda-production`, Neon `oda-production` (Frankfurt), app role `oda_app`; released only by **Actions → release-production** (started by the owner, #95); **production-guard** watches the branch. No demo shop, no seed.
 - **Staging:** https://oda-eta.vercel.app = `main` (PR #90 `0d03dc4`); check `/api/health` (`commit`). Sellers: onboarding, catalogue, orders (every action), manual orders, Home, notifications, reviews, delivery, settings (details, password, shop profile + link change, payments, pause, feedback with screenshots, delete account), More, Insights, Customers, Share, Help, Rate the app. Buyers: shop, product, cart, checkout, pay page, order page, reviews, `/delete-account`. Jobs (GitHub Actions): **cron-expire-orders** (hourly), **cron-purge** (daily 03:43 Nairobi; manual = dry run by default; lists unreferenced files with reasons), **cron-digest** (daily 08:11 Nairobi to support@mugu-labs.com), **backup** (02:30 staging; production at 02:50 once `PRODUCTION_LIVE`), **migrate-staging**; tools: **staging-backdate-order**, **staging-backdate-deletion**, **review-remove**, **demo-seed-staging**.
@@ -21,7 +21,7 @@ Newest entries at the top.
 **Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
 
 **Open items**
-- **Owner:** confirm the Play developer account type before CP4 (#93 D13); until then the plan assumes a personal account: 12 testers for 14 days (#95 e).
+- **Play account (D13, answered 2026-10-10, #100 b):** Personal: closed testing with 12 testers for 14 days before production access (the owner has done it before). The M11 gate still ends at closed testing live + the real-device check.
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
 - **Open (investigate later, no new build for it):** the "oda staging" APK (`c3517d59`) downloads on the Redmi but the install doesn't seem to take: Help still shows 0.3.1. First check: it installs as a *separate* app named "oda staging" (orange icon), so Help in the old oda app always shows 0.3.1; then Play Protect / "install unknown apps" for the browser. The real-device check runs on the Play build in CP4.
 - **Launch checklist L3 (owner, before the M11 gate; doesn't block review stop C or CP4):** copy the upload keystore + credentials (`C:\Users\denni\oda-keystore-backup`, written 2026-10-10 from EAS build credentials `wZQg7G2ndc`, read-only, verified with keytool) into the password manager, then delete the local folder. Claude doesn't move, upload or delete it.
@@ -31,11 +31,19 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-10 · State restoration (decision #100); D13 answered
+
+- **Owner (2026-10-10):** release-production started (production `23d8f7d`: root redirect, noindex, legal pages); D13: Personal Play account; state restoration "yes, as proposed".
+- **Built (JS only, branch `app-state-restoration`):** `src/restore/` (chunked SecureStore records under 2,000 bytes each, with an index for sign-out; drafts 12 h, last screen 1 h; the route rules); `useDraft` on add/edit product (uploaded photos kept), new manual order (with its idempotency key), review replies, order cancel reason + note, shop profile, your details, delivery area, category name (rename and new), feedback text; `useRouteMemory` in the root layout; the start gate reopens the screen with its tab underneath unless a notification started the app; `signOutLocal` clears it all. Never stored: sign-in / sign-up / codes, passwords, delete account, M-Pesa details, onboarding.
+- **Tests:** Vitest `src/restore/store.test.ts`, `route.test.ts`; Jest `src/test/screens/restore.ui.test.tsx` (product restore + Discard, drafts never cross products, background save, leaving removes, untouched keeps nothing; a review reply reopens).
+- **Privacy policy:** one sentence under "Cookies and your device" (approved wording); date unchanged (10 October 2026).
+- **Reaches the Play app** through Actions → eas-update-production after CP4's install (0.4.0 runtime, no native change).
+
 ## 2026-10-10 · Review stop C passed; Home link fix; CP4 preparation
 
 - **Review stop C passed** (owner): privacy policy and terms approved on staging. The "oda staging" APK check is deferred (install didn't take on the Redmi; open item, no new build). Keystore backup: launch checklist L3 (PR #92).
 - **Home link (PR #93, `24a3bb8`):** the shop link pill wrapped onto a clipped second line (stray dashes under `oda-eta.vercel.app/`). On Android a `selectable` Text ignores `numberOfLines`; `src/ui/shopLink.tsx` keeps it on one line ending in "…", not selectable (Copy and Share cover copying). Test `shopLink.ui.test.tsx`. JS only.
-- **State restoration:** scope proposed to the owner; building after the yes.
+- **State restoration:** scope proposed to the owner; approved and built (see the next entry).
 - **CP4 prep:** `docs/play-data-safety.md` (D12), the data safety answer sheet.
 
 ## 2026-10-10 · M11 CP3 part 3: root redirect, audit, the 0.4.0 builds

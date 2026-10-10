@@ -21,6 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { catalogueApi, type Category, type ProductSummary } from '@/catalogue/api';
 import { buyerFilters } from '@/catalogue/list';
 import { errorMessage } from '@/onboarding/labels';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
@@ -56,6 +58,14 @@ export default function CategoryDetail() {
   const category = categories?.find((c) => c.id === id) ?? null;
   const inCategory = (products ?? []).filter((p) => p.categoryId === id);
   const others = (products ?? []).filter((p) => p.categoryId !== id);
+
+  // A rename not yet saved survives Android closing the app (decision #100).
+  const restoredDraft = useDraft<{ name: string }>(`category.${id}`, {
+    value: { name },
+    worthSaving: !!category && name.trim() !== category.name,
+    restore: (saved) => setName(saved.name),
+    ready: !!category,
+  });
 
   async function save(fields: { name?: string; isVisible?: boolean }) {
     const { error: failed } = await catalogueApi.updateCategory(id, fields);
@@ -121,6 +131,13 @@ export default function CategoryDetail() {
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"
       >
+        <DraftBanner
+          visible={restoredDraft.restored}
+          onDiscard={() => {
+            restoredDraft.discard();
+            setName(category.name);
+          }}
+        />
         <View style={[styles.card, styles.formCard]}>
           <Field
             label="Name"

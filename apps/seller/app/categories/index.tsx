@@ -20,6 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { catalogueApi, type Category } from '@/catalogue/api';
 import { move } from '@/catalogue/form';
 import { errorMessage } from '@/onboarding/labels';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, FormMessage, InfoNote } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
@@ -78,6 +80,16 @@ export default function Categories() {
     }
   }
 
+  // A new category's name survives Android closing the app (decision #100).
+  const newDraft = useDraft<{ name: string }>('category.new', {
+    value: { name },
+    worthSaving: adding && !!name.trim(),
+    restore: (saved) => {
+      setName(saved.name);
+      setAdding(true);
+    },
+  });
+
   async function add() {
     if (!name.trim()) return;
     setBusy(true);
@@ -89,6 +101,7 @@ export default function Categories() {
     }
     setName('');
     setAdding(false);
+    newDraft.discard();
     await load();
   }
 
@@ -172,20 +185,30 @@ export default function Categories() {
   );
 
   const addBlock = adding ? (
-    <View style={styles.addRow}>
-      <TextInput
-        autoFocus
-        value={name}
-        onChangeText={setName}
-        onSubmitEditing={add}
-        placeholder="e.g. Dresses"
-        placeholderTextColor={colors.textMuted}
-        accessibilityLabel="New category name"
-        maxLength={40}
-        style={styles.addInput}
-        returnKeyType="done"
+    <View>
+      <DraftBanner
+        visible={newDraft.restored}
+        onDiscard={() => {
+          newDraft.discard();
+          setName('');
+          setAdding(false);
+        }}
       />
-      <Chip label={busy ? 'Adding…' : 'Add'} selected onPress={add} />
+      <View style={styles.addRow}>
+        <TextInput
+          autoFocus
+          value={name}
+          onChangeText={setName}
+          onSubmitEditing={add}
+          placeholder="e.g. Dresses"
+          placeholderTextColor={colors.textMuted}
+          accessibilityLabel="New category name"
+          maxLength={40}
+          style={styles.addInput}
+          returnKeyType="done"
+        />
+        <Chip label={busy ? 'Adding…' : 'Add'} selected onPress={add} />
+      </View>
     </View>
   ) : (
     <Pressable

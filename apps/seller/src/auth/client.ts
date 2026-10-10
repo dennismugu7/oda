@@ -4,6 +4,7 @@ import { createAuthClient } from 'better-auth/react';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@/config';
 import { isOnline } from '@/net';
+import { restoreStore } from '@/restore/native';
 import { CALL_TIMEOUT_MS, guardedCall, type CallResult } from './call';
 import type { AuthError } from './errors';
 import { clearPendingSignup } from './signup';
@@ -41,4 +42,6 @@ export async function signOutLocal(): Promise<void> {
   await clearPendingSignup();
   await SecureStore.deleteItemAsync(`${STORAGE_PREFIX}_cookie`).catch(() => {});
   await SecureStore.deleteItemAsync(`${STORAGE_PREFIX}_session_data`).catch(() => {});
+  // Unsaved drafts and the last screen belong to this account (decision #100).
+  await restoreStore.clearAll().catch(() => {});
 }

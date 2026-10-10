@@ -5,6 +5,8 @@ import { formatKePhone } from '@oda/shared';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { errorMessage } from '@/onboarding/labels';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { settingsApi, type Details } from '@/settings/api';
 import { displayName, initials, memberSince } from '@/settings/form';
 import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
@@ -53,6 +55,30 @@ function DetailsForm({
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
 
+  // Unsaved changes survive Android closing the app (decision #100).
+  const original = {
+    first: data.firstName ?? '',
+    last: data.lastName ?? '',
+    phone: localPart(data.recoveryPhone),
+  };
+  const draft = useDraft<typeof original>('settings-details', {
+    value: { first, last, phone },
+    worthSaving:
+      !saved && (first !== original.first || last !== original.last || phone !== original.phone),
+    restore: (s) => {
+      setFirst(s.first);
+      setLast(s.last);
+      setPhone(s.phone);
+    },
+  });
+
+  function discardDraft() {
+    draft.discard();
+    setFirst(original.first);
+    setLast(original.last);
+    setPhone(original.phone);
+  }
+
   async function save() {
     setBusy(true);
     setSaveError(null);
@@ -77,6 +103,7 @@ function DetailsForm({
   const name = displayName(data.firstName, data.lastName, data.email);
   return (
     <>
+      <DraftBanner visible={draft.restored} onDiscard={discardDraft} />
       {saveError ? <FormMessage>{saveError}</FormMessage> : null}
       {saved ? <FormMessage tone="info">Saved.</FormMessage> : null}
       <Card padded>
