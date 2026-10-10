@@ -1,6 +1,7 @@
 // /privacy and /terms (M11 CP3, decisions #93 D9, #98): the operator, contact and last-updated
 // date in one place; each page writes its own sections.
 import Link from 'next/link';
+import { HOME_HREF } from '@/lib/home';
 import type { ReactNode } from 'react';
 
 export const SUPPORT_EMAIL = 'support@mugu-labs.com';
@@ -20,7 +21,7 @@ export function LegalPage({
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pt-8 pb-12">
       <Link
-        href="/"
+        href={HOME_HREF}
         aria-label="oda home"
         className="text-[32px] leading-none font-bold tracking-[-1px] text-navy"
       >

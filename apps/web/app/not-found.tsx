@@ -1,5 +1,6 @@
 // The branded 404 (spec §6.1): unknown, suspended and deleted shops, and any other missing page.
 import Link from 'next/link';
+import { HOME_HREF } from '@/lib/home';
 
 export default function NotFound() {
   return (
@@ -16,7 +17,7 @@ export default function NotFound() {
         The link may be mistyped, or the shop is no longer on oda. Check the link with the seller.
       </p>
       <Link
-        href="/"
+        href={HOME_HREF}
         className="mt-8 flex h-12 items-center rounded-pill bg-primary px-6 text-button text-text-on-primary"
       >
         Go to oda

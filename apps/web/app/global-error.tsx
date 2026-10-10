@@ -3,6 +3,7 @@
 // The last-resort error page, when the root layout itself fails. It replaces the root layout,
 // so it brings its own <html>, <body> and styles (Next 16 docs: global-error).
 import Link from 'next/link';
+import { HOME_HREF } from '@/lib/home';
 import './globals.css';
 
 export default function GlobalError({
@@ -35,7 +36,7 @@ export default function GlobalError({
             Try again
           </button>
           <Link
-            href="/"
+            href={HOME_HREF}
             className="mt-2 inline-flex min-h-11 items-center text-body-strong text-navy underline"
           >
             Go to oda
