@@ -1,31 +1,42 @@
+import { colors } from '@oda/ui-tokens/tokens';
 import type { ExpoConfig } from 'expo/config';
 
 // Android only, light theme only (docs/decisions.md #8).
 // EAS project created by `eas init` (not a secret).
 const easProjectId = '10f06155-8e5f-441e-b95e-7af4f4c86d38';
 
+// Preview (staging) builds are a separate app, "oda staging" (`com.mugulabs.oda.preview`), so
+// it installs next to the Play app on one phone (decision #93 D6). EAS sets APP_VARIANT in the
+// preview build profile (eas.json) and when publishing preview updates; everything else
+// (production, development, local) is the real app.
+const preview = process.env.APP_VARIANT === 'preview';
+
+// Native colours come from the shared tokens (decision #88: #C44323), never written here.
+const brand = colors.primary;
+
 const config: ExpoConfig = {
-  name: 'oda',
+  name: preview ? 'oda staging' : 'oda',
   slug: 'oda',
   scheme: 'oda',
   // 0.2.0: native modules for onboarding photos and later milestones (decision #53).
   // 0.3.0: push (expo-notifications + Firebase) and Sentry, inactive until M10 (decision #70).
   // 0.3.1: Expo SDK 57 patch releases (decisions #80, #81 f).
+  // 0.4.0: production build (M11 CP3): brand colour #C44323, separate preview app id.
   // Bump on every native change (decision #48).
-  version: '0.3.1',
+  version: '0.4.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   platforms: ['android'],
   icon: './assets/icon.png',
   android: {
-    package: 'com.mugulabs.oda',
+    package: preview ? 'com.mugulabs.oda.preview' : 'com.mugulabs.oda',
     // Firebase config for push (FCM). Never committed (the repo is public): the laptop keeps
     // apps/seller/google-services.json; EAS builds get it from the file variable
     // GOOGLE_SERVICES_JSON (decision #70).
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#D94A27',
+      backgroundColor: brand,
     },
   },
   plugins: [
@@ -39,12 +50,12 @@ const config: ExpoConfig = {
       {
         // Android draws the status-bar icon in one colour: a white "o" with the logo's dot.
         icon: './assets/notification-icon.png',
-        color: '#D94A27',
+        color: brand,
         defaultChannel: 'orders',
       },
     ],
-    // @sentry/react-native is installed for M10 but stays inactive: no config plugin (so no
-    // source-map upload step), no DSN, Sentry.init is never called, nothing is sent.
+    // @sentry/react-native has no config plugin: source maps are uploaded by the eas-update
+    // workflows (decision #90); the DSN comes from the EAS environment (src/sentry.ts).
     [
       'expo-image-picker',
       {
@@ -62,7 +73,7 @@ const config: ExpoConfig = {
         // inside the 96dp safe radius with ~12% margin (200dp clipped the "o" and tick).
         imageWidth: 160,
         resizeMode: 'contain',
-        backgroundColor: '#D94A27',
+        backgroundColor: brand,
       },
     ],
   ],

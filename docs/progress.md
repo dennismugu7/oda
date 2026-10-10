@@ -27,6 +27,14 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-10 · M11 CP3 part 1: search engines, app config for the production build
+
+**Review stop B passed** (owner, 2026-10-10), with one change: shops stay out of search engines until the public launch (PR #86, decision #96, launch checklist L2; production gets it with its next release).
+
+**App config (this PR; decision #97):** preview builds become "oda staging" `com.mugulabs.oda.preview` (D6); eas.json `production` profile (AAB, both CPU types, channel `production`, versionCode from EAS); native colours from `@oda/ui-tokens` (#C44323) and the icon, adaptive icon and splash redrawn by `scripts/draw-brand-assets.mjs` (sharp, linked offline); version 0.4.0 with `native-runtime.json` rewritten; EAS environment `production` (three public values, set by Claude); workflow `eas-update-production`. Local checks: format, lint, typecheck, workflows, seller tests 113, ui-tokens tests, `deps:check` (offline) all pass; database tests and the Android bundle run in CI.
+
+**Open (owner):** decisions for the privacy/terms drafts (operator name, retention gaps found in the code, checkout wording); the Firebase step for `com.mugulabs.oda.preview`; a go for `pnpm audit --prod`, online expo-doctor and the two EAS builds.
+
 ## 2026-10-09 · M11 CP2 part 2: production setup (owner steps 1–2, Vercel by CLI, production-guard)
 
 **Owner's answers (decision #95):** A, free: only the owner starts release-production (Claude only on the owner's go for that release), plus a guard on the `production` branch; yes to Vercel by the laptop's CLI; D13 open, plan for a personal Play account.
