@@ -15,6 +15,8 @@ import {
 } from '@oda/shared';
 import { useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
@@ -308,6 +310,20 @@ function SellerCancel({ order, busy, error, onClose, onSubmit }: SheetProps) {
   const [note, setNote] = useState('');
   const [received, setReceived] = useState<boolean | null>(null);
   const [wa, setWa] = useWhatsApp(order);
+  // Survives Android closing the app (decision #100); "Keep order" or a cancel removes it.
+  const draft = useDraft<{
+    reason: SellerCancelReason | null;
+    note: string;
+    received: boolean | null;
+  }>(`order-cancel.${order.id}`, {
+    value: { reason, note, received },
+    worthSaving: reason !== null || !!note.trim() || received !== null,
+    restore: (saved) => {
+      setReason(saved.reason);
+      setNote(saved.note);
+      setReceived(saved.received);
+    },
+  });
   const name = firstName(order.buyer.name);
   const claimed = order.paymentStatus === 'claimed';
   const refund = order.paymentStatus === 'paid' || (claimed && received === true);
@@ -319,6 +335,15 @@ function SellerCancel({ order, busy, error, onClose, onSubmit }: SheetProps) {
       subtitle={`${order.buyer.name} · ${formatKsh(order.total)}`}
       onClose={onClose}
     >
+      <DraftBanner
+        visible={draft.restored}
+        onDiscard={() => {
+          draft.discard();
+          setReason(null);
+          setNote('');
+          setReceived(null);
+        }}
+      />
       {claimed ? (
         <>
           <Text style={styles.label}>

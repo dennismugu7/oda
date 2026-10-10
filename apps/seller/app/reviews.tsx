@@ -25,6 +25,8 @@ import { ActionSheet } from '@/orders/parts';
 import { reviewsApi, type ReviewList, type SellerReview } from '@/reviews/api';
 import { replaceReview, reviewsCache } from '@/reviews/cache';
 import { avatarFor, emptyText, histogramBars, REVIEW_TABS, reviewLabel } from '@/reviews/view';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
@@ -294,6 +296,25 @@ export default function ReviewsScreen() {
     load(tabRef.current);
   }
 
+  // An unsent reply survives Android closing the app (decision #100): the sheet reopens on it.
+  const replyDraft = useDraft<{ reviewId: string; reply: string }>('review-reply', {
+    value: { reviewId: replying?.id ?? '', reply },
+    worthSaving: !!replying && reply.trim() !== (replying.sellerReply ?? '').trim(),
+    restore: (saved) => {
+      reviewsApi.get(saved.reviewId).then(({ data }) => {
+        if (!data) return;
+        setSheetError(null);
+        setReply(saved.reply);
+        setReplying(data);
+      });
+    },
+  });
+
+  function closeReply() {
+    setReplying(null);
+    replyDraft.discard();
+  }
+
   function openReply(r: SellerReview) {
     setSheetError(null);
     setReply(r.sellerReply ?? '');
@@ -307,7 +328,7 @@ export default function ReviewsScreen() {
     const { data, error: failed } = await reviewsApi.reply(replying.id, value);
     setSaving(false);
     if (!data) return setSheetError(errorMessage(failed));
-    setReplying(null);
+    closeReply();
     updated(data);
   }
 
@@ -457,8 +478,15 @@ export default function ReviewsScreen() {
           replying?.sellerReply ? 'Edit your reply' : `Reply to ${replying?.buyerDisplayName ?? ''}`
         }
         subtitle="Buyers see your reply under the review on your shop page."
-        onClose={() => setReplying(null)}
+        onClose={closeReply}
       >
+        <DraftBanner
+          visible={replyDraft.restored}
+          onDiscard={() => {
+            replyDraft.discard();
+            setReply(replying?.sellerReply ?? '');
+          }}
+        />
         <Field
           label="Your reply"
           labelHint={`${reply.length}/${REVIEW_REPLY_MAX}`}

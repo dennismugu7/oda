@@ -10,6 +10,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { useRouteMemory } from '@/restore/useRouteMemory';
 import { initSentry, wrapRoot } from '@/sentry';
 import { colors } from '@/theme';
 
@@ -25,6 +26,8 @@ function RootLayout() {
     // Welcome logo and headline (the approved preview uses 800).
     Poppins_800ExtraBold,
   });
+  // Remember the screen when oda goes to the background (decision #100).
+  useRouteMemory();
 
   useEffect(() => {
     // On a font error we still show the app (system font) rather than hang on the splash.

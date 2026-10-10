@@ -21,7 +21,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -38,6 +38,7 @@ import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderDetail } from '@/orders/api';
 import { Stepper, TextButton } from '@/orders/parts';
 import { accountLabel, OrderSheet, type SheetKind } from '@/orders/sheets';
+import { restoreStore } from '@/restore/native';
 import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
@@ -102,6 +103,24 @@ export default function OrderDetailScreen() {
       setSheet(quick as SheetKind);
     }
   }
+
+  // A cancel the seller was writing when Android closed the app reopens (decision #100); the
+  // sheet puts the reason and note back itself.
+  const draftChecked = useRef(false);
+  useEffect(() => {
+    if (draftChecked.current || !order || quick) return;
+    draftChecked.current = true;
+    if (!order.actions.includes('sellerCancel' as never)) return;
+    restoreStore.hasDraft(`order-cancel.${order.id}`).then(
+      (has) => {
+        if (!has) return;
+        setSheetError(null);
+        setSheetKey((k) => k + 1);
+        setSheet((current) => current ?? 'sellerCancel');
+      },
+      () => {},
+    );
+  }, [order, quick]);
 
   function open(kind: SheetKind) {
     if (offline) {

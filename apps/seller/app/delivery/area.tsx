@@ -25,6 +25,8 @@ import {
   type AreaDraft,
 } from '@/delivery/form';
 import { errorMessage } from '@/onboarding/labels';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
@@ -68,6 +70,20 @@ export default function AreaScreen() {
 
   const set = (patch: Partial<AreaDraft>) => setDraft((d) => ({ ...d, ...patch }));
   const back = () => (router.canGoBack() ? router.back() : router.replace('/delivery'));
+
+  // Unsaved changes survive Android closing the app (decision #100), once the area is loaded.
+  const original = area ? draftFromArea(area) : emptyArea();
+  const restoredDraft = useDraft<AreaDraft>(`delivery-area.${id ?? 'new'}`, {
+    value: draft,
+    worthSaving: JSON.stringify(draft) !== JSON.stringify(original),
+    restore: setDraft,
+    ready: !id || !!area,
+  });
+
+  function discardDraft() {
+    restoredDraft.discard();
+    setDraft(original);
+  }
 
   async function save() {
     const problem = areaProblem(draft);
@@ -159,6 +175,7 @@ export default function AreaScreen() {
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"
       >
+        <DraftBanner visible={restoredDraft.restored} onDiscard={discardDraft} />
         {error ? <FormMessage>{error}</FormMessage> : null}
         <View style={styles.card}>
           <Field

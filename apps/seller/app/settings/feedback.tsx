@@ -8,6 +8,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { errorMessage } from '@/onboarding/labels';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { nativePhotoDeps, pickPhotos } from '@/onboarding/nativePhotos';
 import { uploadScreenshot, type Picked } from '@/onboarding/photos';
 import { settingsApi, type FeedbackForm } from '@/settings/api';
@@ -35,6 +37,17 @@ export default function ShareFeedback() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
   const [focused, setFocused] = useState(false);
+
+  // The message survives Android closing the app (decision #100); a screenshot isn't kept.
+  const draft = useDraft<{ kind: FeedbackKind; message: string; reply: boolean }>('feedback', {
+    value: { kind, message, reply },
+    worthSaving: !sent && !!message.trim(),
+    restore: (saved) => {
+      setKind(saved.kind);
+      setMessage(saved.message);
+      setReply(saved.reply);
+    },
+  });
 
   async function pick() {
     const { photos, error: pickError } = await pickPhotos('library', 1);
@@ -71,6 +84,7 @@ export default function ShareFeedback() {
     setBusy(false);
     if (ok) {
       setSent(true);
+      draft.discard();
       return;
     }
     setSendError(errorMessage(failed));
@@ -103,6 +117,13 @@ export default function ShareFeedback() {
         </>
       ) : data ? (
         <>
+          <DraftBanner
+            visible={draft.restored}
+            onDiscard={() => {
+              draft.discard();
+              setMessage('');
+            }}
+          />
           {sendError ? <FormMessage>{sendError}</FormMessage> : null}
           <Card padded>
             <Text style={rowStyles.overline}>WHAT&apos;S IT ABOUT?</Text>

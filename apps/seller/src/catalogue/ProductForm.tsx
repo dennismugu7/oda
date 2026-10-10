@@ -39,6 +39,8 @@ import { errorMessage } from '@/onboarding/labels';
 import { nativePhotoDeps, pickPhotos, type PickSource } from '@/onboarding/nativePhotos';
 import { preparePhoto, uploadProductPhoto, type Picked } from '@/onboarding/photos';
 import { addCustomSize, sizeChips, toggleSize } from '@/onboarding/sizes';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { AuthScreen, Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader as Header } from '@/ui/screenHeader';
@@ -56,6 +58,12 @@ const STATUSES: { value: ProductStatus; label: string }[] = [
   { value: 'sold_out', label: 'Sold out' },
   { value: 'hidden', label: 'Hidden' },
 ];
+
+/** What a product draft keeps (decision #100): the fields, and photos already uploaded. */
+interface SavedProductDraft {
+  draft: ProductDraft;
+  photos: { preview: string; photo: PhotoInput }[];
+}
 
 function slotsFrom(product: Product | null): Slot[] {
   return (product?.photos ?? []).map((p) => ({
@@ -189,6 +197,37 @@ function Editor({
     !product ||
     Object.keys(changedFields(product, draft)).length > 0 ||
     photosChanged(original, donePhotos(slots));
+
+  // Unsaved changes survive Android closing the app (decision #100): photos still uploading,
+  // failed or never uploaded aren't kept.
+  const uploaded = slots.flatMap((s) =>
+    s.status === 'done' && s.photo ? [{ preview: s.preview, photo: s.photo }] : [],
+  );
+  const restoredDraft = useDraft<SavedProductDraft>(`product.${product?.id ?? 'new'}`, {
+    value: { draft, photos: uploaded },
+    worthSaving: product
+      ? dirty
+      : JSON.stringify(draft) !== JSON.stringify(emptyDraft()) || uploaded.length > 0,
+    restore: (saved) => {
+      setDraft(saved.draft);
+      setSlots(
+        saved.photos.map((p) => ({
+          id: newSlotId(),
+          preview: p.preview,
+          status: 'done',
+          photo: p.photo,
+          picked: null,
+        })),
+      );
+    },
+  });
+
+  function discardDraft() {
+    restoredDraft.discard();
+    setDraft(product ? draftFrom(product) : emptyDraft());
+    setSlots(slotsFrom(product));
+    setError(null);
+  }
 
   function update(id: string, patch: Partial<Slot>) {
     setSlots((list) => list.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -412,6 +451,7 @@ function Editor({
         />
       }
     >
+      <DraftBanner visible={restoredDraft.restored} onDiscard={discardDraft} />
       <View style={[styles.card, styles.first]}>
         <View style={styles.cardHead}>
           <Text style={styles.overline}>PHOTOS</Text>

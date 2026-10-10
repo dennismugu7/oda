@@ -7,6 +7,8 @@ import { formatKePhone, normalizeKePhone, searchLocations, SLUG_MAX } from '@oda
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { onboardingApi, type SlugCheck } from '@/onboarding/api';
+import { DraftBanner } from '@/restore/DraftBanner';
+import { useDraft } from '@/restore/useDraft';
 import { errorMessage } from '@/onboarding/labels';
 import { nativePhotoDeps, pickPhotos } from '@/onboarding/nativePhotos';
 import { uploadLogo, type Picked } from '@/onboarding/photos';
@@ -79,6 +81,14 @@ function ProfileEditor({
     setForm((f) => ({ ...f, ...patch }));
   };
 
+  // Unsaved text survives Android closing the app (decision #100). A logo picked but not yet
+  // uploaded isn't kept.
+  const draftFile = useDraft<ProfileForm>('shop-profile', {
+    value: form,
+    worthSaving: Object.keys(profileChanges(formOf(data), form)).length > 0,
+    restore: (saved) => setForm({ ...formOf(data), ...saved, logoPath: data.logoPath }),
+  });
+
   async function pickLogo() {
     const { photos, error: pickError } = await pickPhotos('library', 1);
     if (pickError) setSaveError(pickError);
@@ -146,6 +156,7 @@ function ProfileEditor({
       setForm(formOf(result));
       setLogo(null);
       setSaved(true);
+      draftFile.discard();
       return;
     }
     setSaveError(errorMessage(failed));
@@ -153,7 +164,8 @@ function ProfileEditor({
   }
 
   const logoUri = logo?.uri ?? (form.logoPath ? data.logoUrl : null);
-  const dirty = !!logo || Object.keys(profileChanges(formOf(data), form)).length > 0;
+  const changed = Object.keys(profileChanges(formOf(data), form)).length > 0;
+  const dirty = !!logo || changed;
   const handleSheet = editing === 'tiktok' || editing === 'instagram' || editing === 'whatsapp';
 
   return (
@@ -208,6 +220,13 @@ function ProfileEditor({
           onClose={() => setEditing(null)}
         />
       ) : null}
+      <DraftBanner
+        visible={draftFile.restored}
+        onDiscard={() => {
+          draftFile.discard();
+          setForm(formOf(data));
+        }}
+      />
       {saveError ? <FormMessage>{saveError}</FormMessage> : null}
       {saved && !dirty ? (
         <FormMessage tone="info">Saved. Your shop shows it now.</FormMessage>

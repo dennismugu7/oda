@@ -104,7 +104,8 @@ export default function Privacy() {
           a day. It holds today&apos;s date and short shop codes, nothing about you, and expires
           after two days. Your cart, favourites and the link you came from stay on your device
           (local storage) and never reach us until you order. The seller app keeps you signed in
-          with a token stored securely on your phone.
+          with a token stored securely on your phone. If Android closes the app, unsaved form text
+          stays encrypted on your phone for up to 12 hours.
         </p>
       </section>
 

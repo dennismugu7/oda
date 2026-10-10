@@ -2,7 +2,7 @@
 // decides (the onboarding step reached, or the tabs once onboarding is done). Reads the session cookie directly, never Better Auth's session atom, which
 // refreshes ~10 ms after a verified code (src/auth/start.ts). Every path ends: a timeout,
 // an offline message or an error message, never an endless spinner.
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { OFFLINE_MESSAGE, UNREACHABLE_MESSAGE } from '@/auth/errors';
 import type { StartRoute } from '@/auth/route';
 import { getPendingSignup } from '@/auth/signup';
 import { resolveStart } from '@/auth/start';
+import { landing } from '@/restore/start';
 import { clearOnboardingState } from '@/onboarding/useOnboarding';
 import { Button, Wordmark } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
@@ -49,6 +50,15 @@ export default function StartGate() {
           // A sign-up in progress on this phone: back to its code screen.
           router.replace({ pathname: '/verify', params: { email: next.email, resumed: '1' } });
           return;
+        case '/home': {
+          // Reopen the screen Android closed in the background, if under an hour ago (#100).
+          landing().then(({ tab, screen }) => {
+            if (cancelled) return;
+            router.replace(tab);
+            if (screen) router.push(screen as Href);
+          });
+          return;
+        }
         default:
           router.replace(next.to);
       }

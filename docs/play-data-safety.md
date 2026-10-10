@@ -64,5 +64,6 @@ days), except where noted.
   sharing).
 - If Play asks why "Financial info" is collected: sellers enter their own M-Pesa details so
   buyers know where to pay; oda never receives or holds money (terms).
-- Unsaved form text kept on the phone for state restoration (if the owner approves it) never
-  leaves the phone, so it isn't "collected" in Play's sense.
+- Unsaved form text kept for state restoration (decision #100: encrypted in SecureStore on the
+  phone, at most 12 hours, removed on sign-out) never leaves the phone, so it isn't "collected"
+  in Play's sense.
