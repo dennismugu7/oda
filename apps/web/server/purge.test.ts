@@ -327,6 +327,12 @@ describe('unreferenced files and old sign-ups', () => {
       rawMessage: 'SFK7Q2M9TX Confirmed. Ksh1,800.00 sent to … New M-PESA balance is Ksh5,000.',
     });
 
+    // Creating the seller leaves rate-limit rows of its own (recent): only these two count.
+    const ours = async () =>
+      (await db().select().from(t.rateLimits))
+        .map((r) => r.key)
+        .filter((k) => k.includes('203.0.113.9') || k.includes('+254712345901'))
+        .sort();
     const dry = await purge(db(), { dryRun: true });
     expect(dry).toMatchObject({
       rateLimits: 1,
@@ -334,7 +340,7 @@ describe('unreferenced files and old sign-ups', () => {
       verifications: 1,
       claimMessages: 1,
     });
-    expect(await db().select().from(t.rateLimits)).toHaveLength(2);
+    expect(await ours()).toEqual(['order-phone:x:+254712345901', 'signin-ip:203.0.113.9']);
 
     const real = await purge(db(), { dryRun: false });
     expect(real).toMatchObject({
@@ -343,9 +349,7 @@ describe('unreferenced files and old sign-ups', () => {
       verifications: 1,
       claimMessages: 1,
     });
-    expect((await db().select().from(t.rateLimits)).map((r) => r.key)).toEqual([
-      'order-phone:x:+254712345901',
-    ]);
+    expect(await ours()).toEqual(['order-phone:x:+254712345901']);
     expect((await db().select().from(t.deletionRequests)).map((r) => r.email)).toEqual([
       'recent@example.test',
     ]);
