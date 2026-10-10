@@ -604,11 +604,9 @@ export async function transitionOrder(
       await tx.insert(t.paymentClaims).values({
         orderId: order.id,
         shopId: order.shopId,
+        // Only the code is kept: a pasted M-Pesa SMS can hold the buyer's balance and more
+        // (decision #98). raw_message stays null (the purge clears any older ones).
         mpesaCode: code,
-        rawMessage:
-          action.message.trim().toUpperCase() === code
-            ? null
-            : action.message.trim().slice(0, 1000),
       });
     } else {
       const outcome = claimOutcome(action, order.paymentStatus, updated.paymentStatus);

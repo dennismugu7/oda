@@ -27,6 +27,13 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-10 · M11 CP3 part 2: privacy, terms, data retention
+
+- **PR #87 merged** (`c9d1e35`, app config for 0.4.0; all checks green).
+- **Data inventory** (code sweep for the legal pages) found data kept with no limit: rate-limit keys with raw IPs/emails/phones, delete-account requests, expired reset tokens, the full pasted M-Pesa SMS; also a checkout promise the Customers screen contradicted, and no named operator. **Owner's answers → decision #98.**
+- **Code (this PR):** purge step 6 (rate limits > 2 days, delete requests > 30 days, expired reset tokens, claim message text cleared; counts in the run summary and the cron-purge job summary); checkout keeps only the M-Pesa code; the checkout text and a Privacy link; `/privacy` and `/terms` drafts (operator Mugu Labs, Kenya; "Last updated 10 October 2026"; placeholder banner gone). Tests: purge "removes records past their use…", the order claim test now expects no stored message.
+- **For the owner at review stop C:** read https://oda-eta.vercel.app/privacy and /terms after the merge; the terms add "sellers must be 18 or older".
+
 ## 2026-10-10 · M11 CP3 part 1: search engines, app config for the production build
 
 **Review stop B passed** (owner, 2026-10-10), with one change: shops stay out of search engines until the public launch (PR #86, decision #96, launch checklist L2; production gets it with its next release).

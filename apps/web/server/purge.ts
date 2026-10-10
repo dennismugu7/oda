@@ -18,7 +18,11 @@ import { queueDeletions } from './uploads';
 //   3. leftover storage_deletions (failed deletes): retried;
 //   4. unreferenced files under products/, logos/, reviews/ older than 24 h (abandoned
 //      uploads, review photos never submitted);
-//   5. sign-up attempts older than 7 days.
+//   5. sign-up attempts older than 7 days;
+//   6. other records past their use (decision #98): rate-limit counters older than 2 days
+//      (the longest window is a day; their keys hold IP addresses, emails and phones), delete-
+//      account requests older than 30 days, expired password-reset tokens, and any M-Pesa
+//      message text a payment claim still holds (only the code is kept since #98).
 // A dry run reports what each step would remove and removes nothing. Every run (dry or not)
 // writes one ops_events audit row; every purged account writes its own. Logs: counts only.
 
@@ -27,6 +31,8 @@ const DAY = 86_400_000;
 
 export const PURGE_AFTER_DAYS = 30;
 export const SIGNUP_ATTEMPTS_DAYS = 7;
+export const RATE_LIMIT_DAYS = 2;
+export const DELETION_REQUEST_DAYS = 30;
 export const UNREFERENCED_AFTER_HOURS = 24;
 export const BATCH = { accounts: 20, products: 200, retries: 200, unreferenced: 500 };
 /** Prefixes checked for unreferenced files (step 4). */
@@ -61,6 +67,12 @@ export interface PurgeReport {
   /** The unreferenced files themselves (step 4), each with its reason. */
   unreferencedFiles: OrphanFile[];
   signupAttempts: number;
+  /** Step 6: rate-limit counters, delete-account requests, expired reset tokens removed. */
+  rateLimits: number;
+  deletionRequests: number;
+  verifications: number;
+  /** Step 6: payment claims whose pasted M-Pesa message text was cleared. */
+  claimMessages: number;
   /** File deletes that failed; queued in storage_deletions for the next run. */
   failedFiles: number;
   /**
@@ -281,6 +293,10 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     unreferenced: 0,
     unreferencedFiles: [],
     signupAttempts: 0,
+    rateLimits: 0,
+    deletionRequests: 0,
+    verifications: 0,
+    claimMessages: 0,
     failedFiles: 0,
     storageUnavailable: false,
     more: false,
@@ -467,6 +483,55 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     report.signupAttempts = removed.length;
   }
 
+  // 6. Records past their use (#98). Each is a plain count in a dry run.
+  const rateCutoff = new Date(now.getTime() - RATE_LIMIT_DAYS * DAY);
+  const requestCutoff = new Date(now.getTime() - DELETION_REQUEST_DAYS * DAY);
+  const pastUse = [
+    { table: t.rateLimits, where: lt(t.rateLimits.windowStart, rateCutoff), into: 'rateLimits' },
+    {
+      table: t.deletionRequests,
+      where: lt(t.deletionRequests.createdAt, requestCutoff),
+      into: 'deletionRequests',
+    },
+    {
+      table: t.authVerification,
+      where: lt(t.authVerification.expiresAt, now),
+      into: 'verifications',
+    },
+  ] as const;
+  for (const { table, where, into } of pastUse) {
+    if (dryRun) {
+      const [row] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(table)
+        .where(where);
+      report[into] = row?.n ?? 0;
+    } else {
+      report[into] = (
+        await db
+          .delete(table)
+          .where(where)
+          .returning({ one: sql`1` })
+      ).length;
+    }
+  }
+  const withMessage = isNotNull(t.paymentClaims.rawMessage);
+  if (dryRun) {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(t.paymentClaims)
+      .where(withMessage);
+    report.claimMessages = row?.n ?? 0;
+  } else {
+    report.claimMessages = (
+      await db
+        .update(t.paymentClaims)
+        .set({ rawMessage: null })
+        .where(withMessage)
+        .returning({ id: t.paymentClaims.id })
+    ).length;
+  }
+
   await db.insert(t.opsEvents).values({
     action: dryRun ? 'purge_dry_run' : 'purge_run',
     reason: dryRun ? 'Dry run: nothing removed' : 'Daily purge',
@@ -489,6 +554,10 @@ export function summary(report: PurgeReport) {
     retried: report.retried,
     unreferenced: report.unreferenced,
     signupAttempts: report.signupAttempts,
+    rateLimits: report.rateLimits,
+    deletionRequests: report.deletionRequests,
+    verifications: report.verifications,
+    claimMessages: report.claimMessages,
     failedFiles: report.failedFiles,
     storageUnavailable: report.storageUnavailable,
     more: report.more,
@@ -514,7 +583,7 @@ export async function postPurge(
     const report = await purge(getDb(), { dryRun, actor });
     const counts = summary(report);
     console.info(
-      `[cron] purge${dryRun ? ' (dry run)' : ''}: ${counts.accounts} accounts, ${counts.products} products, ${counts.unreferenced} unreferenced, ${counts.retried} retried, ${counts.signupAttempts} sign-up attempts, ${counts.failedFiles} failed`,
+      `[cron] purge${dryRun ? ' (dry run)' : ''}: ${counts.accounts} accounts, ${counts.products} products, ${counts.unreferenced} unreferenced, ${counts.retried} retried, ${counts.signupAttempts} sign-up attempts, ${counts.rateLimits + counts.deletionRequests + counts.verifications} expired records, ${counts.claimMessages} claim messages cleared, ${counts.failedFiles} failed`,
     );
     return Response.json(
       {

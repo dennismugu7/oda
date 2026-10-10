@@ -298,6 +298,64 @@ describe('unreferenced files and old sign-ups', () => {
       'new@example.test',
     ]);
   });
+
+  it('removes records past their use and clears pasted M-Pesa messages (#98)', async () => {
+    const s = await fullShop();
+    const ago = (days: number) => new Date(Date.now() - days * DAY);
+    await db()
+      .insert(t.rateLimits)
+      .values([
+        { key: 'signin-ip:203.0.113.9', windowStart: ago(3), count: 4 },
+        { key: 'order-phone:x:+254712345901', windowStart: ago(1), count: 1 },
+      ]);
+    await db()
+      .insert(t.deletionRequests)
+      .values([
+        { email: 'gone@example.test', createdAt: ago(31) },
+        { email: 'recent@example.test', createdAt: ago(2) },
+      ]);
+    await db()
+      .insert(t.authVerification)
+      .values([
+        { identifier: 'reset-password:old', value: 'x', expiresAt: ago(1) },
+        { identifier: 'reset-password:live', value: 'y', expiresAt: new Date(Date.now() + DAY) },
+      ]);
+    await db().insert(t.paymentClaims).values({
+      orderId: s.order.id,
+      shopId: s.shopId,
+      mpesaCode: 'SFK7Q2M9TX',
+      rawMessage: 'SFK7Q2M9TX Confirmed. Ksh1,800.00 sent to … New M-PESA balance is Ksh5,000.',
+    });
+
+    const dry = await purge(db(), { dryRun: true });
+    expect(dry).toMatchObject({
+      rateLimits: 1,
+      deletionRequests: 1,
+      verifications: 1,
+      claimMessages: 1,
+    });
+    expect(await db().select().from(t.rateLimits)).toHaveLength(2);
+
+    const real = await purge(db(), { dryRun: false });
+    expect(real).toMatchObject({
+      rateLimits: 1,
+      deletionRequests: 1,
+      verifications: 1,
+      claimMessages: 1,
+    });
+    expect((await db().select().from(t.rateLimits)).map((r) => r.key)).toEqual([
+      'order-phone:x:+254712345901',
+    ]);
+    expect((await db().select().from(t.deletionRequests)).map((r) => r.email)).toEqual([
+      'recent@example.test',
+    ]);
+    expect((await db().select().from(t.authVerification)).map((r) => r.identifier)).toEqual([
+      'reset-password:live',
+    ]);
+    expect(await db().select().from(t.paymentClaims)).toMatchObject([
+      { mpesaCode: 'SFK7Q2M9TX', rawMessage: null },
+    ]);
+  });
 });
 
 describe('POST /api/cron/purge', () => {

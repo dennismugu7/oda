@@ -1,11 +1,22 @@
-// /privacy and /terms (M4): placeholder text, clearly marked for replacement before launch
-// (owner Step 63). Only the structure and a few facts are real.
+// /privacy and /terms (M11 CP3, decisions #93 D9, #98): the operator, contact and last-updated
+// date in one place; each page writes its own sections.
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 export const SUPPORT_EMAIL = 'support@mugu-labs.com';
+/** The operator named on both pages (owner, 2026-10-10). */
+export const OPERATOR = 'Mugu Labs';
 
-export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
+export function LegalPage({
+  title,
+  updated,
+  children,
+}: {
+  title: string;
+  /** "Last updated" date, written out (e.g. "10 October 2026"). */
+  updated: string;
+  children: ReactNode;
+}) {
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pt-8 pb-12">
       <Link
@@ -15,15 +26,9 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
       >
         oda<span className="text-green-bright">.</span>
       </Link>
-      <p
-        role="note"
-        className="mt-6 rounded-lg border border-warning-accent bg-warning-tint p-4 text-body-strong text-warning-text-strong"
-      >
-        Placeholder — to be replaced before launch. This page is a draft, not oda&apos;s final legal
-        text.
-      </p>
       <h1 className="mt-6 text-headline text-navy">{title}</h1>
-      <div className="mt-4 space-y-6 text-body text-text-secondary [&_h2]:text-title [&_h2]:text-navy [&_p]:mt-2">
+      <p className="mt-1 text-small text-text-secondary">Last updated {updated}</p>
+      <div className="mt-4 space-y-6 text-body text-text-secondary [&_h2]:text-title [&_h2]:text-navy [&_h3]:mt-3 [&_h3]:text-body-strong [&_h3]:text-navy [&_li]:mt-1 [&_p]:mt-2 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
         {children}
       </div>
       <p className="mt-10 text-small text-text-secondary">
