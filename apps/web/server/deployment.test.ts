@@ -7,8 +7,10 @@ import {
   DEPLOYMENT_CHECK_ENV,
   indexable,
   odaEnvironment,
+  pageRobotsTag,
   PRODUCTION_BASE_URL,
   productionConfigProblems,
+  shopsIndexable,
 } from './deployment';
 
 // Which deployment this is, and what production must have before it serves anyone (M11 CP2).
@@ -48,6 +50,30 @@ describe('odaEnvironment', () => {
     expect(indexable({ VERCEL_ENV: 'production' })).toBe(false);
     expect(indexable({ VERCEL_ENV: 'preview' })).toBe(false);
     expect(indexable({})).toBe(false);
+  });
+
+  it('before launch, production lets search engines index only the landing and legal pages', () => {
+    const prod = { NEXT_PUBLIC_ODA_ENV: 'production' };
+    for (const path of ['/', '/privacy', '/terms', '/terms/']) {
+      expect(pageRobotsTag(path, prod)).toBeNull();
+    }
+    for (const path of ['/amani-styles', '/amani-styles/p/abc', '/delete-account', '/o/x']) {
+      expect(pageRobotsTag(path, prod)).toBe('noindex, nofollow');
+    }
+    expect(shopsIndexable(prod)).toBe(false);
+    expect(pageRobotsTag('/amani-styles', { ...prod, ODA_SHOPS_INDEXABLE: 'yes' })).toBe(
+      'noindex, nofollow',
+    );
+  });
+
+  it('ODA_SHOPS_INDEXABLE=true opens shops and products at launch (production only)', () => {
+    const launched = { NEXT_PUBLIC_ODA_ENV: 'production', ODA_SHOPS_INDEXABLE: 'true' };
+    expect(shopsIndexable(launched)).toBe(true);
+    expect(pageRobotsTag('/amani-styles', launched)).toBeNull();
+    expect(pageRobotsTag('/amani-styles/p/abc', launched)).toBeNull();
+    // Staging never opens up: next.config.ts sends noindex everywhere there.
+    expect(shopsIndexable({ VERCEL_ENV: 'production', ODA_SHOPS_INDEXABLE: 'true' })).toBe(false);
+    expect(pageRobotsTag('/amani-styles', { VERCEL_ENV: 'production' })).toBeNull();
   });
 });
 

@@ -368,6 +368,12 @@ The gate lists each of these as open, and so does the Handoff, until the owner c
 
   Until one of these is done, oda stays in closed testing.
 
+- **L2 · Search engines (#96):** when the owner says oda launches publicly, set
+  `ODA_SHOPS_INDEXABLE` = `true` on Vercel → oda-production → Environment Variables
+  (Production), then run **Actions → release-production** (the same commit may be released
+  again). Check: a shop page no longer sends `X-Robots-Tag: noindex`. Until then only the
+  landing page, `/privacy` and `/terms` can be indexed.
+
 ---
 
 ## Schema changes

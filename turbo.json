@@ -21,7 +21,8 @@
         "BETTER_AUTH_SECRET",
         "CRON_SECRET",
         "OPS_SECRET",
-        "EXPO_ACCESS_TOKEN"
+        "EXPO_ACCESS_TOKEN",
+        "ODA_SHOPS_INDEXABLE"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },

@@ -33,6 +33,8 @@ export const DEPLOYMENT_CHECK_ENV = [
   'OPS_SECRET',
   'EXPO_ACCESS_TOKEN',
   'DATABASE_URL',
+  // Read per request by proxy.ts (decision #96); listed so a build-time read would work too.
+  'ODA_SHOPS_INDEXABLE',
 ] as const;
 
 export type OdaEnvironment = 'production' | 'staging' | 'preview' | 'local';
@@ -49,6 +51,29 @@ export function odaEnvironment(env: Env = process.env): OdaEnvironment {
 /** Search engines may index production only. */
 export function indexable(env: Env = process.env): boolean {
   return odaEnvironment(env) === 'production';
+}
+
+/**
+ * The pages search engines may index on production before the public launch (decision #96):
+ * the landing page and the legal pages. Shops, products and everything else stay out until
+ * the owner sets ODA_SHOPS_INDEXABLE=true on oda-production and redeploys (launch checklist
+ * L2).
+ */
+export const SITE_PAGES = ['/', '/privacy', '/terms'] as const;
+
+/** True once the owner has opened shops and products to search engines (launch). */
+export function shopsIndexable(env: Env = process.env): boolean {
+  return indexable(env) && env.ODA_SHOPS_INDEXABLE?.trim() === 'true';
+}
+
+/**
+ * The X-Robots-Tag a production page needs, or null. Off production, next.config.ts already
+ * sends noindex on every answer.
+ */
+export function pageRobotsTag(pathname: string, env: Env = process.env): string | null {
+  if (!indexable(env) || shopsIndexable(env)) return null;
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  return (SITE_PAGES as readonly string[]).includes(path) ? null : 'noindex, nofollow';
 }
 
 const trimSlash = (url: string | undefined) => url?.trim().replace(/\/+$/, '');
