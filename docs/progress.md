@@ -23,6 +23,7 @@ Newest entries at the top.
 **Open items**
 - **Owner:** confirm the Play developer account type before CP4 (#93 D13); until then the plan assumes a personal account: 12 testers for 14 days (#95 e).
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
+- **Launch checklist L3 (owner, before the M11 gate; doesn't block review stop C or CP4):** copy the upload keystore + credentials (`C:\Users\denni\oda-keystore-backup`, written 2026-10-10 from EAS build credentials `wZQg7G2ndc`, read-only, verified with keytool) into the password manager, then delete the local folder. Claude doesn't move, upload or delete it.
 - **Launch checklist L2 (at the public launch):** set `ODA_SHOPS_INDEXABLE=true` on Vercel oda-production and run release-production; until then shop and product pages send `noindex` (#96).
 - **Owner (before CP4):** uninstall the 0.3.1 app (`com.mugulabs.oda`) before installing from Play; "oda staging" can stay.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).

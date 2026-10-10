@@ -356,7 +356,7 @@ Update to `production` or a new build, and checked again).
 
 ---
 
-## Launch checklist (owner, before real sellers join; not part of the M11 gate)
+## Launch checklist (owner, before real sellers join; not part of the M11 gate unless marked)
 
 The gate lists each of these as open, and so does the Handoff, until the owner closes it.
 
@@ -373,6 +373,12 @@ The gate lists each of these as open, and so does the Handoff, until the owner c
   (Production), then run **Actions → release-production** (the same commit may be released
   again). Check: a shop page no longer sends `X-Robots-Tag: noindex`. Until then only the
   landing page, `/privacy` and `/terms` can be indexed.
+
+- **L3 · Upload keystore backup (owner, 2026-10-10): must be done before the M11 gate.** Copy
+  `C:\Users\denni\oda-keystore-backup` (`keystore.jks` + `credentials.json`, the upload
+  keystore of build credentials `wZQg7G2ndc`, certificate SHA-256 `0666353f…f9f00864`) into the
+  password manager, then delete the local folder. Until then Claude leaves the folder as it is
+  (no move, upload or delete). It doesn't block review stop C or CP4.
 
 ---
 
