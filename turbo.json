@@ -2,6 +2,14 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
   "globalEnv": ["NODE_ENV"],
+  "globalDependencies": [
+    "eslint.config.mjs",
+    "tsconfig.base.json",
+    "package.json",
+    "pnpm-workspace.yaml",
+    ".nvmrc",
+    "turbo.json"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -30,10 +38,27 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {},
-    "typecheck": {},
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
     "test": {
+      "dependsOn": ["transit"],
       "env": ["DATABASE_URL"]
+    },
+    "@oda/web#test": {
+      "dependsOn": ["transit"],
+      "env": ["DATABASE_URL"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/seller/assets/brands/**"]
+    },
+    "@oda/seller#test": {
+      "dependsOn": ["transit"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/help-guides.md"]
     },
     "test:e2e": {
       "dependsOn": ["build"],
