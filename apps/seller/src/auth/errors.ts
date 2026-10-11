@@ -20,6 +20,8 @@ export interface FriendlyError {
 
 export const OFFLINE_MESSAGE = "You're offline. Check your connection and try again.";
 export const UNREACHABLE_MESSAGE = "Couldn't reach oda. Try again.";
+export const GOOGLE_REFUSED_MESSAGE =
+  "We couldn't sign you in with Google. Try again or use your email.";
 const GENERIC = 'Something went wrong. Please try again.';
 
 /** Codes whose message our server writes for sellers (decisions #43–#45). */
@@ -30,6 +32,7 @@ const SERVER_WORDED = new Set([
   'SAME_PASSWORD',
   'EMAIL_HAS_ACCOUNT',
   'ACCOUNT_DELETED',
+  'GOOGLE_EMAIL_NOT_VERIFIED',
   'NO_CODE',
   'invalid', // input checks from our API (zod messages written for sellers)
 ]);
@@ -58,8 +61,19 @@ export function friendlyAuthError(error: AuthError | null | undefined): Friendly
   }
   switch (code) {
     case 'INVALID_EMAIL_OR_PASSWORD':
-      // Same words whether or not the email has an account.
-      return { message: 'Incorrect email or password. Try again.', action: null };
+      // Same words whether or not the email has an account (or only signs in with Google).
+      return {
+        message:
+          'Incorrect email or password. If you signed up with Google, use Continue with Google.',
+        action: null,
+      };
+    // Google sign-in refused by the server (decision #107): a bad or foreign token, or linking.
+    case 'INVALID_TOKEN':
+    case 'OAUTH_LINK_ERROR':
+    case 'GOOGLE_ID_TOKEN_ONLY':
+    case 'FAILED_TO_GET_USER_INFO':
+    case 'USER_EMAIL_NOT_FOUND':
+      return { message: GOOGLE_REFUSED_MESSAGE, action: null };
     case 'EMAIL_NOT_VERIFIED':
       return { message: 'Confirm your email first. We sent you a code.', action: 'verify-email' };
     case 'INVALID_OTP':

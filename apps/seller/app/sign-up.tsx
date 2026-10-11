@@ -1,5 +1,6 @@
-// 02 Sign up. Changes from the image (design-changes.md): no Google/Facebook buttons and no
-// "or continue with"; oda's fonts and brand colours; lowercase "oda"; password rules shown.
+// 02 Sign up. Changes from the image (design-changes.md): no Facebook button and no "or continue
+// with"; "Sign up with Google" at the top, then "or" and the email form (decision #107); oda's
+// fonts and brand colours; lowercase "oda"; password rules shown.
 import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -7,7 +8,10 @@ import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
 import { emailSchema, passwordProblem } from '@oda/shared';
 import { startSignup } from '@/auth/signup';
 import { friendlyAuthError, type FriendlyError } from '@/auth/errors';
+import { googleAvailable } from '@/auth/google';
+import { useGoogleSignIn } from '@/auth/useGoogleSignIn';
 import { API_URL } from '@/config';
+import { GoogleMark } from '@/ui/brandIcons';
 import {
   AuthScreen,
   Button,
@@ -15,8 +19,10 @@ import {
   Field,
   InfoNote,
   Link,
+  OrDivider,
   PasswordField,
   PasswordRules,
+  SigningInOverlay,
   Title,
   Wordmark,
 } from '@/ui/auth';
@@ -30,12 +36,17 @@ export default function SignUp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendlyError | null>(null);
   const passwordRef = useRef<TextInput>(null);
+  // Google signs in an existing account or creates one (decision #107), like Sign in's button.
+  const google = useGoogleSignIn();
+  const withGoogle = googleAvailable();
+  const locked = busy || google.busy;
 
   const emailCheck = emailSchema.safeParse(email);
   const emailError = submitted && !emailCheck.success ? emailCheck.error.issues[0]?.message : null;
   const passwordError = submitted ? passwordProblem(password) : null;
 
   async function submit() {
+    if (locked) return;
     // Close the keyboard so the answer (or an error) is never hidden behind it (Step 49).
     Keyboard.dismiss();
     setSubmitted(true);
@@ -61,16 +72,33 @@ export default function SignUp() {
     });
   }
 
+  function startGoogle() {
+    if (locked) return;
+    Keyboard.dismiss();
+    setError(null);
+    google.start();
+  }
+
   return (
     <AuthScreen
-      footer={<Button title="Create my account" onPress={submit} loading={busy} />}
+      locked={locked}
+      overlay={<SigningInOverlay visible={google.phase === 'signing-in'} />}
+      footer={
+        <Button title="Create my account" onPress={submit} loading={busy} disabled={google.busy} />
+      }
       note={
         <>
           <InfoNote icon="shield">Your money never passes through oda.</InfoNote>
           <Text style={styles.terms}>
             By continuing you agree to oda&apos;s{' '}
-            <Link onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}>Terms</Link> and{' '}
-            <Link onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}>
+            <Link disabled={locked} onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}>
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link
+              disabled={locked}
+              onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}
+            >
               Privacy notice
             </Link>
             .
@@ -81,11 +109,27 @@ export default function SignUp() {
       <Wordmark />
       <Title>Create your{'\n'}free shop</Title>
 
-      <View style={styles.form}>
+      {withGoogle ? (
+        <View style={styles.google}>
+          <Button
+            variant="google"
+            title="Sign up with Google"
+            icon={<GoogleMark />}
+            onPress={startGoogle}
+            loading={google.busy}
+            disabled={busy}
+          />
+          {google.error ? <ErrorMessage>{google.error}</ErrorMessage> : null}
+          <OrDivider />
+        </View>
+      ) : null}
+
+      <View style={withGoogle ? styles.formAfterGoogle : styles.form}>
         <Field
           label="Email"
           value={email}
           onChangeText={setEmail}
+          editable={!locked}
           placeholder="you@example.com"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -101,6 +145,7 @@ export default function SignUp() {
           label="Password"
           value={password}
           onChangeText={setPassword}
+          editable={!locked}
           placeholder="At least 8 characters"
           autoComplete="new-password"
           textContentType="newPassword"
@@ -134,14 +179,19 @@ export default function SignUp() {
       ) : null}
 
       <Text style={styles.switch}>
-        Already have a shop? <Link onPress={() => router.replace('/sign-in')}>Sign in</Link>
+        Already have a shop?{' '}
+        <Link disabled={locked} onPress={() => router.replace('/sign-in')}>
+          Sign in
+        </Link>
       </Text>
     </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  google: { marginTop: spacing.lg, gap: spacing.sm },
   form: { marginTop: spacing.md },
+  formAfterGoogle: { marginTop: spacing.xs },
   switch: { ...text('body'), color: colors.textSecondary, marginTop: spacing.xl },
   terms: { ...text('small'), color: colors.textSecondary, textAlign: 'center' },
 });

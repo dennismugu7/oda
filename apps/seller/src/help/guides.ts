@@ -211,7 +211,7 @@ export const GUIDES: Guide[] = [
     sections: [
       {
         heading: 'Your details and password',
-        body: 'In **More → Settings** you can change your name, your recovery phone and your password. Your email can’t be changed yet.',
+        body: 'In **More → Settings** you can change your name, your recovery phone and your password. Your email can’t be changed yet. If you sign in with Google, **Set a password** emails you a link to add one.',
       },
       {
         heading: 'Taking a break',

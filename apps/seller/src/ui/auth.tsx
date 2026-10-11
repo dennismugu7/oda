@@ -15,6 +15,7 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Pressable,
@@ -71,6 +72,8 @@ export function AuthScreen({
   note,
   back = true,
   header,
+  locked = false,
+  overlay,
 }: {
   children: ReactNode;
   footer?: ReactNode;
@@ -78,8 +81,18 @@ export function AuthScreen({
   back?: boolean;
   /** A fixed header above the form (onboarding); it handles the top inset itself. */
   header?: ReactNode;
+  /** While signing in: Back and Android's back do nothing (decision #107). */
+  locked?: boolean;
+  /** Drawn over the whole screen, footer included (the "Signing you in…" overlay). */
+  overlay?: ReactNode;
 }) {
   const keyboardVisible = useKeyboardVisible();
+
+  useEffect(() => {
+    if (!locked) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [locked]);
   const scroll = useRef<ScrollView>(null);
   const content = useRef<View>(null);
   const focused = useRef<View | null>(null);
@@ -151,7 +164,11 @@ export function AuthScreen({
             }}
           >
             <View ref={content} collapsable={false}>
-              {header ? null : back ? <BackButton /> : <View style={styles.backSpacer} />}
+              {header ? null : back ? (
+                <BackButton disabled={locked} />
+              ) : (
+                <View style={styles.backSpacer} />
+              )}
               {children}
             </View>
           </ScrollView>
@@ -163,15 +180,18 @@ export function AuthScreen({
           </View>
         ) : null}
       </KeyboardAvoidingView>
+      {overlay}
     </SafeAreaView>
   );
 }
 
-export function BackButton() {
+export function BackButton({ disabled = false }: { disabled?: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Back"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       hitSlop={12}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
       style={styles.back}
@@ -271,6 +291,8 @@ export const PasswordField = forwardRef<TextInput, Omit<FieldProps, 'right'>>(
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+            // Locked with the rest of the form while signing in (decision #107).
+            disabled={props.editable === false}
             hitSlop={8}
             onPress={() => setVisible((v) => !v)}
             style={styles.eye}
@@ -314,18 +336,28 @@ export function Button({
   loading = false,
   disabled = false,
   variant = 'primary',
+  icon,
 }: {
   title: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  /** danger: a destructive action (e.g. "Cancel order"). */
-  variant?: 'primary' | 'secondary' | 'danger';
+  /**
+   * danger: a destructive action (e.g. "Cancel order"). google: white with a border and
+   * Google's G (Sign in with Google branding; decision #107).
+   */
+  variant?: 'primary' | 'secondary' | 'danger' | 'google';
+  /** Drawn before the title (the Google G). */
+  icon?: ReactNode;
 }) {
-  const primary = variant !== 'secondary';
+  const primary = variant !== 'secondary' && variant !== 'google';
+  const labelColour =
+    variant === 'google' ? colors.navy : primary ? colors.textOnPrimary : colors.primary;
   return (
     <Pressable
       accessibilityRole="button"
+      // The name stays while the spinner replaces the title.
+      accessibilityLabel={title}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
@@ -333,32 +365,75 @@ export function Button({
         styles.button,
         variant === 'danger'
           ? styles.buttonDanger
-          : primary
-            ? styles.buttonPrimary
-            : styles.buttonSecondary,
+          : variant === 'google'
+            ? styles.buttonGoogle
+            : primary
+              ? styles.buttonPrimary
+              : styles.buttonSecondary,
         (disabled || loading) && styles.buttonDisabled,
         pressed && styles.pressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={primary ? colors.textOnPrimary : colors.primary} />
+        <ActivityIndicator color={labelColour} />
       ) : (
-        <Text
-          style={[styles.buttonText, { color: primary ? colors.textOnPrimary : colors.primary }]}
-        >
-          {title}
-        </Text>
+        <View style={styles.buttonContent}>
+          {icon}
+          <Text style={[styles.buttonText, { color: labelColour }]}>{title}</Text>
+        </View>
       )}
     </Pressable>
   );
 }
 
 /** Underlined inline link inside a sentence. */
-export function Link({ children, onPress }: { children: ReactNode; onPress: () => void }) {
+export function Link({
+  children,
+  onPress,
+  disabled = false,
+}: {
+  children: ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <Text accessibilityRole="link" onPress={onPress} style={styles.link} suppressHighlighting>
+    <Text
+      accessibilityRole="link"
+      accessibilityState={{ disabled }}
+      onPress={disabled ? undefined : onPress}
+      style={[styles.link, disabled && styles.linkDisabled]}
+      suppressHighlighting
+    >
       {children}
     </Text>
+  );
+}
+
+/** A thin "or" between the Google button and the email form (designs 02, 05). */
+export function OrDivider() {
+  return (
+    <View style={styles.divider} accessibilityRole="text" accessibilityLabel="or">
+      <View style={styles.dividerLine} />
+      <Text style={styles.dividerText}>or</Text>
+      <View style={styles.dividerLine} />
+    </View>
+  );
+}
+
+/**
+ * Covers the screen from the moment a Google account is picked until the next screen replaces
+ * this one (decision #107, plan §2.2): never removed on success, so nothing shows in between.
+ */
+export function SigningInOverlay({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <View style={styles.overlay} accessibilityViewIsModal>
+      <View style={styles.overlayShade} />
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text accessibilityLiveRegion="polite" style={styles.overlayText}>
+        Signing you in…
+      </Text>
+    </View>
   );
 }
 
@@ -543,6 +618,12 @@ const styles = StyleSheet.create({
   buttonPrimary: { backgroundColor: colors.primary },
   buttonSecondary: { backgroundColor: colors.primaryTint },
   buttonDanger: { backgroundColor: colors.danger },
+  buttonGoogle: {
+    backgroundColor: colors.surface,
+    borderWidth: sizes.borderWidth,
+    borderColor: colors.border,
+  },
+  buttonContent: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   buttonDisabled: { opacity: 0.6 },
   pressed: { opacity: 0.85 },
   buttonText: text('button'),
@@ -553,6 +634,22 @@ const styles = StyleSheet.create({
     color: colors.navy,
     textDecorationLine: 'underline',
   },
+  linkDisabled: { opacity: 0.6 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  dividerLine: { flex: 1, height: sizes.borderWidth, backgroundColor: colors.border },
+  dividerText: { ...text('body'), color: colors.textSecondary },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  overlayShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.background,
+    opacity: 0.96,
+  },
+  overlayText: { ...text('bodyStrong'), color: colors.navy },
   errorBox: {
     flexDirection: 'row',
     gap: spacing.sm,

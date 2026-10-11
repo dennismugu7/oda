@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
 import { Alert, Text } from 'react-native';
+import { fetchMe } from '@/api';
 import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { settingsApi, type Details } from '@/settings/api';
@@ -20,14 +21,25 @@ import { Sheet } from '@/ui/sheet';
 interface SettingsData {
   details: Details;
   paused: boolean;
+  /** False for a Google-only seller (decision #107): "Set a password" instead of "Change". */
+  hasPassword: boolean;
 }
 
 const cache = memoryCache<SettingsData>();
 
 async function loadSettings() {
-  const [details, pause] = await Promise.all([settingsApi.details(), settingsApi.paused()]);
+  const [details, pause, me] = await Promise.all([
+    settingsApi.details(),
+    settingsApi.paused(),
+    fetchMe(),
+  ]);
   if (details.data && pause.data) {
-    return { data: { details: details.data, paused: pause.data.paused }, error: null };
+    // Without an answer from /api/me, assume a password (the usual case; the screen still works).
+    const hasPassword = me.kind === 'ok' ? me.me.hasPassword !== false : true;
+    return {
+      data: { details: details.data, paused: pause.data.paused, hasPassword },
+      error: null,
+    };
   }
   return { data: null, error: details.error ?? pause.error };
 }
@@ -66,7 +78,11 @@ export default function SettingsScreen() {
   }
 
   function logOut() {
-    Alert.alert('Log out?', "You'll need your email and password to sign in again.", [
+    const again =
+      data?.hasPassword === false
+        ? "You'll need to sign in again with Google."
+        : "You'll need your email and password to sign in again.";
+    Alert.alert('Log out?', again, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
@@ -133,11 +149,25 @@ export default function SettingsScreen() {
                 value={displayName(details.firstName, details.lastName, details.email)}
                 onPress={() => router.push('/settings/details')}
               />
-              <Row
-                icon="lock"
-                title="Change your password"
-                onPress={() => router.push('/settings/password')}
-              />
+              {data.hasPassword ? (
+                <Row
+                  icon="lock"
+                  title="Change your password"
+                  onPress={() => router.push('/settings/password')}
+                />
+              ) : (
+                <Row
+                  icon="lock"
+                  title="Set a password"
+                  value="You sign in with Google"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/settings/password',
+                      params: { mode: 'set', email: details.email },
+                    })
+                  }
+                />
+              )}
             </Card>
           </Section>
 

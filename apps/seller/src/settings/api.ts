@@ -119,6 +119,14 @@ export function changePassword(body: {
   return authCall(() => authClient.changePassword(body));
 }
 
+/**
+ * Set a password (a Google-only seller, decision #107): the reset link Forgot password sends;
+ * Better Auth's reset creates the password when the account has none.
+ */
+export function sendPasswordLink(email: string) {
+  return authCall(() => authClient.requestPasswordReset({ email }));
+}
+
 /** The last payments view loaded, so the account screen opens without loading again. */
 let cachedPayments: Payments | null = null;
 export const paymentsCache = {

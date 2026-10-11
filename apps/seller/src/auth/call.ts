@@ -26,6 +26,21 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+/**
+ * A whole guarded call, its own network check included, within `ms` (sign-in: the owner's
+ * 15 s + 5 s rule, decision #107). Never throws: a late answer becomes TIMEOUT.
+ */
+export async function capCall<T>(
+  call: Promise<CallResult<T>>,
+  ms: number = CALL_TIMEOUT_MS,
+): Promise<CallResult<T>> {
+  try {
+    return await withTimeout(call, ms);
+  } catch {
+    return { data: null, error: { status: 0, code: 'TIMEOUT' } };
+  }
+}
+
 /** Network check, then the call with a timeout; never throws. */
 export async function guardedCall<T>(
   run: () => Promise<{ data?: T | null; error?: AuthError | null }>,

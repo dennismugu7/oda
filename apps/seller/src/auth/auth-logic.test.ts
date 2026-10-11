@@ -80,7 +80,7 @@ describe('friendlyAuthError', () => {
 
   it("rewords Better Auth's own messages", () => {
     expect(friendlyAuthError({ status: 401, code: 'INVALID_EMAIL_OR_PASSWORD' }).message).toBe(
-      'Incorrect email or password. Try again.',
+      'Incorrect email or password. If you signed up with Google, use Continue with Google.',
     );
     expect(
       friendlyAuthError({ status: 400, code: 'INVALID_OTP', message: 'Invalid OTP' }).message,
