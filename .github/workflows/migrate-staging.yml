@@ -23,9 +23,12 @@ permissions:
 jobs:
   staging:
     # Only after a green CI run on a push to main (or by hand).
+    # A manual run only from main; an automatic one only after a green push to this repo's
+    # main (never a fork's branch, public repo hardening).
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
     uses: ./.github/workflows/deploy.yml
     with:
       target: staging

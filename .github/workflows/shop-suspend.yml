@@ -41,6 +41,8 @@ permissions:
 
 jobs:
   suspend:
+    # Runs only from main (public repo hardening): no other branch reaches these secrets.
+    if: github.ref == 'refs/heads/main'
     name: Suspend or unsuspend a shop (${{ inputs.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 5
