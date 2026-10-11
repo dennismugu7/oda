@@ -1,5 +1,5 @@
 import 'server-only';
-import { AUTH_ROUTES, getAuth } from './auth';
+import { AUTH_ROUTES, getAuth, googleWebClientId } from './auth';
 
 // HTTP entry for Better Auth (/api/auth/*). Only the endpoints in AUTH_ROUTES are served;
 // the rest of Better Auth's API (sign-in by code, account linking, user updates…) is 404.
@@ -11,6 +11,8 @@ function isAllowed(method: string, pathname: string): boolean {
   const path = pathname.slice(BASE.length).replace(/\/+$/, '');
   const allowed: readonly string[] =
     method === 'GET' ? AUTH_ROUTES.GET : method === 'POST' ? AUTH_ROUTES.POST : [];
+  // Google sign-in is off (404) until its client ID is configured (decision #107).
+  if (path === '/sign-in/social' && !googleWebClientId()) return false;
   return allowed.includes(path);
 }
 

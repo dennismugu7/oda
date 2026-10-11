@@ -19,7 +19,7 @@ const mail = (
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy" updated="10 October 2026">
+    <LegalPage title="Privacy" updated="11 October 2026">
       <section>
         <h2>Who we are</h2>
         <p>
@@ -41,6 +41,11 @@ export default function Privacy() {
           <li>
             Your email and password. The password is stored only in scrambled form (hashed), never
             as you typed it.
+          </li>
+          <li>
+            If you sign in with Google: your Google account&apos;s email and the ID Google gives us
+            for it. We don&apos;t receive your Google password or contacts, and we don&apos;t keep
+            your Google name or photo.
           </li>
           <li>Your name and a recovery phone number, if you add them.</li>
           <li>
@@ -172,6 +177,7 @@ export default function Privacy() {
           <li>GitHub: runs our scheduled jobs and makes our encrypted nightly backups.</li>
           <li>Cloudflare: points oda&apos;s web address to our hosting.</li>
           <li>Google Play: distributes the seller app.</li>
+          <li>Google: confirms who you are when you choose to sign in with Google.</li>
         </ul>
         <p>
           Our emails use a font from Google Fonts, which your email app may load when it shows the

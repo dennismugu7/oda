@@ -171,3 +171,24 @@ describe('scrubBreadcrumb and scrubString', () => {
     expect(scrubString('Order #1042')).toBe('Order #1042');
   });
 });
+
+describe('Google ID tokens (decision #107)', () => {
+  const jwt =
+    'eyJhbGciOiJSUzI1NiIsImtpZCI6Im9kYS10ZXN0In0.eyJzdWIiOiIxMDk4NzY1NDMyMTAiLCJlbWFpbCI6Indhbmppa3VAZ21haWwuY29tIn0.c2lnbmF0dXJlLXZhbHVlLWZvci10ZXN0cy0xMjM0NTY3ODkw';
+
+  it('masks every part of a token in text', () => {
+    const out = scrubString(`sign-in failed for ${jwt}`);
+    for (const part of jwt.split('.')) expect(out).not.toContain(part);
+  });
+
+  it('drops idToken / id_token fields', () => {
+    const out = JSON.stringify(
+      scrubEvent({
+        event_id: 'g1',
+        extra: { idToken: jwt, id_token: jwt, provider: 'google' },
+      }),
+    );
+    for (const part of jwt.split('.')) expect(out).not.toContain(part);
+    expect(out).toContain('google');
+  });
+});
