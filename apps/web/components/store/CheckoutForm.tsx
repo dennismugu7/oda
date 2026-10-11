@@ -600,11 +600,14 @@ export function CheckoutForm({
         <p className="mt-3 flex gap-2 border-t border-border pt-3 text-small text-text-secondary">
           <ShieldCheckIcon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
           {/* Matches what sellers can do (Customers list, WhatsApp) and /privacy (#98). */}
-          {shopName} sees these details to handle your orders and may contact you on WhatsApp or by
-          phone.{' '}
-          <Link href="/privacy" className="underline">
-            Privacy
-          </Link>
+          {/* One flex item, so the Privacy link stays inline in the sentence (a11y.spec). */}
+          <span>
+            {shopName} sees these details to handle your orders and may contact you on WhatsApp or
+            by phone.{' '}
+            <Link href="/privacy" className="underline">
+              Privacy
+            </Link>
+          </span>
         </p>
       </section>
 

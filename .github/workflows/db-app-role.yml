@@ -33,6 +33,8 @@ permissions:
 
 jobs:
   app-role:
+    # Runs only from main (public repo hardening): no other branch reaches these secrets.
+    if: github.ref == 'refs/heads/main'
     name: App database role (${{ inputs.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 10

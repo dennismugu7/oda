@@ -2,13 +2,11 @@
 // Step 52) plus up to 4 more, from the camera or the gallery; name; price; optional sizes
 // (presets for the business type are suggestions; "+ Other" adds the seller's own). Each
 // photo is re-encoded and uploaded as soon as it is picked (decision #52), so Next only saves.
-import Feather from '@expo/vector-icons/Feather';
 import { PRODUCT_PHOTOS_MAX } from '@oda/shared';
 import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -25,6 +23,8 @@ import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip, onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, fonts, radii, sizes as sizeTokens, spacing, text } from '@/theme';
+import { PhotoSourceSheet } from '@/ui/photoSourceSheet';
+import { Icon } from '@/ui/icon';
 
 interface Slot {
   id: string;
@@ -74,6 +74,8 @@ function Step({ state }: { state: OnboardingState }) {
   const [sizeError, setSizeError] = useState<string | null>(null);
   // Storage isn't taking photos (decision #93 D1): the product may be saved without one.
   const [paused, setPaused] = useState(false);
+  // The photo sheet: open with the slot it replaces, if any.
+  const [photoSheet, setPhotoSheet] = useState<{ replace?: string } | null>(null);
 
   const uploading = slots.some((s) => s.status === 'uploading');
   const room = PRODUCT_PHOTOS_MAX - slots.length;
@@ -123,11 +125,7 @@ function Step({ state }: { state: OnboardingState }) {
   }
 
   function choose(replace?: string) {
-    Alert.alert(replace ? 'Retake photo' : 'Add a photo', undefined, [
-      { text: 'Take a photo', onPress: () => add('camera', replace) },
-      { text: 'Choose from gallery', onPress: () => add('library', replace) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setPhotoSheet({ replace });
   }
 
   function remove(id: string) {
@@ -203,7 +201,7 @@ function Step({ state }: { state: OnboardingState }) {
             onPress={() => choose(cover.id)}
           >
             <View style={styles.retake}>
-              <Feather name="rotate-cw" size={14} color={colors.navy} />
+              <Icon name="rotate-cw" size={14} color={colors.navy} />
               <Text style={styles.retakeText}>Retake</Text>
             </View>
             <View style={styles.coverChip}>
@@ -217,7 +215,7 @@ function Step({ state }: { state: OnboardingState }) {
             onPress={() => choose()}
             style={({ pressed }) => [styles.coverEmpty, pressed && styles.pressed]}
           >
-            <Feather name="camera" size={28} color={colors.navy} />
+            <Icon name="camera" size={28} color={colors.navy} />
             <Text style={styles.addTitle}>Add a cover photo</Text>
             <Text style={styles.addSub}>Camera or gallery</Text>
           </Pressable>
@@ -230,7 +228,7 @@ function Step({ state }: { state: OnboardingState }) {
               onPress={() => choose()}
               style={({ pressed }) => [styles.addMore, pressed && styles.pressed]}
             >
-              <Feather name="plus" size={26} color={colors.navy} />
+              <Icon name="plus" size={26} color={colors.navy} />
               <Text style={styles.addTitle}>Add more</Text>
               <Text style={styles.addSub}>Up to {PRODUCT_PHOTOS_MAX} photos</Text>
             </Pressable>
@@ -256,7 +254,7 @@ function Step({ state }: { state: OnboardingState }) {
                   style={styles.removeTarget}
                 >
                   <View style={styles.removeBadge}>
-                    <Feather name="x" size={12} color={colors.textOnNavy} />
+                    <Icon name="x" size={12} color={colors.textOnNavy} />
                   </View>
                 </Pressable>
               }
@@ -325,6 +323,12 @@ function Step({ state }: { state: OnboardingState }) {
         ) : null}
       </View>
       {error ? <FormMessage>{error}</FormMessage> : null}
+      <PhotoSourceSheet
+        visible={photoSheet !== null}
+        title={photoSheet?.replace ? 'Retake photo' : 'Add a photo'}
+        onPick={(pick) => add(pick, photoSheet?.replace)}
+        onClose={() => setPhotoSheet(null)}
+      />
     </OnboardingScreen>
   );
 }
@@ -370,7 +374,7 @@ function PhotoTile({
       ) : null}
       {failed ? (
         <View style={styles.overlay}>
-          <Feather name="refresh-cw" size={20} color={colors.textOnNavy} />
+          <Icon name="refresh-cw" size={20} color={colors.textOnNavy} />
           <Text style={styles.overlayText}>Try again</Text>
         </View>
       ) : null}

@@ -1,13 +1,13 @@
 // The thin "You're offline" bar (design-changes NEW: offline bar; spec §8): saved data is shown
 // read-only and nothing is queued. `saved={false}` when there's no saved copy to show.
-import Feather from '@expo/vector-icons/Feather';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export function OfflineBar({ saved = true }: { saved?: boolean }) {
   return (
     <View style={styles.bar} accessibilityRole="alert" accessibilityLiveRegion="polite">
-      <Feather name="wifi-off" size={16} color={colors.textOnNavy} />
+      <Icon name="wifi-off" size={16} color={colors.textOnNavy} />
       <Text style={styles.text}>
         {saved ? 'You’re offline · showing saved data' : 'You’re offline. Connect to load this.'}
       </Text>
@@ -24,7 +24,7 @@ export function LoadMoreFailed({ onRetry }: { onRetry: () => void }) {
       onPress={onRetry}
       style={({ pressed }) => [styles.more, pressed && styles.pressed]}
     >
-      <Feather name="refresh-cw" size={16} color={colors.textSecondary} />
+      <Icon name="refresh-cw" size={16} color={colors.textSecondary} />
       <Text style={styles.moreText}>Couldn’t load more · Try again</Text>
     </Pressable>
   );

@@ -2,7 +2,6 @@
 // the link (Change link warns first: the old link keeps working and sends buyers to the new
 // one), about, location (Kenyan town / Nairobi area picker or free text), and how buyers reach
 // you: WhatsApp (the main button), phone calls, TikTok and Instagram. One "Save changes".
-import Feather from '@expo/vector-icons/Feather';
 import { formatKePhone, normalizeKePhone, searchLocations, SLUG_MAX } from '@oda/shared';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -20,6 +19,7 @@ import { Button, Field, FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, Row, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<ShopProfile>();
 
@@ -247,7 +247,7 @@ function ProfileEditor({
               </Text>
             )}
             <View style={styles.camera}>
-              <Feather name="camera" size={13} color={colors.textOnNavy} />
+              <Icon name="camera" size={13} color={colors.textOnNavy} />
             </View>
           </Pressable>
           <View style={styles.flex}>
@@ -306,7 +306,7 @@ function ProfileEditor({
             >
               {form.locationLabel ?? 'Choose your town or area'}
             </Text>
-            <Feather name="chevron-down" size={20} color={colors.navy} />
+            <Icon name="chevron-down" size={20} color={colors.navy} />
           </Pressable>
           {fields.locationLabel ? (
             <Text style={styles.fieldError}>{fields.locationLabel}</Text>
@@ -326,7 +326,7 @@ function ProfileEditor({
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>Main button</Text>
               </View>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
+              <Icon name="chevron-right" size={20} color={colors.textMuted} />
             </View>
           }
         />
@@ -384,7 +384,7 @@ function LocationSheet({
       onClose={onClose}
       header={
         <View style={styles.search}>
-          <Feather name="search" size={18} color={colors.textSecondary} />
+          <Icon name="search" size={18} color={colors.textSecondary} />
           <TextInput
             accessibilityLabel="Search towns and areas"
             value={query}

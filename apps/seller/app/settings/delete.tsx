@@ -1,7 +1,6 @@
 // Delete account (design-changes NEW: type "DELETE" to confirm; explains that orders and
 // customers are removed after 30 days). The shop closes at once and this phone signs out; the
 // purge job removes the data, photos and account after 30 days (decision #72 c).
-import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +11,7 @@ import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Card } from '@/ui/rows';
 import { colors, fonts, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const WHAT_HAPPENS = [
   'Your shop link stops working at once. Buyers with open orders see “This shop has closed”.',
@@ -58,7 +58,7 @@ export default function DeleteAccount() {
         <Text style={styles.title}>What happens</Text>
         {WHAT_HAPPENS.map((line) => (
           <View key={line} style={styles.line}>
-            <Feather name="alert-circle" size={18} color={colors.danger} style={styles.icon} />
+            <Icon name="alert-circle" size={18} color={colors.danger} style={styles.icon} />
             <Text style={styles.lineText}>{line}</Text>
           </View>
         ))}

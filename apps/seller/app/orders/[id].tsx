@@ -3,7 +3,6 @@
 // for the current state. Actions are whatever the shared machine allows (the server checks
 // again); after one with a WhatsApp step, the seller's WhatsApp opens with the message if the
 // toggle is on. A lost race ("This order changed") reloads the order.
-import Feather from '@expo/vector-icons/Feather';
 import {
   BUYER_CANCEL_LABELS,
   firstName,
@@ -43,6 +42,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const PRIMARY_LABELS: Record<string, string> = {
   confirmPayment: 'Confirm payment',
@@ -237,12 +237,12 @@ export default function OrderDetailScreen() {
             hitSlop={12}
             onPress={() => setMenu(true)}
           >
-            <Feather name="more-vertical" size={26} color={colors.textOnNavy} />
+            <Icon name="more-vertical" size={26} color={colors.textOnNavy} />
           </Pressable>
         </View>
         {cancelled ? (
           <View style={styles.cancelledPill}>
-            <Feather name="x-circle" size={16} color={colors.textOnNavy} />
+            <Icon name="x-circle" size={16} color={colors.textOnNavy} />
             <Text style={styles.cancelledText}>Cancelled</Text>
           </View>
         ) : (
@@ -278,7 +278,7 @@ export default function OrderDetailScreen() {
             onPress={() => Linking.openURL(`tel:${order.buyer.phone}`)}
             style={({ pressed }) => [styles.round, pressed && styles.pressed]}
           >
-            <Feather name="phone" size={22} color={colors.navy} />
+            <Icon name="phone" size={22} color={colors.navy} />
           </Pressable>
           {order.buyer.whatsapp ? (
             <Pressable
@@ -291,7 +291,7 @@ export default function OrderDetailScreen() {
               }
               style={({ pressed }) => [styles.round, styles.roundGreen, pressed && styles.pressed]}
             >
-              <Feather name="message-circle" size={22} color={colors.textOnNavy} />
+              <Icon name="message-circle" size={22} color={colors.textOnNavy} />
             </Pressable>
           ) : null}
         </View>
@@ -303,7 +303,7 @@ export default function OrderDetailScreen() {
                 <Image source={{ uri: item.thumbUrl }} style={styles.thumb} />
               ) : (
                 <View style={[styles.thumb, styles.thumbEmpty]}>
-                  <Feather name="shopping-bag" size={18} color={colors.textMuted} />
+                  <Icon name="shopping-bag" size={18} color={colors.textMuted} />
                 </View>
               )}
               <View style={styles.flex}>
@@ -500,7 +500,7 @@ function StatusCard({ order, onResolve }: { order: OrderDetail; onResolve: () =>
               }}
               style={({ pressed }) => [styles.copy, pressed && styles.pressed]}
             >
-              <Feather name={copied ? 'check' : 'copy'} size={18} color={colors.navy} />
+              <Icon name={copied ? 'check' : 'copy'} size={18} color={colors.navy} />
               <Text style={styles.copyText}>{copied ? 'Copied' : 'Copy'}</Text>
             </Pressable>
           </View>
@@ -607,7 +607,7 @@ function Card({
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={onPress}>
-      <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
+      <Icon name="chevron-left" size={30} color={colors.textOnNavy} />
     </Pressable>
   );
 }

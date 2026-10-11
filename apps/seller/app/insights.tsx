@@ -2,7 +2,6 @@
 // is a confirmed, sent or delivered order, order-lifecycle.md) with the change against the same
 // stretch of the previous period and a bar chart; orders, average order and shop visits; where
 // orders come from; top products. Each period loads when picked and is kept for offline.
-import Feather from '@expo/vector-icons/Feather';
 import { formatKsh, INSIGHT_PERIODS, type InsightPeriod } from '@oda/shared';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -27,6 +26,7 @@ import { OfflineBar } from '@/ui/offline';
 import { rowStyles } from '@/ui/rows';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const PERIOD_LABELS: Record<InsightPeriod, string> = {
   today: 'Today',
@@ -222,7 +222,7 @@ function InsightsBody({ data }: { data: Insights }) {
                 <Image source={{ uri: p.thumbUrl }} style={styles.thumb} />
               ) : (
                 <View style={[styles.thumb, styles.thumbEmpty]}>
-                  <Feather name="shopping-bag" size={20} color={colors.textSecondary} />
+                  <Icon name="shopping-bag" size={20} color={colors.textSecondary} />
                 </View>
               )}
               <Text style={styles.productName} numberOfLines={2}>

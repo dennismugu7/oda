@@ -1,18 +1,16 @@
 // The seller's tabs (design 15 onwards; decision #32 (10)): Home · Orders · + · Shop · More.
 // The raised "+" in the middle adds a product; it opens a screen, not a tab.
-import Feather from '@expo/vector-icons/Feather';
 import { router, Tabs } from 'expo-router';
-import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePushRegistration, usePushTaps } from '@/push/usePush';
 import { colors, spacing, text } from '@/theme';
-
-type IconName = ComponentProps<typeof Feather>['name'];
+import { Icon, type IconName } from '@/ui/icon';
 
 const tabIcon = (name: IconName) =>
-  function TabIcon({ color }: { color: ColorValue }) {
-    return <Feather name={name} size={24} color={color} />;
+  function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
+    // The selected tab shows the filled icon (decision #103).
+    return <Icon name={name} size={24} color={color} weight={focused ? 'fill' : 'regular'} />;
   };
 
 function AddButton() {
@@ -24,7 +22,7 @@ function AddButton() {
         onPress={() => router.push('/products/new')}
         style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
       >
-        <Feather name="plus" size={30} color={colors.textOnNavy} />
+        <Icon name="plus" size={30} color={colors.textOnNavy} />
       </Pressable>
       <Text style={styles.addLabel} numberOfLines={1} maxFontSizeMultiplier={1.3}>
         Add product

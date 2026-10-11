@@ -1,7 +1,6 @@
 // Categories (design 20b-categories; design-changes: the one categories screen, reached from
 // the Shop tab and, later, More). Shown to buyers in this order: hold and drag to reorder
 // (up/down arrows if dragging isn't available on this phone). Tap a category to edit it.
-import Feather from '@expo/vector-icons/Feather';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -27,6 +26,7 @@ import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { DragBoundary } from '@/ui/dragBoundary';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 /** How far each move arrow's target reaches into the row's padding. */
 const ARROW_SLOP = spacing.md;
@@ -129,13 +129,7 @@ export default function Categories() {
       style={[styles.row, index > 0 && styles.rowDivider, active && styles.rowActive]}
     >
       {drag ? (
-        <Feather
-          name="menu"
-          size={20}
-          color={colors.textMuted}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        />
+        <Icon name="menu" size={20} color={colors.textMuted} />
       ) : (
         <View style={styles.arrows}>
           <Pressable
@@ -146,11 +140,7 @@ export default function Categories() {
             style={styles.arrow}
             onPress={() => moveBy(index, -1)}
           >
-            <Feather
-              name="chevron-up"
-              size={20}
-              color={index === 0 ? colors.border : colors.navy}
-            />
+            <Icon name="chevron-up" size={20} color={index === 0 ? colors.border : colors.navy} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -160,7 +150,7 @@ export default function Categories() {
             style={styles.arrow}
             onPress={() => moveBy(index, 1)}
           >
-            <Feather
+            <Icon
               name="chevron-down"
               size={20}
               color={categories && index === categories.length - 1 ? colors.border : colors.navy}
@@ -180,7 +170,7 @@ export default function Categories() {
         </Text>
       </View>
       {!c.isVisible ? <Text style={styles.badge}>Hidden</Text> : null}
-      <Feather name="chevron-right" size={20} color={colors.textMuted} />
+      <Icon name="chevron-right" size={20} color={colors.textMuted} />
     </Pressable>
   );
 
@@ -216,7 +206,7 @@ export default function Categories() {
       onPress={() => setAdding(true)}
       style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
     >
-      <Feather name="plus" size={20} color={colors.navy} />
+      <Icon name="plus" size={20} color={colors.navy} />
       <Text style={styles.addText}>Add a category</Text>
     </Pressable>
   );
