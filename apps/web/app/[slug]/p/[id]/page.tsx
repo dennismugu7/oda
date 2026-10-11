@@ -122,9 +122,9 @@ export default async function ProductPage(props: Props) {
         </p>
       ) : null}
       <p className="mt-3 flex flex-wrap items-baseline gap-3">
-        <span className="text-display text-navy">{formatKsh(product.price)}</span>
+        <span className="text-display whitespace-nowrap text-navy">{formatKsh(product.price)}</span>
         {product.compareAtPrice ? (
-          <span className="text-subtitle text-text-secondary line-through">
+          <span className="text-subtitle whitespace-nowrap text-text-secondary line-through">
             {formatKsh(product.compareAtPrice)}
           </span>
         ) : null}
