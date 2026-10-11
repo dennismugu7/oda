@@ -73,10 +73,12 @@ export function ProductGrid({
                 {p.ratingCount})
               </p>
             ) : null}
-            <p className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-subtitle font-bold text-navy">{formatKsh(p.price)}</span>
+            <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-subtitle font-bold whitespace-nowrap text-navy">
+                {formatKsh(p.price)}
+              </span>
               {p.compareAtPrice ? (
-                <span className="text-small text-text-secondary line-through">
+                <span className="text-small whitespace-nowrap text-text-secondary line-through">
                   {formatKsh(p.compareAtPrice)}
                 </span>
               ) : null}
