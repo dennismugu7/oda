@@ -166,34 +166,39 @@ export default function ShopTab() {
         />
       ) : (
         <View style={styles.shopCard}>
-          <ShopAvatar name={shop?.name} logoUrl={shop?.logoUrl} />
-          <View style={styles.shopText}>
-            <Text style={styles.shopName} numberOfLines={1}>
-              {shop?.name ?? ' '}
-            </Text>
-            <Text style={styles.shopLink} numberOfLines={1}>
-              {shop ? displayUrl(SHOP_BASE_URL, shop.slug) : ' '}
-            </Text>
+          {/* The name gets the full width and wraps; View and Share sit beneath (QA round 1). */}
+          <View style={styles.shopTop}>
+            <ShopAvatar name={shop?.name} logoUrl={shop?.logoUrl} />
+            <View style={styles.shopText}>
+              <Text style={styles.shopName} numberOfLines={2}>
+                {shop?.name ?? ' '}
+              </Text>
+              <Text style={styles.shopLink} numberOfLines={1} ellipsizeMode="tail">
+                {shop ? displayUrl(SHOP_BASE_URL, shop.slug) : ' '}
+              </Text>
+            </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="View your shop as buyers see it"
-            disabled={!shop}
-            onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
-            style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
-          >
-            <Icon name="eye" size={16} color={colors.textOnNavy} />
-            <Text style={styles.viewText}>View</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Share your shop"
-            onPress={share}
-            style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
-          >
-            <Icon name="share" size={16} color={colors.textOnPrimary} />
-            <Text style={styles.shareText}>Share</Text>
-          </Pressable>
+          <View style={styles.shopButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View your shop as buyers see it"
+              disabled={!shop}
+              onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
+              style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
+            >
+              <Icon name="eye" size={16} color={colors.textOnNavy} />
+              <Text style={styles.viewText}>View</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share your shop"
+              onPress={share}
+              style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
+            >
+              <Icon name="share" size={16} color={colors.textOnPrimary} />
+              <Text style={styles.shareText}>Share</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -383,8 +388,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   shopCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
     backgroundColor: colors.navyRaised,
@@ -393,10 +396,14 @@ const styles = StyleSheet.create({
     borderColor: colors.navyMuted,
     padding: spacing.md,
   },
-  shopText: { flex: 1 },
-  shopName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
+  shopTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  shopText: { flex: 1, minWidth: 0, gap: spacing.xxs },
+  shopName: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 24, color: colors.textOnNavy },
+  shopButtons: { flexDirection: 'row', gap: spacing.sm },
   shopLink: { ...text('small'), color: colors.toggleOff },
   shareButton: {
+    flex: 1,
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -406,6 +413,8 @@ const styles = StyleSheet.create({
     height: 44,
   },
   viewButton: {
+    flex: 1,
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -414,8 +423,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
-  viewText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnNavy },
-  shareText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
+  viewText: { ...text('small'), fontFamily: fonts.semibold, color: colors.textOnNavy },
+  shareText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   listHead: { paddingTop: spacing.lg, gap: spacing.md },
   suspended: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   chips: { paddingHorizontal: spacing.lg, gap: spacing.sm },
