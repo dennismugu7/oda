@@ -2,7 +2,6 @@
 // Step 52) plus up to 4 more, from the camera or the gallery; name; price; optional sizes
 // (presets for the business type are suggestions; "+ Other" adds the seller's own). Each
 // photo is re-encoded and uploaded as soon as it is picked (decision #52), so Next only saves.
-import Feather from '@expo/vector-icons/Feather';
 import { PRODUCT_PHOTOS_MAX } from '@oda/shared';
 import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
@@ -25,6 +24,7 @@ import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip, onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, fonts, radii, sizes as sizeTokens, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 interface Slot {
   id: string;
@@ -203,7 +203,7 @@ function Step({ state }: { state: OnboardingState }) {
             onPress={() => choose(cover.id)}
           >
             <View style={styles.retake}>
-              <Feather name="rotate-cw" size={14} color={colors.navy} />
+              <Icon name="rotate-cw" size={14} color={colors.navy} />
               <Text style={styles.retakeText}>Retake</Text>
             </View>
             <View style={styles.coverChip}>
@@ -217,7 +217,7 @@ function Step({ state }: { state: OnboardingState }) {
             onPress={() => choose()}
             style={({ pressed }) => [styles.coverEmpty, pressed && styles.pressed]}
           >
-            <Feather name="camera" size={28} color={colors.navy} />
+            <Icon name="camera" size={28} color={colors.navy} />
             <Text style={styles.addTitle}>Add a cover photo</Text>
             <Text style={styles.addSub}>Camera or gallery</Text>
           </Pressable>
@@ -230,7 +230,7 @@ function Step({ state }: { state: OnboardingState }) {
               onPress={() => choose()}
               style={({ pressed }) => [styles.addMore, pressed && styles.pressed]}
             >
-              <Feather name="plus" size={26} color={colors.navy} />
+              <Icon name="plus" size={26} color={colors.navy} />
               <Text style={styles.addTitle}>Add more</Text>
               <Text style={styles.addSub}>Up to {PRODUCT_PHOTOS_MAX} photos</Text>
             </Pressable>
@@ -256,7 +256,7 @@ function Step({ state }: { state: OnboardingState }) {
                   style={styles.removeTarget}
                 >
                   <View style={styles.removeBadge}>
-                    <Feather name="x" size={12} color={colors.textOnNavy} />
+                    <Icon name="x" size={12} color={colors.textOnNavy} />
                   </View>
                 </Pressable>
               }
@@ -370,7 +370,7 @@ function PhotoTile({
       ) : null}
       {failed ? (
         <View style={styles.overlay}>
-          <Feather name="refresh-cw" size={20} color={colors.textOnNavy} />
+          <Icon name="refresh-cw" size={20} color={colors.textOnNavy} />
           <Text style={styles.overlayText}>Try again</Text>
         </View>
       ) : null}

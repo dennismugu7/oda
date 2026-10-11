@@ -1,8 +1,8 @@
 // "Unsaved changes restored · Discard" above a form whose draft came back after Android
 // closed oda (decision #100).
-import Feather from '@expo/vector-icons/Feather';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export const RESTORED_TEXT = 'Unsaved changes restored';
 
@@ -10,7 +10,7 @@ export function DraftBanner({ visible, onDiscard }: { visible: boolean; onDiscar
   if (!visible) return null;
   return (
     <View style={styles.bar} accessibilityLiveRegion="polite">
-      <Feather name="rotate-ccw" size={16} color={colors.navy} />
+      <Icon name="rotate-ccw" size={16} color={colors.navy} />
       <Text style={styles.text}>{RESTORED_TEXT}</Text>
       <Pressable
         accessibilityRole="button"

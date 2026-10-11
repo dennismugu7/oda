@@ -3,7 +3,6 @@
 // stars, day, each item's text with its product chip, photos, tags), one editable reply per
 // review, and ⋮ → Report review (its photos are hidden from buyers at once). A tapped
 // new_review notification opens this screen at that review. Offline: the saved list, read-only.
-import Feather from '@expo/vector-icons/Feather';
 import { daysAgo, REVIEW_REPLY_MAX, REVIEW_REPORT_REASON_MAX, type ReviewTab } from '@oda/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -32,6 +31,7 @@ import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
 import { Star } from '@/ui/star';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
@@ -122,7 +122,7 @@ function ReviewCard({
           onPress={onMenu}
           style={styles.menu}
         >
-          <Feather name="more-vertical" size={22} color={colors.textSecondary} />
+          <Icon name="more-vertical" size={22} color={colors.textSecondary} />
         </Pressable>
       </View>
 
@@ -156,7 +156,7 @@ function ReviewCard({
       ) : null}
       {review.reportedAt ? (
         <View style={styles.reported}>
-          <Feather name="flag" size={14} color={colors.warningTextStrong} />
+          <Icon name="flag" size={14} color={colors.warningTextStrong} />
           <Text style={styles.reportedText}>
             Reported{photos.length ? ' · photos hidden from buyers' : ''}
           </Text>
@@ -187,7 +187,7 @@ function ReviewCard({
             onPress={onReply}
             style={({ pressed }) => [styles.replyButton, pressed && styles.pressed]}
           >
-            <Feather name="corner-up-left" size={20} color={colors.navy} />
+            <Icon name="corner-up-left" size={20} color={colors.navy} />
             <Text style={styles.replyButtonText}>Reply</Text>
           </Pressable>
         </View>
@@ -361,7 +361,7 @@ export default function ReviewsScreen() {
       <StatusBar style="light" />
       <View style={styles.titleRow}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={back}>
-          <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
+          <Icon name="chevron-left" size={30} color={colors.textOnNavy} />
         </Pressable>
         <View style={styles.flex}>
           <Text accessibilityRole="header" style={styles.title}>
@@ -403,7 +403,7 @@ export default function ReviewsScreen() {
 
   const note = (
     <View style={styles.note}>
-      <Feather name="info" size={18} color={colors.textSecondary} />
+      <Icon name="info" size={18} color={colors.textSecondary} />
       <Text style={styles.noteText}>
         Buyers get a review link in your WhatsApp message and their email when you mark an order as
         delivered.
@@ -453,7 +453,7 @@ export default function ReviewsScreen() {
           ListEmptyComponent={
             focused ? null : (
               <View style={styles.empty}>
-                <Feather name="star" size={28} color={colors.primary} />
+                <Icon name="star" size={28} color={colors.primary} />
                 <Text style={styles.emptyTitle}>{emptyText(tab).title}</Text>
                 <Text style={styles.emptyLine}>{emptyText(tab).line}</Text>
               </View>

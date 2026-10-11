@@ -2,7 +2,6 @@
 // reorder (react-native-draggable-flatlist, decision #57); tapping a photo always offers
 // Make cover / Move left / Move right / Remove, so reordering works even without dragging.
 // If the drag list fails to render on this phone, an error boundary shows a plain row.
-import Feather from '@expo/vector-icons/Feather';
 import {
   ActivityIndicator,
   Image,
@@ -18,6 +17,7 @@ import type { PhotoInput } from './api';
 import type { Picked } from '@/onboarding/photos';
 import { DragBoundary } from '@/ui/dragBoundary';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export interface Slot {
   id: string;
@@ -66,7 +66,7 @@ function Tile({
         </View>
       ) : slot.status === 'failed' ? (
         <View style={styles.overlay}>
-          <Feather name="alert-circle" size={22} color={colors.textOnNavy} />
+          <Icon name="alert-circle" size={22} color={colors.textOnNavy} />
         </View>
       ) : null}
       {cover ? (
@@ -86,7 +86,7 @@ function AddTile({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       style={({ pressed }) => [styles.tile, styles.add, pressed && styles.pressed]}
     >
-      <Feather name="plus" size={24} color={colors.navy} />
+      <Icon name="plus" size={24} color={colors.navy} />
       <Text style={styles.addText}>Add</Text>
     </Pressable>
   );

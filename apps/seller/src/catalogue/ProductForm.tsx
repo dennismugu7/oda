@@ -3,7 +3,6 @@
 // upload as soon as they're picked (decision #52) and Save sends the rest: everything for a
 // new product, only what changed for an edit. Delete goes back to the Shop tab, which shows
 // "… deleted · Undo" (decision #57).
-import Feather from '@expo/vector-icons/Feather';
 import { COLOUR_PRESETS, PRODUCT_PHOTOS_MAX, SIZE_PRESETS, type ProductStatus } from '@oda/shared';
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
@@ -46,6 +45,7 @@ import { Chip } from '@/ui/onboarding';
 import { ScreenHeader as Header } from '@/ui/screenHeader';
 import { Sheet, type SheetOption } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 let slotIds = 0;
 const newSlotId = () => `slot-${++slotIds}`;
@@ -546,7 +546,7 @@ function Editor({
             <Text style={[styles.selectText, !category && styles.selectEmpty]}>
               {category?.name ?? 'No category'}
             </Text>
-            <Feather name="chevron-down" size={20} color={colors.navy} />
+            <Icon name="chevron-down" size={20} color={colors.navy} />
           </Pressable>
         </View>
         <View style={styles.fieldBlock}>

@@ -2,7 +2,6 @@
 // mark-delivered sheet; design-changes). Each collects what its action needs and hands it to
 // the detail screen, which sends it to the one actions endpoint and then, if the toggle is on,
 // opens the seller's WhatsApp with the message the server wrote.
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   firstName,
   formatKePhone,
@@ -13,7 +12,7 @@ import {
   type SellerCancelReason,
   type SentMethod,
 } from '@oda/shared';
-import { useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DraftBanner } from '@/restore/DraftBanner';
 import { useDraft } from '@/restore/useDraft';
@@ -22,6 +21,7 @@ import { Chip } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import type { OrderDetail } from './api';
 import { ActionSheet, CheckBox, Summary, TextButton, WhatsAppToggle } from './parts';
+import { Icon, type IconName } from '@/ui/icon';
 
 export type SheetKind =
   | 'confirmPayment'
@@ -168,7 +168,7 @@ const SENT_OPTIONS: {
   method: SentMethod;
   title: string;
   line: string;
-  icon: ComponentProps<typeof MaterialCommunityIcons>['name'];
+  icon: IconName;
 }[] = [
   { method: 'rider', title: 'Rider', line: 'Boda boda or delivery rider', icon: 'bike' },
   {
@@ -214,7 +214,7 @@ function MarkSent({ order, busy, error, onClose, onSubmit }: SheetProps) {
             style={[styles.option, on && styles.optionOn]}
           >
             <View style={styles.optionIcon}>
-              <MaterialCommunityIcons name={o.icon} size={22} color={colors.navy} />
+              <Icon name={o.icon} size={22} color={colors.navy} />
             </View>
             <View style={styles.flex}>
               <Text style={styles.optionTitle}>{o.title}</Text>

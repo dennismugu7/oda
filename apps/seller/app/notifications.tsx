@@ -1,9 +1,8 @@
 // Notifications (design-changes NEW: notifications list): newest first, an unread dot, tap →
 // the order, or the review for a new review (marked read), "Mark all read". The same events reach the phone as push in CP4.
-import Feather from '@expo/vector-icons/Feather';
 import { listTime } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState, type ComponentProps } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,8 +24,9 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon, type IconName } from '@/ui/icon';
 
-const ICONS: Record<NotificationItem['type'], ComponentProps<typeof Feather>['name']> = {
+const ICONS: Record<NotificationItem['type'], IconName> = {
   new_order: 'shopping-bag',
   payment_claimed: 'dollar-sign',
   switched_to_pod: 'truck',
@@ -134,7 +134,7 @@ export default function NotificationsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="bell" size={28} color={colors.primary} />
+              <Icon name="bell" size={28} color={colors.primary} />
               <Text style={styles.emptyTitle}>No notifications yet</Text>
               <Text style={styles.emptyLine}>
                 New orders, payments, cancellations and reviews will show here.
@@ -153,7 +153,7 @@ export default function NotificationsScreen() {
               ]}
             >
               <View style={styles.icon}>
-                <Feather name={ICONS[item.type]} size={20} color={colors.navy} />
+                <Icon name={ICONS[item.type]} size={20} color={colors.navy} />
               </View>
               <View style={styles.flex}>
                 <Text style={[styles.title, !item.readAt && styles.titleUnread]}>{item.title}</Text>

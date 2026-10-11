@@ -2,7 +2,6 @@
 // an optional screenshot and "You can reply to me on WhatsApp". It reaches the oda team in the
 // daily support digest. "Add screenshot" shows only once the private store is connected
 // (decision #74 b).
-import Feather from '@expo/vector-icons/Feather';
 import { FEEDBACK_MAX, formatKePhone, type FeedbackKind } from '@oda/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -19,6 +18,7 @@ import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, FormMessage } from '@/ui/auth';
 import { Card, rowStyles, ToggleRow } from '@/ui/rows';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<FeedbackForm>();
 
@@ -105,7 +105,7 @@ export default function ShareFeedback() {
         <>
           <Card padded>
             <View style={styles.thanks}>
-              <Feather name="heart" size={28} color={colors.primary} />
+              <Icon name="heart" size={28} color={colors.primary} />
               <Text style={styles.thanksTitle}>Thank you!</Text>
               <Text style={styles.thanksText}>
                 We read every message.
@@ -142,7 +142,7 @@ export default function ShareFeedback() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Feather name={c.icon} size={18} color={on ? colors.textOnNavy : colors.navy} />
+                    <Icon name={c.icon} size={18} color={on ? colors.textOnNavy : colors.navy} />
                     <Text style={[styles.chipText, on && styles.chipTextOn]}>{c.label}</Text>
                   </Pressable>
                 );
@@ -190,7 +190,7 @@ export default function ShareFeedback() {
                       onPress={() => setShot(null)}
                       style={styles.remove}
                     >
-                      <Feather name="x" size={16} color={colors.navy} />
+                      <Icon name="x" size={16} color={colors.navy} />
                       <Text style={styles.removeText}>Remove</Text>
                     </Pressable>
                   </View>
@@ -201,7 +201,7 @@ export default function ShareFeedback() {
                     onPress={pick}
                     style={({ pressed }) => [styles.add, pressed && styles.pressed]}
                   >
-                    <Feather name="camera" size={20} color={colors.navy} />
+                    <Icon name="camera" size={20} color={colors.navy} />
                     <Text style={styles.addText}>Add</Text>
                   </Pressable>
                 )}

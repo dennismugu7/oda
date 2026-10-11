@@ -1,6 +1,5 @@
 // Your details (design 20b-your-details, with design-changes: the email note reads "Email
 // can't be changed yet" and there is no profile-photo button, initials only).
-import Feather from '@expo/vector-icons/Feather';
 import { formatKePhone } from '@oda/shared';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,6 +13,7 @@ import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
 import { Card } from '@/ui/rows';
 import { colors, fonts, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<Details>();
 
@@ -147,7 +147,7 @@ function DetailsForm({
           value={data.email}
           editable={false}
           style={styles.locked}
-          right={<Feather name="lock" size={18} color={colors.textMuted} />}
+          right={<Icon name="lock" size={18} color={colors.textMuted} />}
         >
           <Text style={styles.help}>Email can&apos;t be changed yet.</Text>
         </Field>

@@ -2,7 +2,6 @@
 // filter chips (All, categories, Sold out, Hidden), search, and the product list. Tap a
 // product to edit it; long-press to change its status. "View" opens the real buyer shop in
 // the in-app browser (19b-preview, decision #60). After a delete, "Product deleted · Undo" shows for ~5 seconds.
-import Feather from '@expo/vector-icons/Feather';
 import { displayUrl, formatKsh, type ProductStatus } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -39,6 +38,7 @@ import { OfflineBar } from '@/ui/offline';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
   { status: 'available', label: 'Available' },
@@ -150,7 +150,7 @@ export default function ShopTab() {
           }}
           style={styles.searchButton}
         >
-          <Feather name={searching ? 'x' : 'search'} size={22} color={colors.textOnNavy} />
+          <Icon name={searching ? 'x' : 'search'} size={22} color={colors.textOnNavy} />
         </Pressable>
       </View>
       {searching ? (
@@ -182,7 +182,7 @@ export default function ShopTab() {
             onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
             style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
           >
-            <Feather name="eye" size={16} color={colors.textOnNavy} />
+            <Icon name="eye" size={16} color={colors.textOnNavy} />
             <Text style={styles.viewText}>View</Text>
           </Pressable>
           <Pressable
@@ -191,7 +191,7 @@ export default function ShopTab() {
             onPress={share}
             style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
           >
-            <Feather name="share" size={16} color={colors.textOnPrimary} />
+            <Icon name="share" size={16} color={colors.textOnPrimary} />
             <Text style={styles.shareText}>Share</Text>
           </Pressable>
         </View>
@@ -254,7 +254,7 @@ export default function ShopTab() {
                     style={styles.categoriesLink}
                   >
                     <Text style={styles.categoriesText}>Categories</Text>
-                    <Feather name="chevron-right" size={18} color={colors.navy} />
+                    <Icon name="chevron-right" size={18} color={colors.navy} />
                   </Pressable>
                 </View>
               </View>
@@ -284,7 +284,7 @@ export default function ShopTab() {
               <Image source={{ uri: item.coverUrl }} style={styles.thumb} />
             ) : (
               <View style={[styles.thumb, styles.thumbEmpty]}>
-                <Feather name="camera" size={20} color={colors.textMuted} />
+                <Icon name="camera" size={20} color={colors.textMuted} />
               </View>
             )}
             <View style={styles.rowText}>
@@ -310,7 +310,7 @@ export default function ShopTab() {
                 <Text style={[styles.badge, styles.badgeWarn]}>Add photo</Text>
               ) : null}
             </View>
-            <Feather name="chevron-right" size={20} color={colors.textMuted} />
+            <Icon name="chevron-right" size={20} color={colors.textMuted} />
           </Pressable>
         )}
         ListEmptyComponent={
@@ -321,7 +321,7 @@ export default function ShopTab() {
           ) : products.length === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
-                <Feather name="shopping-bag" size={26} color={colors.primary} />
+                <Icon name="shopping-bag" size={26} color={colors.primary} />
               </View>
               <Text style={styles.emptyTitle}>No products yet</Text>
               <Text style={styles.emptyLine}>

@@ -1,12 +1,12 @@
 // Cards of rows used by More and the settings screens (designs 20, 20b-settings,
 // 20b-shop-profile, 20b-payments): an icon tile, a bold title with an optional line under it,
 // a value or a switch on the right, and a chevron when the row opens something.
-import Feather from '@expo/vector-icons/Feather';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon, type IconName } from '@/ui/icon';
 
-export type FeatherName = ComponentProps<typeof Feather>['name'];
+export type FeatherName = IconName;
 
 export function Section({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -32,7 +32,7 @@ export function IconTile({
 }) {
   return (
     <View style={[styles.iconTile, { backgroundColor: tint }]}>
-      <Feather name={icon} size={20} color={color} />
+      <Icon name={icon} size={20} color={color} />
     </View>
   );
 }
@@ -77,8 +77,7 @@ export function Row({
           {value}
         </Text>
       ) : null}
-      {right ??
-        (onPress ? <Feather name="chevron-right" size={20} color={colors.textMuted} /> : null)}
+      {right ?? (onPress ? <Icon name="chevron-right" size={20} color={colors.textMuted} /> : null)}
     </>
   );
   if (!onPress) {

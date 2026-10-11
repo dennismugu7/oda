@@ -3,7 +3,6 @@
 // "Collection" = the whole shop; the QR code image is deferred), a caption in English or
 // Swahili ("Try another"), and share: the caption, with the link tagged for the channel
 // (?s=wa|status|tt|ig|fb), is copied, then the image goes to the phone's share sheet.
-import Feather from '@expo/vector-icons/Feather';
 import { displayUrl, formatKsh, shareUrl, type CaptionLanguage } from '@oda/shared';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
@@ -35,6 +34,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { BrandIcon, StatusRing } from '@/ui/brandIcons';
 import { rowStyles } from '@/ui/rows';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<ShareData>();
 
@@ -113,7 +113,7 @@ function ChannelMark({ channel }: { channel: ShareChannel }) {
       ) : channel === 'facebook' ? (
         <BrandIcon brand="facebook" size={24} />
       ) : (
-        <Feather name="music" size={20} color={colors.navy} />
+        <Icon name="music" size={20} color={colors.navy} />
       )}
     </View>
   );
@@ -234,7 +234,7 @@ function Sharer({
                 )}
                 {k === kind ? (
                   <View style={styles.check}>
-                    <Feather name="check" size={14} color={colors.textOnPrimary} />
+                    <Icon name="check" size={14} color={colors.textOnPrimary} />
                   </View>
                 ) : null}
               </View>
@@ -287,7 +287,7 @@ function Sharer({
             onPress={() => setIndex((i) => (i + 1) % captionsFor(kind, language))}
             style={styles.textAction}
           >
-            <Feather name="refresh-cw" size={18} color={colors.navy} />
+            <Icon name="refresh-cw" size={18} color={colors.navy} />
             <Text style={styles.textActionLabel}>Try another</Text>
           </Pressable>
           <Pressable
@@ -295,7 +295,7 @@ function Sharer({
             onPress={() => copy('caption')}
             style={styles.textAction}
           >
-            <Feather name="copy" size={18} color={colors.navy} />
+            <Icon name="copy" size={18} color={colors.navy} />
             <Text style={styles.textActionLabel}>Copy caption</Text>
           </Pressable>
         </View>
@@ -315,7 +315,7 @@ function Sharer({
           onPress={() => copy('link')}
           style={styles.copyButton}
         >
-          <Feather name="copy" size={18} color={colors.navy} />
+          <Icon name="copy" size={18} color={colors.navy} />
           <Text style={styles.textActionLabel}>Copy</Text>
         </Pressable>
       </View>

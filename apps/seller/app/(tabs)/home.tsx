@@ -2,7 +2,6 @@
 // the shop link (copy, share), the To-do card (To confirm / To send / New with counts and a
 // quick action), sales this week (Mon–Sun bars in Nairobi days, % vs the same stretch of last
 // week, the top source), "Finish your shop", and the empty state before the first order.
-import Feather from '@expo/vector-icons/Feather';
 import {
   displayUrl,
   firstName as first,
@@ -41,6 +40,7 @@ import { OfflineBar } from '@/ui/offline';
 import { ShopLinkText } from '@/ui/shopLink';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 type TodoTab = 'confirm' | 'send' | 'new';
 
@@ -131,7 +131,7 @@ export default function HomeTab() {
               onPress={() => router.push('/notifications')}
               style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
             >
-              <Feather name="bell" size={24} color={colors.textOnNavy} />
+              <Icon name="bell" size={24} color={colors.textOnNavy} />
               {unread > 0 ? (
                 <View style={styles.bellCount}>
                   <Text style={styles.bellCountText}>{unread > 9 ? '9+' : unread}</Text>
@@ -148,7 +148,7 @@ export default function HomeTab() {
                 onPress={copy}
                 style={({ pressed }) => [styles.copy, pressed && styles.pressed]}
               >
-                <Feather name={copied ? 'check' : 'copy'} size={20} color={colors.textOnNavy} />
+                <Icon name={copied ? 'check' : 'copy'} size={20} color={colors.textOnNavy} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -156,7 +156,7 @@ export default function HomeTab() {
                 onPress={share}
                 style={({ pressed }) => [styles.share, pressed && styles.pressed]}
               >
-                <Feather name="share" size={18} color={colors.textOnPrimary} />
+                <Icon name="share" size={18} color={colors.textOnPrimary} />
                 <Text style={styles.shareText}>Share</Text>
               </Pressable>
             </View>
@@ -179,7 +179,7 @@ export default function HomeTab() {
               <FinishCard />
               <View style={styles.emptyCard}>
                 <View style={styles.emptyIcon}>
-                  <Feather name="file-text" size={24} color={colors.primary} />
+                  <Icon name="file-text" size={24} color={colors.primary} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.emptyTitle}>No orders yet</Text>
@@ -229,11 +229,11 @@ function TodoCard({ list, now }: { list: OrderList; now: Date }) {
           onPress={() => router.push('/orders')}
           style={({ pressed }) => [styles.attention, pressed && styles.pressed]}
         >
-          <Feather name="alert-circle" size={18} color={colors.warningTextStrong} />
+          <Icon name="alert-circle" size={18} color={colors.warningTextStrong} />
           <Text style={styles.attentionText}>
             {attention} cancelled {attention === 1 ? 'order needs' : 'orders need'} your attention
           </Text>
-          <Feather name="chevron-right" size={18} color={colors.warningTextStrong} />
+          <Icon name="chevron-right" size={18} color={colors.warningTextStrong} />
         </Pressable>
       ) : null}
       <View style={styles.chips} accessibilityRole="tablist">
@@ -270,7 +270,7 @@ function TodoCard({ list, now }: { list: OrderList; now: Date }) {
         style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}
       >
         <Text style={styles.seeAllText}>See all orders</Text>
-        <Feather name="chevron-right" size={18} color={colors.navy} />
+        <Icon name="chevron-right" size={18} color={colors.navy} />
       </Pressable>
     </View>
   );
@@ -372,7 +372,7 @@ function SalesCard({ home }: { home: HomeData }) {
       </View>
       {source ? (
         <View style={styles.sourceRow}>
-          <Feather name="bar-chart-2" size={20} color={colors.green} />
+          <Icon name="bar-chart-2" size={20} color={colors.green} />
           <Text style={styles.sourceText}>{source}</Text>
         </View>
       ) : null}

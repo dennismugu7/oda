@@ -5,8 +5,6 @@
 // (EN/SW, "Try another"; the shop link is always included, tagged ?s=… per button), and
 // "Go to my shop". "See what buyers see" opens the real shop in the in-app browser (M4,
 // decision #60).
-import Feather from '@expo/vector-icons/Feather';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   caption,
   captionCount,
@@ -44,6 +42,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { BrandIcon, StatusRing, type Brand } from '@/ui/brandIcons';
 import { StepStatus } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 // Official brand marks for WhatsApp, Instagram and Facebook; TikTok needs written
 // permission, so a neutral icon with its name (decision #55).
@@ -202,7 +201,7 @@ function Step({ state }: { state: OnboardingState }) {
           </View>
           <View style={styles.liveRow}>
             <View style={styles.liveCheck}>
-              <Feather name="check" size={26} color={colors.textOnNavy} />
+              <Icon name="check" size={26} color={colors.textOnNavy} />
             </View>
             <Text accessibilityRole="header" style={styles.liveTitle}>
               Your shop is live
@@ -220,7 +219,7 @@ function Step({ state }: { state: OnboardingState }) {
               onPress={copy}
               style={({ pressed }) => [styles.copy, pressed && styles.pressed]}
             >
-              <Feather name={copied ? 'check' : 'copy'} size={16} color={colors.navy} />
+              <Icon name={copied ? 'check' : 'copy'} size={16} color={colors.navy} />
               <Text style={styles.copyText}>{copied ? 'Copied' : 'Copy'}</Text>
             </Pressable>
           </View>
@@ -231,7 +230,7 @@ function Step({ state }: { state: OnboardingState }) {
             style={styles.seeBuyers}
           >
             <Text style={styles.seeBuyersText}>See what buyers see</Text>
-            <Feather name="arrow-right" size={18} color={colors.textOnNavy} />
+            <Icon name="arrow-right" size={18} color={colors.textOnNavy} />
           </Pressable>
         </View>
 
@@ -253,7 +252,7 @@ function Step({ state }: { state: OnboardingState }) {
                       ) : BRANDS[target] ? (
                         <BrandIcon brand={BRANDS[target]!} size={28} />
                       ) : (
-                        <MaterialCommunityIcons
+                        <Icon
                           name={NEUTRAL_ICONS[target] ?? 'dots-horizontal'}
                           size={26}
                           color={colors.navy}
@@ -312,9 +311,7 @@ function Step({ state }: { state: OnboardingState }) {
                   accessibilityLabel={`${item.label}: ${item.done ? 'done' : 'not yet'}`}
                 >
                   <View style={[styles.itemMark, item.done && styles.itemMarkDone]}>
-                    {item.done ? (
-                      <Feather name="check" size={14} color={colors.textOnNavy} />
-                    ) : null}
+                    {item.done ? <Icon name="check" size={14} color={colors.textOnNavy} /> : null}
                   </View>
                   <View style={styles.itemBody}>
                     <Text style={[styles.itemLabel, item.done && styles.itemLabelDone]}>
@@ -427,7 +424,7 @@ function Step({ state }: { state: OnboardingState }) {
                 style={styles.another}
                 hitSlop={8}
               >
-                <Feather name="rotate-cw" size={15} color={colors.navy} />
+                <Icon name="rotate-cw" size={15} color={colors.navy} />
                 <Text style={styles.anotherText}>Try another</Text>
               </Pressable>
             </View>

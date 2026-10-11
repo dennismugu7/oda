@@ -1,11 +1,10 @@
 // Help and support (design 20b-help, decision #77): search the bundled guides, talk to us
 // (email only for now; a "Chat on WhatsApp" button appears when the server is configured with a
 // number), the guides, and Report a problem / Suggest an idea (the feedback screen).
-import Feather from '@expo/vector-icons/Feather';
 import { waLink } from '@oda/shared';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GUIDES } from '@/help/guides';
 import { searchGuides } from '@/help/search';
@@ -18,6 +17,7 @@ import { Card, Row, rowStyles, Section } from '@/ui/rows';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { appVersion, canSendTestError, sendTestError } from '@/sentry';
+import { Icon } from '@/ui/icon';
 
 export default function HelpScreen() {
   const insets = useSafeAreaInsets();
@@ -41,7 +41,7 @@ export default function HelpScreen() {
         onBack={() => goBack('/more')}
       >
         <View style={styles.search}>
-          <Feather name="search" size={20} color={colors.textSecondary} />
+          <Icon name="search" size={20} color={colors.textSecondary} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -52,13 +52,14 @@ export default function HelpScreen() {
             style={styles.searchInput}
           />
           {searching ? (
-            <Feather
-              name="x"
-              size={20}
-              color={colors.textSecondary}
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Clear search"
               onPress={() => setQuery('')}
-            />
+              hitSlop={12}
+            >
+              <Icon name="x" size={20} color={colors.textSecondary} />
+            </Pressable>
           ) : null}
         </View>
       </ScreenHeader>
