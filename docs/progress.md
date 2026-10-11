@@ -31,6 +31,12 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-11 · Faster CI (decision #104)
+
+- **Turbo cache in CI** (`actions/cache` of `.turbo/cache`, no secret): lint, typecheck and unit tests replay for unchanged packages. `turbo.json`: `transit` dependencies so a change in a package reruns its dependants, root config files as `globalDependencies`, and out-of-package test inputs (`docs/help-guides.md` for the seller tests, the seller brand files for the web tests). Vercel Remote Cache not set up (it needs a `TURBO_TOKEN` secret).
+- **Docs-only PRs** (only `docs/` except `help-guides.md`, `design/`, Markdown outside `apps/` and `packages/`): the CI job's "What changed" step (plain git) skips lint, typecheck, migrate, tests, build, Playwright and the Expo checks; install, format and the repo / workflow checks still run and the check still reports green. Pushes to `main` always run everything (migrate-staging waits for that run).
+- **Timing:** before, CI took 7.4–8.5 min for every PR and push (docs-only PR #94: 7.9 min; unit tests alone 2 min 42 s, the web DB tests). After: see PR.
+
 ## 2026-10-10 · State restoration (decision #100); D13 answered
 
 - **Owner (2026-10-10):** release-production started (production `23d8f7d`: root redirect, noindex, legal pages); D13: Personal Play account; state restoration "yes, as proposed".
