@@ -28,3 +28,6 @@ apps/seller/ios
 # Firebase config for the seller app (decision #70): never committed (public repo).
 apps/seller/google-services.json
 apps/web/regression-output/
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/
