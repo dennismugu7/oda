@@ -4,12 +4,7 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
-    "paths": {
-      "@/*": ["./src/*"],
-      "phosphor-react-native/src/icons/*": [
-        "./node_modules/phosphor-react-native/lib/typescript/icons/*"
-      ]
-    }
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
   "exclude": ["node_modules", "android", "ios"]
