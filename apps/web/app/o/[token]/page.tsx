@@ -9,6 +9,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
+import { CaretRightIcon, ChatCircleIcon, CheckIcon } from '@phosphor-icons/react/dist/ssr';
 import { notFound } from 'next/navigation';
 import {
   BUYER_CANCEL_LABELS,
@@ -49,18 +50,7 @@ export const metadata: Metadata = {
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
 function Check({ size = 28 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <path
-        d="M5 12.5l4.5 4.5L19 7.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <CheckIcon size={size} aria-hidden="true" />;
 }
 
 export default async function OrderPage({ params }: { params: Promise<{ token: string }> }) {
@@ -129,15 +119,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
           className="flex min-h-16 items-center gap-3 border-b border-border px-4 py-3"
         >
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-tint text-green">
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path
-                d="M5 5h14v10H9l-4 4V5z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <ChatCircleIcon size={22} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-body-strong text-navy">Message {shopName}</span>
@@ -145,9 +127,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
               Questions about sizes, items or delivery
             </span>
           </span>
-          <span aria-hidden="true" className="text-title text-navy">
-            ›
-          </span>
+          <CaretRightIcon size={20} aria-hidden="true" className="shrink-0 text-navy" />
         </a>
       ) : null}
       <ReportProblem token={order.token} />

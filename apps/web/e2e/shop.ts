@@ -108,7 +108,7 @@ export async function addDressAndBag(page: Page, slug: string) {
   await page.getByRole('link', { name: /Kitenge wrap dress KSh/ }).click();
   await page.getByRole('button', { name: 'M', exact: true }).click();
   await page.getByRole('button', { name: 'Add to cart · KSh 2,500' }).click();
-  await page.getByRole('link', { name: 'View cart →' }).click();
+  await page.getByRole('link', { name: 'View cart', exact: true }).click();
   await expect(page.getByText('KSh 4,300').first()).toBeVisible();
 }
 

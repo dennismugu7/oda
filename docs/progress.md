@@ -31,6 +31,13 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-11 · QA round 1: web icons
+
+- **Done (branch `qa1-web-icons`, on top of `web-shop-width`; decision #103 b):** the web's hand-drawn icons are now Phosphor (`@phosphor-icons/react`, regular weight, same names as the app): back `CaretLeft`, cart `ShoppingBag`, Secure `Lock`, search `MagnifyingGlass`, filters `SlidersHorizontal`, Share `ShareNetwork`, favourite `Heart` (`fill` when favourited), quick add / quantity `Plus` / `Minus`, remove `Trash`, ticks `Check` (the 12 px colour tick is `bold`: a regular stroke is under 1 px there), close / clear / remove filter `X`, "View cart" `ArrowRight`, help row `ChatCircle` + `CaretRight`, report `ShieldWarning`, privacy note and Verified buyer `ShieldCheck`, Add photo `Camera`, password `Eye` / `EyeSlash`. The text glyphs used as icons (→ › × − +) became icons too. Server Components import from `@phosphor-icons/react/dist/ssr`, client components from `@phosphor-icons/react`; every icon is `aria-hidden`, the buttons and links keep their names.
+- **Kept as drawn:** the rating stars (the #936511 outline, decision #89), WhatsApp's official glyph (#55), the password-changed illustration; the password rules' ✓ / • and the review tags' ✓ stay text.
+- **Bundle:** only the icons used reach the browser (checked in the built chunks), but each Phosphor icon carries all six weights: buyer first load +1.3 to +4.3 KB gzipped (product page the most), still under the ~152 KB of #84 d.
+- **Tests:** the "View cart →" link is now "View cart" (`e2e/shop.ts`, `e2e/storefront.spec.ts`, the staging regression). Vitest and Playwright need Postgres (Docker off): CI only, and CI is blocked by the GitHub billing problem, so the PR waits.
+
 ## 2026-10-11 · Web shop fits a 360 px phone (owner-approved design)
 
 - **Bug:** on a 360 px phone the shop page was 406 px wide: the row "search + filter + green Chat button" didn't fit (the Chat link ended at x = 406).

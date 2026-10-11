@@ -11,6 +11,7 @@ import { ProductReviews } from '@/components/store/ProductReviews';
 import { getDb } from '@/server/db';
 import { productReviews } from '@/server/repos/reviews';
 import Link from 'next/link';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/ssr';
 import { HttpError } from '@/server/errors';
 import { loadShop, restOf, shopData, shopLink, takingOrders } from '@/server/storefront';
 
@@ -88,16 +89,7 @@ export default async function ProductPage(props: Props) {
           aria-label={`Back to ${shop.name}`}
           className="absolute top-3 left-3 flex size-12 items-center justify-center rounded-pill bg-surface text-navy shadow-sm"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M15 5l-7 7 7 7"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <CaretLeftIcon size={22} aria-hidden="true" />
         </Link>
         <div className="absolute top-3 right-3 flex gap-2 [&>button]:static">
           <FavouriteButton shopId={shop.id} productId={product.id} productName={product.name} />

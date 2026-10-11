@@ -3,6 +3,7 @@
 // box and the filters are plain GET forms, so every result page is a shareable URL.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CaretLeftIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
 import { formatKsh, STORE_SORTS, storeQuery, type StoreQuery } from '@oda/shared';
 import { CartBar, VisitBeacon } from '@/components/store/interactive';
 import { ProductGrid } from '@/components/store/ProductGrid';
@@ -91,16 +92,7 @@ export default async function Search({ params, searchParams }: Props) {
           aria-label={`Back to ${shop.name}`}
           className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M15 5l-7 7 7 7"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <CaretLeftIcon size={22} aria-hidden="true" />
         </Link>
         <form
           action={`/${shop.slug}/search`}
@@ -128,7 +120,7 @@ export default async function Search({ params, searchParams }: Props) {
               aria-label="Clear the search"
               className="-mr-2 flex size-11 items-center justify-center rounded-pill bg-surface-muted text-navy"
             >
-              ×
+              <XIcon size={18} aria-hidden="true" />
             </Link>
           ) : null}
         </form>
@@ -214,7 +206,8 @@ export default async function Search({ params, searchParams }: Props) {
                 aria-label={`Remove filter ${c.label}`}
                 className="flex h-11 items-center gap-1.5 rounded-pill border border-primary bg-primary-tint px-4 text-body-strong text-primary"
               >
-                {c.label} <span aria-hidden="true">×</span>
+                {c.label}
+                <XIcon size={16} aria-hidden="true" />
               </Link>
             </li>
           ))}

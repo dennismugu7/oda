@@ -3,6 +3,7 @@
 // itself is the client component CartView.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/ssr';
 import { CartView } from '@/components/store/CartView';
 import { loadShop, restOf, shopData, takingOrders } from '@/server/storefront';
 
@@ -32,16 +33,7 @@ export default async function Cart({ params, searchParams }: Props) {
           aria-label={`Back to ${shop.name}`}
           className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M15 5l-7 7 7 7"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <CaretLeftIcon size={22} aria-hidden="true" />
         </Link>
         <h1 id="cart-title" tabIndex={-1} className="flex-1 text-headline text-navy">
           Your cart

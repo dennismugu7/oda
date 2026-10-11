@@ -5,6 +5,7 @@
 // instead, Cancel order), the cancel card (6), and Report a problem. Every action goes to
 // /api/o/:token/* (transitionOrder() on the server); the page then reloads its data.
 import { useRouter } from 'next/navigation';
+import { ShieldWarningIcon } from '@phosphor-icons/react';
 import { useRef, useState, useTransition } from 'react';
 import { extractMpesaCode, formatKePhone, formatKsh } from '@oda/shared';
 
@@ -355,21 +356,7 @@ export function ReportProblem({ token }: { token: string }) {
         className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left"
       >
         <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M12 8v4M12 15.5v.5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <ShieldWarningIcon size={22} aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-body-strong text-navy">Report a problem to oda</span>

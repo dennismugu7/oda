@@ -50,7 +50,7 @@ async function addDress(page: Page) {
   await page.goto(`/${shopSlug}/p/${ids.dress}`);
   await page.getByRole('button', { name: 'M', exact: true }).click();
   await page.getByRole('button', { name: `Add to cart · ${KSH(1500)}` }).click();
-  await page.getByRole('link', { name: 'View cart →' }).click();
+  await page.getByRole('link', { name: 'View cart', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your cart' })).toBeVisible();
 }
 
