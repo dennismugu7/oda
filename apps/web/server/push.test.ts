@@ -117,7 +117,7 @@ describe('sending pushes', () => {
     expect(sent.map((m) => m.to)).toEqual([TOKEN_A, TOKEN_B]);
     expect(sent[0]).toMatchObject({
       title: `New order #${o.number}`,
-      body: 'Wanjiku · KES 1,200 · Pay now with M-Pesa',
+      body: 'Wanjiku · KSh 1,200 · Pay now with M-Pesa',
       data: { type: 'new_order', orderId: o.id },
       priority: 'high',
       channelId: 'orders',

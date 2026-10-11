@@ -19,7 +19,7 @@ oda gives social sellers in Kenya a free shop link. A seller sets up a shop in t
 
 ## 3. Market rules (apply everywhere)
 
-- Country: Kenya only. Currency **KES**, stored as **integer shillings** (no cents). Display: `KSh 2,500` in the seller app and `KES 2,500` in the buyer web (as in the designs).
+- Country: Kenya only. Currency **KES**, stored as **integer shillings** (no cents). Display: `KSh 2,500` everywhere: seller app, buyer web, emails and link previews (decision #101; the web designs show "KES").
 - Phone numbers: stored in E.164 (`+2547XXXXXXXX` / `+2541XXXXXXXX`). Input accepts `07…`, `01…`, `7…`, `+254…`.
 - Timezone for all "today / this week / this month" logic: **Africa/Nairobi**.
 - Languages: UI in English. The share captions are the only bilingual feature (EN/SW).
@@ -131,7 +131,7 @@ Screens are in `design/web/`. The iPhone status bar and URL bar in the images ar
 - States: shop paused ("taking a break, back soon", can browse, cannot order), shop not found (404 with oda branding), shop suspended by oda (same as not found).
 
 ### 6.2 Product (02)
-Photo carousel with a count, favourite, cart icon with count, badge, name, rating (links to reviews), price/was-price/"Save x%", colour swatches, size buttons (the sizes the seller listed), qty stepper, and **Add to cart · KES x**. Shows "{units_sold} sold" only when `units_sold` ≥ 5. No size guide. Delivery info card (cheapest area fee, pickup, free-delivery threshold). Payment info card: "Pay the seller directly with M-Pesa" / "or on delivery" according to settings. Product reviews list below.
+Photo carousel with a count, favourite, cart icon with count, badge, name, rating (links to reviews), price/was-price/"Save x%", colour swatches, size buttons (the sizes the seller listed), qty stepper, and **Add to cart · KSh x**. Shows "{units_sold} sold" only when `units_sold` ≥ 5. No size guide. Delivery info card (cheapest area fee, pickup, free-delivery threshold). Payment info card: "Pay the seller directly with M-Pesa" / "or on delivery" according to settings. Product reviews list below.
 
 ### 6.3 Cart (03)
 Per shop, stored in localStorage. Line items (size/colour, qty, remove), a free-delivery progress banner (if the seller has a threshold), "Goes well with" (up to 2 visible products from other categories, by popularity), subtotal. Delivery is shown as "Choose at checkout". **Prices are re-validated by the server at checkout.** If an item became sold out, hidden or changed price, show it inline and block checkout until resolved.
@@ -140,10 +140,10 @@ Per shop, stored in localStorage. Line items (size/colour, qty, remove), a free-
 1. **Your details:** name, phone (+254), "I use WhatsApp on this number" (default on), optional email for a receipt, privacy note.
 2. **Delivery:** radio list of the seller's delivery areas (fee + ETA) and Pickup (if enabled). Address/directions text (required for delivery). Free delivery is applied automatically when eligible.
 3. **Payment:** *Pay now with M-Pesa* and/or *Pay on delivery*, according to shop settings. Pay now is only available if the shop has an active payment account.
-4. Button: **Place order · KES x**. Server-side: validate, recompute totals, rate-limit, create the order, return the order token → redirect to `/o/{token}`.
+4. Button: **Place order · KSh x**. Server-side: validate, recompute totals, rate-limit, create the order, return the order token → redirect to `/o/{token}`.
 
 ### 6.5 Pay page (replaces 04b, see `design-changes.md`)
-For pay-now orders in `awaiting_payment`: shows **exact** M-Pesa instructions for the seller's account type (Till: "Lipa na M-Pesa → Buy Goods → Till 123 456 → KES 4,300"; Pochi; Paybill + account number = order number). Copy buttons. The seller's name on the account ("confirm you see AMANI STYLES before entering your PIN"). A field **"Paste your M-Pesa confirmation message or code"** that extracts the 10-character code → **I've paid**. After submitting: "Waiting for {shop} to confirm your payment". Pay-on-delivery orders skip this page.
+For pay-now orders in `awaiting_payment`: shows **exact** M-Pesa instructions for the seller's account type (Till: "Lipa na M-Pesa → Buy Goods → Till 123 456 → KSh 4,300"; Pochi; Paybill + account number = order number). Copy buttons. The seller's name on the account ("confirm you see AMANI STYLES before entering your PIN"). A field **"Paste your M-Pesa confirmation message or code"** that extracts the 10-character code → **I've paid**. After submitting: "Waiting for {shop} to confirm your payment". Pay-on-delivery orders skip this page.
 
 ### 6.6 Order page `/o/{token}` (05-confirmation, 6-order-status, 05c-delivered)
 - Just placed: "Order placed!" + what happens next + the tracking/bookmark note.

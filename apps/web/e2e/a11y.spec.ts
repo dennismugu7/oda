@@ -65,7 +65,7 @@ test('buyer pages: names, labels, alt text and 44 px buttons', async ({ page, re
       'product',
       async () => {
         await page.goto(`/${slug}`);
-        await page.getByRole('link', { name: /Kitenge wrap dress KES/ }).click();
+        await page.getByRole('link', { name: /Kitenge wrap dress KSh/ }).click();
         await expect(page.getByRole('heading', { name: 'Kitenge wrap dress' })).toBeVisible();
       },
     ],

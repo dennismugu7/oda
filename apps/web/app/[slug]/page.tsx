@@ -3,7 +3,7 @@
 // visit count run in the browser. `?c=` filters by category, `?q=` searches.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatKes, storeQuery } from '@oda/shared';
+import { formatKsh, storeQuery } from '@oda/shared';
 import { CartBar, ShareButton, VisitBeacon } from '@/components/store/interactive';
 import { ProductGrid } from '@/components/store/ProductGrid';
 import {
@@ -56,8 +56,8 @@ export default async function ShopHome({ params, searchParams }: Props) {
   const canOrder = takingOrders(shop);
   const cheapest = areas.length ? Math.min(...areas.map((a) => a.fee)) : null;
   const deliveryLine = [
-    cheapest !== null ? `Delivery from ${formatKes(cheapest)}` : null,
-    shop.freeDeliveryThreshold ? `Free over ${formatKes(shop.freeDeliveryThreshold)}` : null,
+    cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
+    shop.freeDeliveryThreshold ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}` : null,
     shop.pickupEnabled ? `Pickup${shop.pickupLocation ? ` in ${shop.pickupLocation}` : ''}` : null,
   ]
     .filter(Boolean)

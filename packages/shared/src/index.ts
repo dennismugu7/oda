@@ -1,5 +1,6 @@
 export * from './auth';
 export * from './money';
+export * from './initials';
 export * from './orderMachine';
 export * from './pricing';
 export * from './phone';

@@ -19,7 +19,7 @@ export interface ShopOptions {
   till?: boolean;
   /** Pay on delivery as well as pay now (with `till`). */
   payOnDelivery?: boolean;
-  /** Delivery areas / pickup (no seller API until M6); default one area, CBD KES 200. */
+  /** Delivery areas / pickup (no seller API until M6); default one area, CBD KSh 200. */
   areas?: { name: string; fee: number; etaLabel?: string; freeDeliveryEligible?: boolean }[];
   pickup?: boolean;
   freeDeliveryThreshold?: number | null;
@@ -27,7 +27,7 @@ export interface ShopOptions {
 
 /**
  * A seller sets up a shop through the real API (sign-up, onboarding, signed uploads,
- * products): "Kitenge wrap dress" (KES 2,500, sizes M/L) and "Woven kiondo bag" (KES 1,800).
+ * products): "Kitenge wrap dress" (KSh 2,500, sizes M/L) and "Woven kiondo bag" (KSh 1,800).
  */
 export async function sellerShop(request: APIRequestContext, opts: ShopOptions = {}) {
   const ip = randomIp();
@@ -94,15 +94,15 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
   return slug;
 }
 
-/** Buyer: the bag (quick add) and the dress in M, then the cart (KES 4,300). */
+/** Buyer: the bag (quick add) and the dress in M, then the cart (KSh 4,300). */
 export async function addDressAndBag(page: Page, slug: string) {
   await page.goto(`/${slug}?s=tt`);
   await page.getByRole('button', { name: 'Add Woven kiondo bag to cart' }).click();
-  await page.getByRole('link', { name: /Kitenge wrap dress KES/ }).click();
+  await page.getByRole('link', { name: /Kitenge wrap dress KSh/ }).click();
   await page.getByRole('button', { name: 'M', exact: true }).click();
-  await page.getByRole('button', { name: 'Add to cart · KES 2,500' }).click();
+  await page.getByRole('button', { name: 'Add to cart · KSh 2,500' }).click();
   await page.getByRole('link', { name: 'View cart →' }).click();
-  await expect(page.getByText('KES 4,300').first()).toBeVisible();
+  await expect(page.getByText('KSh 4,300').first()).toBeVisible();
 }
 
 export async function fillDetails(page: Page) {
@@ -110,13 +110,13 @@ export async function fillDetails(page: Page) {
   await page.getByLabel('Phone number').fill('712 345 678');
 }
 
-/** Buyer: a pay-now order of the dress and bag to CBD (KES 4,500); ends on its order page. */
+/** Buyer: a pay-now order of the dress and bag to CBD (KSh 4,500); ends on its order page. */
 export async function placePayNowOrder(page: Page, slug: string) {
   await addDressAndBag(page, slug);
   await page.goto(`/${slug}/checkout`);
   await fillDetails(page);
   await page.getByLabel('Area, street or building').fill('Moi Avenue, Bazaar Plaza');
   await page.getByRole('radio', { name: /Pay now with M-Pesa/ }).check();
-  await page.getByRole('button', { name: 'Place order · KES 4,500' }).click();
+  await page.getByRole('button', { name: 'Place order · KSh 4,500' }).click();
   await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
 }

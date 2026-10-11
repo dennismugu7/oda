@@ -122,7 +122,7 @@ test('delivered order → review with a photo → on the product page; edit with
 
   // The product page: the average and the review with its photo; the bag shows no rating.
   await page.goto(`/${slug}`);
-  await page.getByRole('link', { name: 'New Kitenge wrap dress ★ 4.0 (1) KES 2,500' }).click();
+  await page.getByRole('link', { name: 'New Kitenge wrap dress ★ 4.0 (1) KSh 2,500' }).click();
   await expect(page.getByRole('link', { name: '1 review' })).toBeVisible();
   const reviews = page.getByRole('region', { name: 'Reviews' });
   await expect(reviews.getByText('Fits perfectly, call me')).toBeVisible();

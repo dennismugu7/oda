@@ -11,8 +11,8 @@ test('browse → search → product → cart', async ({ page, request }) => {
   // Shop home (01)
   await page.goto(`/${slug}`);
   await expect(page.getByRole('heading', { name: 'E2E Boutique' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Kitenge wrap dress KES/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Woven kiondo bag KES/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Kitenge wrap dress KSh/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Woven kiondo bag KSh/ })).toBeVisible();
 
   // Quick add (no sizes or colours): green tick and the cart bar.
   await page.getByRole('button', { name: 'Add Woven kiondo bag to cart' }).click();
@@ -27,30 +27,30 @@ test('browse → search → product → cart', async ({ page, request }) => {
   await page.screenshot({ path: test.info().outputPath('07-search-390x844.png'), fullPage: true });
 
   // Product (02): choosing a size is required, then add two.
-  await page.getByRole('link', { name: /Kitenge wrap dress KES/ }).click();
+  await page.getByRole('link', { name: /Kitenge wrap dress KSh/ }).click();
   await expect(page.getByRole('heading', { name: 'Kitenge wrap dress' })).toBeVisible();
   await page.getByRole('button', { name: /Add to cart/ }).click();
   await expect(page.getByText('Choose a size.')).toBeVisible();
   await page.getByRole('button', { name: 'L', exact: true }).click();
   await page.getByRole('button', { name: 'One more' }).click();
-  await expect(page.getByRole('button', { name: 'Add to cart · KES 5,000' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add to cart · KSh 5,000' })).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('02-product-390x844.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Add to cart · KES 5,000' }).click();
+  await page.getByRole('button', { name: 'Add to cart · KSh 5,000' }).click();
   await page.getByRole('link', { name: 'View cart →' }).click();
 
-  // Cart (03): both lines, checked with the server, subtotal KES 6,800.
+  // Cart (03): both lines, checked with the server, subtotal KSh 6,800.
   await expect(page.getByRole('heading', { name: 'Your cart' })).toBeVisible();
   await expect(page.getByText('Size L')).toBeVisible();
   await expect(page.getByText('Woven kiondo bag')).toBeVisible();
-  await expect(page.getByText('KES 6,800').first()).toBeVisible();
+  await expect(page.getByText('KSh 6,800').first()).toBeVisible();
   // Nothing changed since adding (Next's route announcer is also role=alert, outside main).
   await expect(page.locator('main [role=alert]')).toHaveCount(0);
   await page.screenshot({ path: test.info().outputPath('03-cart-390x844.png'), fullPage: true });
 
   // Changing a quantity updates the total.
-  // The bag (added first) is line 1; the dress (2 × KES 2,500) is line 2.
+  // The bag (added first) is line 1; the dress (2 × KSh 2,500) is line 2.
   await page.getByRole('button', { name: 'One less' }).nth(1).click();
-  await expect(page.getByText('KES 4,300').first()).toBeVisible();
+  await expect(page.getByText('KSh 4,300').first()).toBeVisible();
 });
 
 test('an old shop link redirects permanently to the current one', async ({ page, request }) => {

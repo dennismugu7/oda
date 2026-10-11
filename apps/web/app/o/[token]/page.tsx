@@ -16,7 +16,7 @@ import {
   buyerTimeline,
   canReviewOrder,
   formatKePhone,
-  formatKes,
+  formatKsh,
   paymentsBlocked,
   SUSPENDED_PAY_MESSAGE,
   type CancelReason,
@@ -88,7 +88,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const actions = buyerActions(ctx.order, shop);
   const account = order.paymentAccount as PayAccount | null;
   const itemCount = order.items.reduce((n, i) => n + i.qty, 0);
-  const summary = `${shopName} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${formatKes(order.total)}`;
+  const summary = `${shopName} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${formatKsh(order.total)}`;
   const demo = order.shop && isDemoShop(order.shop.slug);
   const whatsapp =
     order.shop && !shop.closed
@@ -165,7 +165,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             <p className="truncate text-body text-text-secondary">{shopName}</p>
           </div>
           <h1 className="mt-1 text-headline text-navy">
-            Pay {formatKes(order.total)} to {shopName}
+            Pay {formatKsh(order.total)} to {shopName}
           </h1>
           <p className="mt-1 text-body text-text-secondary">
             Your order is placed. Pay on M-Pesa, then tell {shopName} you’ve paid.
@@ -225,7 +225,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             {order.status === 'payment_claimed'
               ? `${shopName} is checking your M-Pesa payment.`
               : order.paymentMethod === 'pay_on_delivery'
-                ? `${shopName} will accept your order and get it to you. You pay ${formatKes(order.total)} ${pickup ? 'when you collect it' : 'on delivery'}.`
+                ? `${shopName} will accept your order and get it to you. You pay ${formatKsh(order.total)} ${pickup ? 'when you collect it' : 'on delivery'}.`
                 : `${shopName} will be in touch.`}
           </p>
         </div>
@@ -483,7 +483,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
                 </span>
                 <span className="text-text-secondary">× {i.qty}</span>
                 <span className="w-24 text-right text-body-strong text-navy">
-                  {formatKes(i.unitPrice * i.qty)}
+                  {formatKsh(i.unitPrice * i.qty)}
                 </span>
               </li>
             ))}
@@ -496,12 +496,12 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
                   : `Delivery${order.deliveryAreaName ? ` · ${order.deliveryAreaName}` : ''}`}
               </dt>
               <dd className="text-navy">
-                {order.deliveryFee === 0 ? 'Free' : formatKes(order.deliveryFee)}
+                {order.deliveryFee === 0 ? 'Free' : formatKsh(order.deliveryFee)}
               </dd>
             </div>
             <div className="flex justify-between text-body-strong text-navy">
               <dt>Total</dt>
-              <dd>{formatKes(order.total)}</dd>
+              <dd>{formatKsh(order.total)}</dd>
             </div>
           </dl>
           <p className="mt-3 text-small text-text-secondary">

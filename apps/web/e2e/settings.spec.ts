@@ -10,7 +10,7 @@ test('no page shows the till badge, even with a Till', async ({ page, request })
   await expect(page.getByRole('heading', { name: 'E2E Boutique' })).toBeVisible();
   await expect(page.getByText(/till checked/i)).toHaveCount(0);
 
-  await page.getByRole('link', { name: /Woven kiondo bag KES/ }).click();
+  await page.getByRole('link', { name: /Woven kiondo bag KSh/ }).click();
   await expect(page.getByRole('heading', { name: 'Woven kiondo bag' })).toBeVisible();
   await expect(page.getByText(/till checked/i)).toHaveCount(0);
   await page.getByRole('button', { name: /Add to cart/ }).click();
@@ -33,7 +33,7 @@ test('pause → browse only, no orders; resume → orders again', async ({ page,
   await pause(true);
   await page.goto(`/${slug}`);
   await expect(page.getByText('E2E Boutique is taking a break.')).toBeVisible();
-  await page.getByRole('link', { name: /Woven kiondo bag KES/ }).click();
+  await page.getByRole('link', { name: /Woven kiondo bag KSh/ }).click();
   await expect(page.getByRole('heading', { name: 'Woven kiondo bag' })).toBeVisible();
   await expect(page.getByText('E2E Boutique is taking a break')).toBeVisible();
   await expect(page.getByRole('button', { name: /Add to cart/ })).toHaveCount(0);

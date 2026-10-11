@@ -2,7 +2,7 @@
 // left; the name, price (and was-price), shop and link on navy. 1200 × 630, next/og.
 import { notFound } from 'next/navigation';
 import { ImageResponse } from 'next/og';
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import { colors } from '@oda/ui-tokens';
 import { HttpError } from '@/server/errors';
 import { linkFontSize, loadShop, previewFonts, shopData, shopLink } from '@/server/storefront';
@@ -67,7 +67,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
             <span style={{ fontSize: 48, fontWeight: 700, color: '#fff' }}>
-              {formatKes(product.price)}
+              {formatKsh(product.price)}
             </span>
             {product.compareAtPrice ? (
               <span
@@ -78,7 +78,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                   textDecoration: 'line-through',
                 }}
               >
-                {formatKes(product.compareAtPrice)}
+                {formatKsh(product.compareAtPrice)}
               </span>
             ) : null}
           </div>

@@ -23,8 +23,8 @@ describe('review text cleaning (decision #73 b)', () => {
   });
 
   it('keeps prices, sizes and short numbers', () => {
-    expect(stripPhones('Paid KES 2,500 for size 42, arrived in 2 days')).toBe(
-      'Paid KES 2,500 for size 42, arrived in 2 days',
+    expect(stripPhones('Paid KSh 2,500 for size 42, arrived in 2 days')).toBe(
+      'Paid KSh 2,500 for size 42, arrived in 2 days',
     );
   });
 

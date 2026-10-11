@@ -35,7 +35,7 @@ describe('cart check against current products (spec §6.3)', () => {
   it('flags a new price and uses it', () => {
     const [c] = reconcile([line()], map(product({ price: 2800 })));
     expect(c).toMatchObject({
-      problem: 'Price changed from KES 2,500 to KES 2,800.',
+      problem: 'Price changed from KSh 2,500 to KSh 2,800.',
       remove: false,
       line: { price: 2800 },
     });

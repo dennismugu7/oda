@@ -44,12 +44,12 @@ const ids: Record<string, string> = {};
 const tokens: Record<string, string> = {};
 let shopSlug = A.slug; // changes at 3.15
 
-const KES = (n: number) => `KES ${n.toLocaleString('en-US')}`;
+const KSH = (n: number) => `KSh ${n.toLocaleString('en-US')}`;
 
 async function addDress(page: Page) {
   await page.goto(`/${shopSlug}/p/${ids.dress}`);
   await page.getByRole('button', { name: 'M', exact: true }).click();
-  await page.getByRole('button', { name: `Add to cart · ${KES(1500)}` }).click();
+  await page.getByRole('button', { name: `Add to cart · ${KSH(1500)}` }).click();
   await page.getByRole('link', { name: 'View cart →' }).click();
   await expect(page.getByRole('heading', { name: 'Your cart' })).toBeVisible();
 }
@@ -174,7 +174,7 @@ test('Sitting 1 · 1B Onboarding (M2)', async () => {
     });
     expect(res.status()).toBe(422);
   });
-  await test.step('1.11 First product with a photo: Test dress, KES 1,500, size M', async () => {
+  await test.step('1.11 First product with a photo: Test dress, KSh 1,500, size M', async () => {
     const state = await a.ok('POST', '/api/onboarding/product', {
       name: 'Test dress',
       price: 1500,
@@ -207,7 +207,7 @@ test('Sitting 1 · 1C Delivery and catalogue (M3, M6)', async ({ page }) => {
     await expect(page.getByText(/Not taking orders yet/)).toBeVisible();
     await shot(page, '1.14-not-taking-orders');
   });
-  await test.step('1.15 Kilimani KES 200 by rider, and pickup at Yaya Centre', async () => {
+  await test.step('1.15 Kilimani KSh 200 by rider, and pickup at Yaya Centre', async () => {
     const view = await a.ok(
       'POST',
       '/api/delivery/areas',
@@ -235,7 +235,7 @@ test('Sitting 1 · 1C Delivery and catalogue (M3, M6)', async ({ page }) => {
     const list = await a.ok('PUT', '/api/categories/order', { ids: [ids.tops, ids.dresses] });
     expect(list.map((c: { name: string }) => c.name)).toEqual(['Tops', 'Dresses']);
   });
-  await test.step('1.17 Test top: 2 photos, KES 900 (was 1,200), Tops, sizes S/M, a colour', async () => {
+  await test.step('1.17 Test top: 2 photos, KSh 900 (was 1,200), Tops, sizes S/M, a colour', async () => {
     const top = await a.ok(
       'POST',
       '/api/products',
@@ -307,7 +307,7 @@ test('Sitting 1 · 1D The shop on the web, share, Demo Duka (M4, M8b)', async ({
   await test.step('1.22 The shop as buyers see it: 2 products, no Hidden item', async () => {
     await page.goto(`/${A.slug}`);
     await expect(page.getByRole('heading', { name: A.name })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Test dress KES/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Test dress KSh/ })).toBeVisible();
     await expect(page.getByRole('link', { name: /Test top/ })).toBeVisible();
     await expect(page.getByText('Hidden item')).toHaveCount(0);
     await shot(page, '1.22-shop');
@@ -316,12 +316,12 @@ test('Sitting 1 · 1D The shop on the web, share, Demo Duka (M4, M8b)', async ({
     const share = await a.ok('GET', '/api/share');
     expect(share.shop.slug).toBe(A.slug);
   });
-  await test.step('1.24 Categories Tops before Dresses; Test top sold out with KES 1,200 crossed out', async () => {
+  await test.step('1.24 Categories Tops before Dresses; Test top sold out with KSh 1,200 crossed out', async () => {
     const html = await page.content();
     expect(html.indexOf('>Tops<')).toBeGreaterThan(-1);
     expect(html.indexOf('>Tops<')).toBeLessThan(html.indexOf('>Dresses<'));
     await expect(page.getByText('Sold out').first()).toBeVisible();
-    await expect(page.getByText(KES(1200)).first()).toBeVisible();
+    await expect(page.getByText(KSH(1200)).first()).toBeVisible();
   });
   await test.step('1.25 Test top’s page: no Add to cart', async () => {
     await page.goto(`/${A.slug}/p/${ids.top}`);
@@ -335,12 +335,12 @@ test('Sitting 1 · 1D The shop on the web, share, Demo Duka (M4, M8b)', async ({
     await page.getByLabel('Search this shop').press('Enter');
     await expect(page.getByText('1 product')).toBeVisible();
     await page.goto(`/${A.slug}/search?sort=price_asc`);
-    await expect(page.getByRole('link', { name: /Test dress KES/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Test dress KSh/ })).toBeVisible();
     await shot(page, '1.26-search');
   });
-  await test.step('1.27 Test dress M in the cart: KES 1,500', async () => {
+  await test.step('1.27 Test dress M in the cart: KSh 1,500', async () => {
     await addDress(page);
-    await expect(page.getByText(KES(1500)).first()).toBeVisible();
+    await expect(page.getByText(KSH(1500)).first()).toBeVisible();
     await shot(page, '1.27-cart');
   });
   await test.step('1.28 Demo Duka: demo banner, 12 products, favourites kept after a reload', async () => {
@@ -429,7 +429,7 @@ test('Sitting 2 · 2A Pay now, end to end (M5, M6)', async ({ page }) => {
       pay: 'now',
     });
     await expect(
-      page.getByRole('heading', { name: `Pay ${KES(1700)} to ${A.name}` }),
+      page.getByRole('heading', { name: `Pay ${KSH(1700)} to ${A.name}` }),
     ).toBeVisible();
     await expect(page.getByText('REG TEST ONLY', { exact: true })).toBeVisible();
     await shot(page, '2.1-pay-page');
@@ -572,7 +572,7 @@ test('Sitting 2 · 2C Seller cancel and refund; manual order (M6)', async ({ pag
   await test.step('2.17 Its link: the buyer’s pay page (Till 000000)', async () => {
     await page.goto(`/o/${tokens.manual}`);
     await expect(
-      page.getByRole('heading', { name: new RegExp(`^Pay KES 1,500 to ${A.name}`) }),
+      page.getByRole('heading', { name: new RegExp(`^Pay KSh 1,500 to ${A.name}`) }),
     ).toBeVisible();
     await shot(page, '2.17-manual-order-pay');
   });

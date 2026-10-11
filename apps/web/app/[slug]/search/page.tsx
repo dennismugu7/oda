@@ -3,7 +3,7 @@
 // box and the filters are plain GET forms, so every result page is a shareable URL.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatKes, STORE_SORTS, storeQuery, type StoreQuery } from '@oda/shared';
+import { formatKsh, STORE_SORTS, storeQuery, type StoreQuery } from '@oda/shared';
 import { CartBar, VisitBeacon } from '@/components/store/interactive';
 import { ProductGrid } from '@/components/store/ProductGrid';
 import { loadShop, restOf, shopData, takingOrders } from '@/server/storefront';
@@ -72,7 +72,7 @@ export default async function Search({ params, searchParams }: Props) {
       : null,
     query.max
       ? {
-          label: `Under ${formatKes(query.max)}`,
+          label: `Under ${formatKsh(query.max)}`,
           url: searchUrl(shop.slug, query, { max: undefined }),
         }
       : null,
@@ -180,7 +180,7 @@ export default async function Search({ params, searchParams }: Props) {
               <option value="">Any price</option>
               {MAX_PRICES.map((m) => (
                 <option key={m} value={m}>
-                  Under {formatKes(m)}
+                  Under {formatKsh(m)}
                 </option>
               ))}
             </select>

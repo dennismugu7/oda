@@ -177,7 +177,7 @@ describe('POST /api/shops/:slug/orders', () => {
       type: 'new_order',
       orderId: order.id,
       title: `New order #${order.number}`,
-      body: 'Wanjiku Kamau · KES 2,700 · Pay now with M-Pesa',
+      body: 'Wanjiku Kamau · KSh 2,700 · Pay now with M-Pesa',
     });
     // No email given: no receipt.
     expect(testOutbox.all()).toHaveLength(0);
@@ -207,7 +207,7 @@ describe('POST /api/shops/:slug/orders', () => {
     expect(mail.kind).toBe('order-receipt');
     expect(mail.subject).toBe(`Your order #${order.number} from Amani Styles`);
     expect(mail.text).toContain(`/o/${body.token}`);
-    expect(mail.text).toContain('You pay KES 2,500 on delivery');
+    expect(mail.text).toContain('You pay KSh 2,500 on delivery');
   });
 
   it('applies free delivery and unknown sources count as direct', async () => {

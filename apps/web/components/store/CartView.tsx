@@ -6,7 +6,7 @@
 // anything sold out, gone or repriced, blocking checkout until it's resolved (spec §6.3).
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import { cartCount, cartTotal, type CartLine } from '@/lib/store/cart';
 import { reconcile, type CurrentProduct } from '@/lib/store/reconcile';
 import { useCart } from './useShopStore';
@@ -161,7 +161,7 @@ export function CartView({
               <strong>You’ve unlocked free delivery</strong>
             ) : (
               <>
-                Add <strong>{formatKes(freeDeliveryThreshold - subtotal)}</strong> more for free
+                Add <strong>{formatKsh(freeDeliveryThreshold - subtotal)}</strong> more for free
                 delivery
               </>
             )}
@@ -253,7 +253,7 @@ export function CartView({
                 </p>
               ) : null}
               <div className="mt-2 flex items-center justify-between">
-                <p className="text-subtitle font-bold text-navy">{formatKes(c.line.price)}</p>
+                <p className="text-subtitle font-bold text-navy">{formatKsh(c.line.price)}</p>
                 <div className="flex h-11 items-center rounded-pill border border-border">
                   <button
                     type="button"
@@ -315,7 +315,7 @@ export function CartView({
                 </Link>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-body text-navy">{s.name}</p>
-                  <p className="text-body-strong text-navy">{formatKes(s.price)}</p>
+                  <p className="text-body-strong text-navy">{formatKsh(s.price)}</p>
                 </div>
                 {s.hasOptions ? (
                   <Link
@@ -352,7 +352,7 @@ export function CartView({
       <dl className="mt-6 space-y-2 text-body">
         <div className="flex justify-between">
           <dt className="text-text-secondary">Subtotal</dt>
-          <dd className="text-body-strong text-navy">{formatKes(subtotal)}</dd>
+          <dd className="text-body-strong text-navy">{formatKsh(subtotal)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-text-secondary">Delivery</dt>
@@ -363,7 +363,7 @@ export function CartView({
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-border bg-surface px-4 pt-3 pb-4">
         <div className="flex items-baseline justify-between">
           <span className="text-body text-text-secondary">Total</span>
-          <span className="text-headline text-navy">{formatKes(subtotal)}</span>
+          <span className="text-headline text-navy">{formatKsh(subtotal)}</span>
         </div>
         {canOrder && !problems.length ? (
           <Link

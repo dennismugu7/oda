@@ -9,14 +9,8 @@ function assertShillings(amount: number): void {
   }
 }
 
-/** "KSh 2,500": the seller app's convention. */
+/** "KSh 2,500": how oda shows money everywhere (app, web, emails, link previews; decision #101). */
 export function formatKsh(amount: number): string {
   assertShillings(amount);
   return `KSh ${grouping.format(amount)}`;
-}
-
-/** "KES 2,500": the buyer web's convention. */
-export function formatKes(amount: number): string {
-  assertShillings(amount);
-  return `KES ${grouping.format(amount)}`;
 }

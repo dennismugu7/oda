@@ -37,9 +37,9 @@ describe('buyer order emails (M5)', () => {
     const mail = orderReceiptEmail(order);
     expect(mail.kind).toBe('order-receipt');
     expect(mail.subject).toBe('Your order #1042 from Amani <b>Styles</b>');
-    expect(mail.text).toContain('Wrap dress — Maroon · Size M × 2: KES 5,000');
+    expect(mail.text).toContain('Wrap dress — Maroon · Size M × 2: KSh 5,000');
     expect(mail.text).toContain('Delivery (CBD): Free');
-    expect(mail.text).toContain('Pay KES 5,000 to Amani <b>Styles</b> on M-Pesa');
+    expect(mail.text).toContain('Pay KSh 5,000 to Amani <b>Styles</b> on M-Pesa');
     expect(mail.html).toContain('href="https://oda-eta.vercel.app/o/AbCdEfGhIjKl"');
     expect(mail.html).not.toContain('<script>');
     expect(mail.html).not.toContain('<b>Styles');

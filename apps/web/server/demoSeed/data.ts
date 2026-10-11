@@ -17,7 +17,7 @@ export const DEMO_SHOP = {
   locationLabel: 'Demo town',
 };
 
-/** Reset on every run: both ways to pay, pickup, free delivery over KES 5,000. */
+/** Reset on every run: both ways to pay, pickup, free delivery over KSh 5,000. */
 export const DEMO_SETTINGS = {
   acceptsPayBefore: true,
   acceptsPayOnDelivery: true,

@@ -33,7 +33,7 @@ export const REVIEW_LIMITS = {
 
 /**
  * Removes phone numbers: 9 or more digits, with or without spaces, dots, dashes, brackets or
- * a leading + (0712 345 678, +254-712-345-678, 254712345678). Prices like "KES 2,500" stay.
+ * a leading + (0712 345 678, +254-712-345-678, 254712345678). Prices like "KSh 2,500" stay.
  */
 export function stripPhones(text: string): string {
   return text
