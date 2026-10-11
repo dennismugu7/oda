@@ -17,6 +17,7 @@ import { Button, Field, FormMessage, Link, LinkButton } from '@/ui/auth';
 import { onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { KenyaFlag } from '@/ui/kenyaFlag';
 
 type Check =
   | { status: 'idle' }
@@ -248,15 +249,7 @@ function Step({ state }: { state: OnboardingState }) {
           error={phoneError ?? fields.whatsappPhone}
           left={
             <>
-              <View
-                style={styles.flag}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <View style={[styles.flagBand, { backgroundColor: colors.text }]} />
-                <View style={[styles.flagBand, { backgroundColor: colors.danger }]} />
-                <View style={[styles.flagBand, { backgroundColor: colors.green }]} />
-              </View>
+              <KenyaFlag />
               <Text style={styles.prefixStrong}>+254</Text>
             </>
           }
@@ -444,7 +437,5 @@ const styles = StyleSheet.create({
   },
   prefixText: { ...text('body'), color: colors.textSecondary },
   prefixStrong: { ...text('bodyStrong'), fontSize: 16, color: colors.navy },
-  flag: { width: 20, height: 14, borderRadius: 3, overflow: 'hidden' },
-  flagBand: { flex: 1 },
   help: { ...text('body'), color: colors.textSecondary },
 });

@@ -142,6 +142,13 @@ describe('no name yet (§1.5)', () => {
     expect(screen.queryByText('?')).toBeNull();
   });
 
+  it('Your details: the recovery phone shows Kenya’s flag before +254 (decision #109 b)', async () => {
+    await render(<YourDetails />);
+    await screen.findByText('wanjiku.kamau');
+    expect(screen.getByTestId('kenya-flag', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText('+254')).toBeTruthy();
+  });
+
   it('Home: the greeting has no dangling comma', async () => {
     mockHome.mockResolvedValue({
       data: {

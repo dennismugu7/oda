@@ -69,6 +69,14 @@ describe('Onboarding · Name your shop', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
   });
 
+  it('the WhatsApp number shows Kenya’s flag before +254 (decision #109 b)', async () => {
+    await render(<NameShop />);
+    await screen.findByLabelText('Shop name');
+    const flag = screen.getByTestId('kenya-flag', { includeHiddenElements: true });
+    expect(flag).toHaveStyle({ width: 20, height: 14, borderRadius: 3 });
+    expect(screen.getByText('+254')).toBeTruthy();
+  });
+
   it('a taken link shows the reason and suggestions to pick', async () => {
     mockCheckSlug.mockImplementation(async (q: { slug?: string }) =>
       q.slug === 'amani-styles-ke'

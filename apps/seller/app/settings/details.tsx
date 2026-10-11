@@ -14,6 +14,7 @@ import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
 import { Card } from '@/ui/rows';
 import { colors, fonts, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { KenyaFlag } from '@/ui/kenyaFlag';
 
 const cache = memoryCache<Details>();
 
@@ -154,7 +155,12 @@ function DetailsForm({
         <Field
           label="Phone number"
           labelHint="For account recovery"
-          left={<Text style={styles.prefix}>+254</Text>}
+          left={
+            <>
+              <KenyaFlag />
+              <Text style={styles.prefix}>+254</Text>
+            </>
+          }
           value={phone}
           onChangeText={setPhone}
           placeholder="712 345 678"
