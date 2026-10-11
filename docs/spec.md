@@ -45,8 +45,8 @@ Bottom tabs: **Home · Orders · + · Shop · More** ("+" = add product). UI tex
 - Implementation: **Better Auth** inside `apps/web` (email + password sign-in, sessions, password reset by emailed link), with Better Auth's Expo integration in the seller app (session in SecureStore). Sign-up and its 6-digit code (~10 min expiry) are oda's own: the account is created only when the code is entered, with the password chosen in that sign-up attempt (decision #49). Emails are sent with Resend using the designs in screens 04 and 06. Sign-in and code attempts are rate-limited.
 - Welcome → Sign in / Create new shop.
 - Sign up: email + password (min 8 chars, must include a number). A 6-digit code is sent to the email → verify screen (resend with a 60s cooldown; "check spam" hint).
-- Sign in: email + password. Forgot password → email with a reset link → web page `/reset-password` (screens 07, 08) → back to the app.
-- **No Google or Facebook sign-in in v1.**
+- Sign in: email + password, or **Google** (decision #107: Android's Google account chooser; the app sends Google's ID token to the server; an existing account with the same email is linked, a new email creates an account that goes to onboarding). Forgot password → email with a reset link → web page `/reset-password` (screens 07, 08) → back to the app.
+- Sign up: also **Sign up with Google** above an "or" divider (decision #107). **No Facebook sign-in in v1.**
 - Change password (screen 21) with an optional "log out other phones".
 - Sessions persist: the session stays signed in (Better Auth sessions renew automatically).
 
@@ -181,4 +181,4 @@ Exactly the "email" side effects listed in `order-lifecycle.md`. Every email inc
 ## 9. Out of scope for v1
 Ideas kept for later, with the decision that moved them: `docs/v2-ideas.md`.
 
-Payment aggregator / STK push / automatic payment confirmation · deposits · automated WhatsApp/SMS messages · courier integrations · stock counts · buyer accounts · iOS app · multiple staff per shop · multiple shops per seller · dark mode · discount codes · AI captions · Google/Facebook sign-in · commissions/subscriptions.
+Payment aggregator / STK push / automatic payment confirmation · deposits · automated WhatsApp/SMS messages · courier integrations · stock counts · buyer accounts · iOS app · multiple staff per shop · multiple shops per seller · dark mode · discount codes · AI captions · Facebook sign-in · commissions/subscriptions.
