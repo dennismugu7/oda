@@ -1,7 +1,6 @@
 // Building blocks for the auth screens (designs 02, 03, 05 and the new forgot-password
 // screen): page layout, wordmark, fields, buttons and notices. Brand colours and oda's fonts
 // everywhere (docs/design-changes.md).
-import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
 import {
   createContext,
@@ -32,6 +31,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { passwordChecks } from '@oda/shared';
 import { colors, radii, sizes, spacing, text } from '@/theme';
 import { revealOffset } from './reveal';
+import { Icon } from '@/ui/icon';
 
 /** True while the on-screen keyboard is open. */
 export function useKeyboardVisible(): boolean {
@@ -176,7 +176,7 @@ export function BackButton() {
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
       style={styles.back}
     >
-      <Feather name="chevron-left" size={30} color={colors.navy} />
+      <Icon name="chevron-left" size={30} color={colors.navy} />
     </Pressable>
   );
 }
@@ -275,7 +275,7 @@ export const PasswordField = forwardRef<TextInput, Omit<FieldProps, 'right'>>(
             onPress={() => setVisible((v) => !v)}
             style={styles.eye}
           >
-            <Feather name={visible ? 'eye-off' : 'eye'} size={22} color={colors.textSecondary} />
+            <Icon name={visible ? 'eye-off' : 'eye'} size={22} color={colors.textSecondary} />
           </Pressable>
         }
         {...props}
@@ -290,7 +290,7 @@ export function PasswordRules({ password }: { password: string }) {
     <View style={styles.rules} accessibilityLabel="Password rules">
       {passwordChecks(password).map((rule) => (
         <View key={rule.label} style={styles.rule}>
-          <Feather
+          <Icon
             name={rule.ok ? 'check' : 'circle'}
             size={rule.ok ? 16 : 6}
             color={rule.ok ? colors.green : colors.textMuted}
@@ -418,7 +418,7 @@ export function FormMessage({
       accessibilityLiveRegion="polite"
       style={error ? styles.errorBox : styles.infoBox}
     >
-      <Feather
+      <Icon
         name={error ? 'alert-circle' : 'check-circle'}
         size={18}
         color={error ? colors.warningTextStrong : colors.green}
@@ -433,11 +433,7 @@ export const ErrorMessage = FormMessage;
 export function InfoNote({ icon, children }: { icon: 'info' | 'shield'; children: ReactNode }) {
   return (
     <View style={styles.note}>
-      <Feather
-        name={icon}
-        size={18}
-        color={icon === 'shield' ? colors.green : colors.textSecondary}
-      />
+      <Icon name={icon} size={18} color={icon === 'shield' ? colors.green : colors.textSecondary} />
       <Text style={[styles.noteText, icon === 'shield' && { color: colors.textSecondary }]}>
         {children}
       </Text>

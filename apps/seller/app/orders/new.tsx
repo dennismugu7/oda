@@ -3,7 +3,6 @@
 // pickup or a delivery area with an editable fee, and Already paid / Not paid yet / Pay on
 // delivery. Prices and the total come from the server's quote; after creating, the order link
 // is shown to copy or send on WhatsApp (for "Not paid yet" it's where the buyer pays).
-import Feather from '@expo/vector-icons/Feather';
 import {
   formatKsh,
   MANUAL_PAYMENT_LABELS,
@@ -49,6 +48,7 @@ import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 type Choice = { kind: 'pickup' } | { kind: 'delivery'; areaId: string } | null;
 
@@ -262,7 +262,7 @@ export default function NewOrder() {
           hitSlop={12}
           onPress={close}
         >
-          <Feather name="x" size={28} color={colors.textOnNavy} />
+          <Icon name="x" size={28} color={colors.textOnNavy} />
         </Pressable>
         <View style={styles.flex}>
           <Text accessibilityRole="header" style={styles.title}>
@@ -345,7 +345,7 @@ export default function NewOrder() {
             onPress={() => setPicking(true)}
             style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
           >
-            <Feather name="plus" size={20} color={colors.navy} />
+            <Icon name="plus" size={20} color={colors.navy} />
             <Text style={styles.addText}>Add product</Text>
           </Pressable>
         </View>
@@ -411,7 +411,7 @@ export default function NewOrder() {
                       : formatKsh(option.deliveryFee)
                     : '—'}
                 </Text>
-                <Feather name="edit-2" size={18} color={colors.textSecondary} />
+                <Icon name="edit-2" size={18} color={colors.textSecondary} />
               </Pressable>
             ) : (
               <View style={styles.feeEdit}>
@@ -525,7 +525,7 @@ function Stepper({
         onPress={onMinus}
         style={styles.stepButton}
       >
-        <Feather name={qty === 1 ? 'trash-2' : 'minus'} size={18} color={colors.navy} />
+        <Icon name={qty === 1 ? 'trash-2' : 'minus'} size={18} color={colors.navy} />
       </Pressable>
       <Text style={styles.qty}>{qty}</Text>
       <Pressable
@@ -534,7 +534,7 @@ function Stepper({
         onPress={onPlus}
         style={styles.stepButton}
       >
-        <Feather name="plus" size={18} color={colors.navy} />
+        <Icon name="plus" size={18} color={colors.navy} />
       </Pressable>
     </View>
   );
@@ -687,7 +687,7 @@ function ProductPicker({
                         : ''}
                   </Text>
                 </View>
-                <Feather name="plus" size={20} color={colors.navy} />
+                <Icon name="plus" size={20} color={colors.navy} />
               </Pressable>
             ))}
           </ScrollView>
@@ -714,7 +714,7 @@ function Created({ order, onClose }: { order: OrderDetail; onClose: () => void }
     <View style={[styles.screen, styles.created, { paddingTop: insets.top + spacing.xl }]}>
       <StatusBar style="dark" />
       <View style={styles.check}>
-        <Feather name="check" size={32} color={colors.textOnNavy} />
+        <Icon name="check" size={32} color={colors.textOnNavy} />
       </View>
       <Text accessibilityRole="header" style={styles.createdTitle}>
         Order #{order.number} created

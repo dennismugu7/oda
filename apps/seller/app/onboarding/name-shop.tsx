@@ -2,7 +2,6 @@
 // ("… is yours", Edit), the WhatsApp number buyers chat with, and an optional logo (tap
 // the avatar in the preview). Saving creates the shop (decision #51); the logo is uploaded
 // after that, since uploads belong to a shop.
-import Feather from '@expo/vector-icons/Feather';
 import { displayUrl, formatKePhone, normalizeKePhone, SLUG_MAX } from '@oda/shared';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -17,6 +16,7 @@ import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage, Link, LinkButton } from '@/ui/auth';
 import { onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 type Check =
   | { status: 'idle' }
@@ -154,7 +154,7 @@ function Step({ state }: { state: OnboardingState }) {
         </View>
         <View style={styles.preview}>
           <View style={styles.urlBar}>
-            <Feather name="lock" size={12} color={colors.textSecondary} />
+            <Icon name="lock" size={12} color={colors.textSecondary} />
             <Text style={styles.url} numberOfLines={1}>
               {displayUrl(SHOP_BASE_URL, '')}
               <Text style={styles.urlSlug}>{result?.slug || slug || 'your-shop'}</Text>
@@ -173,7 +173,7 @@ function Step({ state }: { state: OnboardingState }) {
                 <Text style={styles.avatarInitial}>{initial}</Text>
               )}
               <View style={styles.cameraBadge}>
-                <Feather name="camera" size={11} color={colors.textOnNavy} />
+                <Icon name="camera" size={11} color={colors.textOnNavy} />
               </View>
             </Pressable>
             <View style={styles.shopText}>
@@ -185,7 +185,7 @@ function Step({ state }: { state: OnboardingState }) {
               </Text>
             </View>
             <View style={styles.chat}>
-              <Feather name="message-circle" size={14} color={colors.textOnNavy} />
+              <Icon name="message-circle" size={14} color={colors.textOnNavy} />
               <Text style={styles.chatText}>Chat</Text>
             </View>
           </View>
@@ -310,7 +310,7 @@ function LinkStatus({
   if (result.available) {
     return (
       <View style={styles.linkRow} accessibilityLiveRegion="polite">
-        <Feather name="check" size={16} color={colors.green} />
+        <Icon name="check" size={16} color={colors.green} />
         <Text style={styles.linkText}>
           <Text style={styles.linkStrong}>{shown}</Text> is yours
         </Text>

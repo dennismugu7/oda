@@ -1,12 +1,11 @@
 // Words and icons for onboarding (designs 09, 10, 13), plus how API errors read to the seller.
-import type MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { colors } from '@oda/ui-tokens';
 import type { BusinessType, Channel, PaymentAccountType } from '@oda/shared';
-import type { ComponentProps } from 'react';
 import type { ApiError } from '@/api';
 import { OFFLINE_MESSAGE, UNREACHABLE_MESSAGE } from '@/auth/errors';
+import type { IconName } from '@/ui/icon';
 
-export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+export type { IconName } from '@/ui/icon';
 
 export const BUSINESS_TYPE_OPTIONS: { value: BusinessType; label: string; icon: IconName }[] = [
   { value: 'fashion', label: 'Clothes & fashion', icon: 'tshirt-crew-outline' },

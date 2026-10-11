@@ -1,6 +1,5 @@
 // 05 Sign in. Changes from the image: no Google/Facebook buttons; oda's fonts and brand colours.
 // Also opened by the web page 08's "Open oda app" link (oda://sign-in).
-import Feather from '@expo/vector-icons/Feather';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
@@ -19,6 +18,7 @@ import {
   Wordmark,
 } from '@/ui/auth';
 import { colors, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export default function SignIn() {
   // ready=1: the account was just created from the code, but the app no longer holds the
@@ -86,7 +86,7 @@ export default function SignIn() {
           error={emailError}
           right={
             emailCheck.success ? (
-              <Feather name="check" size={20} color={colors.green} style={styles.tick} />
+              <Icon name="check" size={20} color={colors.green} style={styles.tick} />
             ) : null
           }
         />

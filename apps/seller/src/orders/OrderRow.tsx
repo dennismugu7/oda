@@ -1,11 +1,11 @@
 // One order in the Orders list (design 17-orders): cover, buyer, "#1042 · Kitenge top + 1
 // more", total and time; outside To do, a status chip.
-import Feather from '@expo/vector-icons/Feather';
 import { formatKsh, itemsSummary, listTime, needsMoneyAction, orderStatusLabel } from '@oda/shared';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import type { OrderRow as Row } from './api';
+import { Icon } from '@/ui/icon';
 
 export function OrderRow({
   order,
@@ -31,7 +31,7 @@ export function OrderRow({
         <Image source={{ uri: order.thumbUrl }} style={styles.thumb} />
       ) : (
         <View style={[styles.thumb, styles.thumbEmpty]}>
-          <Feather name="shopping-bag" size={20} color={colors.textMuted} />
+          <Icon name="shopping-bag" size={20} color={colors.textMuted} />
         </View>
       )}
       <View style={styles.body}>
@@ -52,7 +52,7 @@ export function OrderRow({
         <Text style={styles.total}>{formatKsh(order.total)}</Text>
         <Text style={styles.time}>{listTime(new Date(order.placedAt), now)}</Text>
       </View>
-      <Feather name="chevron-right" size={20} color={colors.textMuted} />
+      <Icon name="chevron-right" size={20} color={colors.textMuted} />
     </Pressable>
   );
 }

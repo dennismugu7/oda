@@ -2,7 +2,6 @@
 // spent and order count are sales only (confirmed, sent, delivered); "Repeat" = 2 or more.
 // Filters All / Repeat / New this month with counts, search by name or phone, newest order
 // first, 30 a page (more load at the end of the list), and a WhatsApp button on each row.
-import Feather from '@expo/vector-icons/Feather';
 import { formatKsh, waLink, type CustomerFilter } from '@oda/shared';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,6 +25,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const FILTERS: { key: CustomerFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -165,7 +165,7 @@ export default function CustomersScreen() {
             <ActivityIndicator style={styles.loading} color={colors.primary} />
           ) : empty ? (
             <View style={styles.emptyCard}>
-              <Feather name="users" size={28} color={colors.primary} />
+              <Icon name="users" size={28} color={colors.primary} />
               <Text style={styles.emptyTitle}>
                 {query.trim()
                   ? 'No customers match'
@@ -242,7 +242,7 @@ function CustomerRow({
         onPress={() => Linking.openURL(waLink(c.phone, `Hi ${firstName}, `)).catch(() => {})}
         style={({ pressed }) => [styles.wa, pressed && styles.pressed]}
       >
-        <Feather name="message-circle" size={20} color={colors.green} />
+        <Icon name="message-circle" size={20} color={colors.green} />
       </Pressable>
     </View>
   );

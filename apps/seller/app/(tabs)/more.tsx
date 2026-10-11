@@ -2,7 +2,6 @@
 // "Your business" (Insights "KSh x this week", Customers, Reviews "4.8 ★ · 38"), "Your shop"
 // (Shop profile, Payments "Till 123 456", Delivery "3 areas", Categories), Settings and Help and
 // support. Values load fresh whenever the tab shows; offline, the last copy stays (read-only).
-import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { openBuyerView } from '@/catalogue/preview';
@@ -15,6 +14,7 @@ import { Card, Row, Section, type FeatherName } from '@/ui/rows';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { TabScreen } from '@/ui/tabs';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<MoreData>();
 
@@ -59,7 +59,7 @@ export default function MoreTab() {
         onPress={() => data && openBuyerView(data.shop.url)}
         style={({ pressed }) => [styles.view, pressed && styles.pressed]}
       >
-        <Feather name="external-link" size={16} color={colors.navy} />
+        <Icon name="external-link" size={16} color={colors.navy} />
         <Text style={styles.viewText}>View</Text>
       </Pressable>
     </View>

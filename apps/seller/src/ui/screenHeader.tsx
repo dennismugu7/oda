@@ -1,12 +1,12 @@
 // The navy header of a pushed screen (designs 18-edit-product, 20b-categories, 20b1): back,
 // a title with an optional line under it, and an optional ⋮ menu.
-import Feather from '@expo/vector-icons/Feather';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinkButton } from '@/ui/auth';
 import { colors, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export function ScreenHeader({
   title,
@@ -40,7 +40,7 @@ export function ScreenHeader({
           hitSlop={12}
           onPress={onBack}
         >
-          <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
+          <Icon name="chevron-left" size={30} color={colors.textOnNavy} />
         </Pressable>
         <View style={styles.headerText}>
           <Text accessibilityRole="header" style={styles.headerTitle} numberOfLines={1}>
@@ -73,7 +73,7 @@ export function ScreenHeader({
             hitSlop={12}
             onPress={onMenu}
           >
-            <Feather name={menuIcon} size={26} color={colors.textOnNavy} />
+            <Icon name={menuIcon} size={26} color={colors.textOnNavy} />
           </Pressable>
         ) : (
           <View style={styles.headerSpacer} />

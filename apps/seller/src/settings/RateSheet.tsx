@@ -1,7 +1,6 @@
 // The "Enjoying oda?" sheet (design 21-rate-app) over Settings: five stars (all on to start),
 // then Play's in-app review for 4–5 stars once oda is on Google Play, a clear message before
 // that, and the feedback screen for 1–3 stars (src/settings/rate.ts, decision #78).
-import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { useState } from 'react';
@@ -11,6 +10,7 @@ import { Button } from '@/ui/auth';
 import { Star } from '@/ui/star';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { rateButtonTitle, rateNext, STAR_LABELS } from './rate';
+import { Icon } from '@/ui/icon';
 
 export function RateSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
@@ -60,7 +60,7 @@ export function RateSheet({ visible, onClose }: { visible: boolean; onClose: () 
           onPress={close}
           style={styles.close}
         >
-          <Feather name="x" size={22} color={colors.navy} />
+          <Icon name="x" size={22} color={colors.navy} />
         </Pressable>
         <View style={styles.logo}>
           <Text style={styles.logoText}>

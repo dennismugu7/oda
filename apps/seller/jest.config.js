@@ -12,6 +12,6 @@ module.exports = {
   testTimeout: 30_000,
   // pnpm keeps packages under node_modules/.pnpm: transform React Native and Expo code there too.
   transformIgnorePatterns: [
-    'node_modules/(?!(\.pnpm/[^/]+/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|@oda/.*|@better-auth/.*|better-auth))',
+    'node_modules/(?!(\.pnpm/[^/]+/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|@oda/.*|@better-auth/.*|better-auth|phosphor-react-native))',
   ],
 };
