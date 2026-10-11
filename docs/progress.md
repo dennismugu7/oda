@@ -31,6 +31,12 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-11 · Web shop fits a 360 px phone (owner-approved design)
+
+- **Bug:** on a 360 px phone the shop page was 406 px wide: the row "search + filter + green Chat button" didn't fit (the Chat link ended at x = 406).
+- **Fix (branch `web-shop-width`):** Chat moved into the shop header as a round 44 × 44 icon button left of Share (name "Chat with <shop> on WhatsApp", same wa.me link, hidden without a WhatsApp number), showing WhatsApp's official green glyph unmodified (`apps/web/public/brands/whatsapp-glyph-green.svg`, a byte-for-byte copy of the seller app's file; `public/brands/README.md` notes the source; `test/brandAssets.test.ts` checks they match). The search field takes the full row (filter button inside). Product and search page headers checked: they fit. `body { overflow-wrap: anywhere }` so a very long word in a shop, product or area name wraps instead of widening a page.
+- **Test:** `e2e/page-width.spec.ts` at 360 × 780: `scrollWidth` of html and body ≤ 360 on landing, privacy, terms, delete-account, shop, search (query; filters open), product, cart, checkout, pay page, order page and 404, with a 40-character shop name, a 74-character product name and a 50-character area name (long words). `sellerShop` takes `name` and extra `products`. Runs in CI only (local e2e needs Postgres; Docker was off).
+
 ## 2026-10-10 · State restoration (decision #100); D13 answered
 
 - **Owner (2026-10-10):** release-production started (production `23d8f7d`: root redirect, noindex, legal pages); D13: Personal Play account; state restoration "yes, as proposed".

@@ -16,6 +16,9 @@ body {
   background: var(--color-surface);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
+  /* A very long word (a shop, product or area name) wraps instead of widening the page past a
+     360 px phone (e2e/page-width.spec.ts). */
+  overflow-wrap: anywhere;
 }
 
 /* A visible focus ring for keyboard users on everything (WCAG 2.4.7). In the base layer, so a

@@ -1,5 +1,6 @@
 // Shop home (web 01, with design-changes: no "order in 3h" banner, no stock badges, a
-// WhatsApp chat button in the header). Server-rendered; the cart, favourites, Share and the
+// WhatsApp chat button in the header: a round icon next to Share, so the search row fits a
+// 360 px phone). Server-rendered; the cart, favourites, Share and the
 // visit count run in the browser. `?c=` filters by category, `?q=` searches.
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -99,13 +100,26 @@ export default async function ShopHome({ params, searchParams }: Props) {
             <p className="truncate text-body text-text-secondary">{meta.join(' · ')}</p>
           ) : null}
         </div>
-        <ShareButton url={shopLink(shop.slug)} title={shop.name} />
+        <div className="flex shrink-0 items-center gap-2">
+          {shop.whatsappPhone ? (
+            <a
+              href={whatsappLink(shop.whatsappPhone, shop.name)}
+              aria-label={`Chat with ${shop.name} on WhatsApp`}
+              className="flex size-11 shrink-0 items-center justify-center rounded-pill border border-border bg-surface"
+            >
+              {/* WhatsApp's official green glyph, unmodified (public/brands/README.md). */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- a static brand file (decision #59) */}
+              <img src="/brands/whatsapp-glyph-green.svg" alt="" width={22} height={22} />
+            </a>
+          ) : null}
+          <ShareButton url={shopLink(shop.slug)} title={shop.name} />
+        </div>
       </header>
 
-      <div className="mt-4 flex gap-2 px-4">
+      <div className="mt-4 px-4">
         <form
           action={`/${shop.slug}/search`}
-          className="flex flex-1 items-center gap-2 rounded-pill border border-border px-4 focus-within:border-navy focus-within:ring-2 focus-within:ring-navy"
+          className="flex items-center gap-2 rounded-pill border border-border px-4 focus-within:border-navy focus-within:ring-2 focus-within:ring-navy"
         >
           <svg
             viewBox="0 0 24 24"
@@ -149,21 +163,6 @@ export default async function ShopHome({ params, searchParams }: Props) {
             </svg>
           </Link>
         </form>
-        <a
-          href={whatsappLink(shop.whatsappPhone, shop.name)}
-          className="flex h-12 shrink-0 items-center gap-1.5 rounded-pill bg-green px-4 text-body-strong text-text-on-primary"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path
-              d="M4 20l1.3-4A8 8 0 1112 20a8 8 0 01-3.8-1L4 20z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Chat
-        </a>
       </div>
 
       {shop.isPaused ? (
