@@ -2,7 +2,6 @@
 // filter chips (All, categories, Sold out, Hidden), search, and the product list. Tap a
 // product to edit it; long-press to change its status. "View" opens the real buyer shop in
 // the in-app browser (19b-preview, decision #60). After a delete, "Product deleted · Undo" shows for ~5 seconds.
-import Feather from '@expo/vector-icons/Feather';
 import { displayUrl, formatKsh, type ProductStatus } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -39,6 +38,7 @@ import { OfflineBar } from '@/ui/offline';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
   { status: 'available', label: 'Available' },
@@ -150,7 +150,7 @@ export default function ShopTab() {
           }}
           style={styles.searchButton}
         >
-          <Feather name={searching ? 'x' : 'search'} size={22} color={colors.textOnNavy} />
+          <Icon name={searching ? 'x' : 'search'} size={22} color={colors.textOnNavy} />
         </Pressable>
       </View>
       {searching ? (
@@ -166,34 +166,39 @@ export default function ShopTab() {
         />
       ) : (
         <View style={styles.shopCard}>
-          <ShopAvatar name={shop?.name} logoUrl={shop?.logoUrl} />
-          <View style={styles.shopText}>
-            <Text style={styles.shopName} numberOfLines={1}>
-              {shop?.name ?? ' '}
-            </Text>
-            <Text style={styles.shopLink} numberOfLines={1}>
-              {shop ? displayUrl(SHOP_BASE_URL, shop.slug) : ' '}
-            </Text>
+          {/* The name gets the full width and wraps; View and Share sit beneath (QA round 1). */}
+          <View style={styles.shopTop}>
+            <ShopAvatar name={shop?.name} logoUrl={shop?.logoUrl} />
+            <View style={styles.shopText}>
+              <Text style={styles.shopName} numberOfLines={2}>
+                {shop?.name ?? ' '}
+              </Text>
+              <Text style={styles.shopLink} numberOfLines={1} ellipsizeMode="tail">
+                {shop ? displayUrl(SHOP_BASE_URL, shop.slug) : ' '}
+              </Text>
+            </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="View your shop as buyers see it"
-            disabled={!shop}
-            onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
-            style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
-          >
-            <Feather name="eye" size={16} color={colors.textOnNavy} />
-            <Text style={styles.viewText}>View</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Share your shop"
-            onPress={share}
-            style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
-          >
-            <Feather name="share" size={16} color={colors.textOnPrimary} />
-            <Text style={styles.shareText}>Share</Text>
-          </Pressable>
+          <View style={styles.shopButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View your shop as buyers see it"
+              disabled={!shop}
+              onPress={() => shop && openBuyerView(shopPageUrl(shop.slug))}
+              style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
+            >
+              <Icon name="eye" size={16} color={colors.textOnNavy} />
+              <Text style={styles.viewText}>View</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share your shop"
+              onPress={share}
+              style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}
+            >
+              <Icon name="share" size={16} color={colors.textOnPrimary} />
+              <Text style={styles.shareText}>Share</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -254,7 +259,7 @@ export default function ShopTab() {
                     style={styles.categoriesLink}
                   >
                     <Text style={styles.categoriesText}>Categories</Text>
-                    <Feather name="chevron-right" size={18} color={colors.navy} />
+                    <Icon name="chevron-right" size={18} color={colors.navy} />
                   </Pressable>
                 </View>
               </View>
@@ -284,7 +289,7 @@ export default function ShopTab() {
               <Image source={{ uri: item.coverUrl }} style={styles.thumb} />
             ) : (
               <View style={[styles.thumb, styles.thumbEmpty]}>
-                <Feather name="camera" size={20} color={colors.textMuted} />
+                <Icon name="camera" size={20} color={colors.textMuted} />
               </View>
             )}
             <View style={styles.rowText}>
@@ -310,7 +315,7 @@ export default function ShopTab() {
                 <Text style={[styles.badge, styles.badgeWarn]}>Add photo</Text>
               ) : null}
             </View>
-            <Feather name="chevron-right" size={20} color={colors.textMuted} />
+            <Icon name="chevron-right" size={20} color={colors.textMuted} />
           </Pressable>
         )}
         ListEmptyComponent={
@@ -321,7 +326,7 @@ export default function ShopTab() {
           ) : products.length === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
-                <Feather name="shopping-bag" size={26} color={colors.primary} />
+                <Icon name="shopping-bag" size={26} color={colors.primary} />
               </View>
               <Text style={styles.emptyTitle}>No products yet</Text>
               <Text style={styles.emptyLine}>
@@ -383,8 +388,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   shopCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
     backgroundColor: colors.navyRaised,
@@ -393,10 +396,14 @@ const styles = StyleSheet.create({
     borderColor: colors.navyMuted,
     padding: spacing.md,
   },
-  shopText: { flex: 1 },
-  shopName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
+  shopTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  shopText: { flex: 1, minWidth: 0, gap: spacing.xxs },
+  shopName: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 24, color: colors.textOnNavy },
+  shopButtons: { flexDirection: 'row', gap: spacing.sm },
   shopLink: { ...text('small'), color: colors.toggleOff },
   shareButton: {
+    flex: 1,
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -406,6 +413,8 @@ const styles = StyleSheet.create({
     height: 44,
   },
   viewButton: {
+    flex: 1,
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -414,8 +423,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
-  viewText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnNavy },
-  shareText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
+  viewText: { ...text('small'), fontFamily: fonts.semibold, color: colors.textOnNavy },
+  shareText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   listHead: { paddingTop: spacing.lg, gap: spacing.md },
   suspended: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   chips: { paddingHorizontal: spacing.lg, gap: spacing.sm },

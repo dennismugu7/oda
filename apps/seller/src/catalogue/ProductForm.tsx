@@ -3,7 +3,6 @@
 // upload as soon as they're picked (decision #52) and Save sends the rest: everything for a
 // new product, only what changed for an edit. Delete goes back to the Shop tab, which shows
 // "… deleted · Undo" (decision #57).
-import Feather from '@expo/vector-icons/Feather';
 import { COLOUR_PRESETS, PRODUCT_PHOTOS_MAX, SIZE_PRESETS, type ProductStatus } from '@oda/shared';
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
@@ -46,6 +45,8 @@ import { Chip } from '@/ui/onboarding';
 import { ScreenHeader as Header } from '@/ui/screenHeader';
 import { Sheet, type SheetOption } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { PhotoSourceSheet } from '@/ui/photoSourceSheet';
+import { Icon } from '@/ui/icon';
 
 let slotIds = 0;
 const newSlotId = () => `slot-${++slotIds}`;
@@ -175,6 +176,7 @@ function Editor({
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [sheet, setSheet] = useState<'menu' | 'category' | 'colour' | 'photo' | null>(null);
+  const [sourceSheet, setSourceSheet] = useState(false);
   const [photoTarget, setPhotoTarget] = useState<{ slot: Slot; index: number } | null>(null);
   const [addingSize, setAddingSize] = useState(false);
   const [customSize, setCustomSize] = useState('');
@@ -271,11 +273,7 @@ function Editor({
   }
 
   function chooseSource() {
-    Alert.alert('Add photos', undefined, [
-      { text: 'Take a photo', onPress: () => addPhotos('camera') },
-      { text: 'Choose from gallery', onPress: () => addPhotos('library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setSourceSheet(true);
   }
 
   async function save() {
@@ -546,7 +544,7 @@ function Editor({
             <Text style={[styles.selectText, !category && styles.selectEmpty]}>
               {category?.name ?? 'No category'}
             </Text>
-            <Feather name="chevron-down" size={20} color={colors.navy} />
+            <Icon name="chevron-down" size={20} color={colors.navy} />
           </Pressable>
         </View>
         <View style={styles.fieldBlock}>
@@ -622,6 +620,11 @@ function Editor({
       </View>
       {error ? <FormMessage>{error}</FormMessage> : null}
 
+      <PhotoSourceSheet
+        visible={sourceSheet}
+        onPick={(source) => addPhotos(source)}
+        onClose={() => setSourceSheet(false)}
+      />
       <Sheet
         visible={sheet === 'menu'}
         title={product?.name ?? ''}

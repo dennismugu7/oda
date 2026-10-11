@@ -2,8 +2,6 @@
 // checkout, pickup, and free delivery over an amount. A shop needs an area or pickup to take
 // orders, so the screen says so while it has neither. Tap an area to edit it; hold it to
 // move it or delete it. Pickup and free delivery are edited in place.
-import Feather from '@expo/vector-icons/Feather';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   DELIVERY_METHOD_LABELS,
   formatKsh,
@@ -12,7 +10,7 @@ import {
   pickupLine,
 } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState, type ComponentProps, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -35,8 +33,7 @@ import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
-
-type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+import { Icon, type IconName } from '@/ui/icon';
 
 const METHOD_ICON: Record<DeliveryArea['method'], IconName> = {
   rider: 'bike',
@@ -238,7 +235,7 @@ export default function DeliveryScreen() {
         {offline ? <OfflineBar /> : null}
         {!delivery.hasDeliveryOption ? (
           <View style={styles.warning} accessibilityRole="alert">
-            <Feather name="alert-triangle" size={18} color={colors.warningTextStrong} />
+            <Icon name="alert-triangle" size={18} color={colors.warningTextStrong} />
             <Text style={styles.warningText}>
               Buyers can’t order yet. Add a delivery area or turn on pickup.
             </Text>
@@ -278,7 +275,7 @@ export default function DeliveryScreen() {
                 <Text style={styles.fee}>{a.fee === 0 ? 'Free' : formatKsh(a.fee)}</Text>
                 {a.etaLabel ? <Text style={styles.eta}>{a.etaLabel}</Text> : null}
               </View>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
+              <Icon name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>
           ))}
           <Pressable
@@ -292,7 +289,7 @@ export default function DeliveryScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Feather name="plus" size={20} color={colors.navy} />
+            <Icon name="plus" size={20} color={colors.navy} />
             <Text style={styles.addText}>Add delivery area</Text>
           </Pressable>
         </View>
@@ -430,7 +427,7 @@ export default function DeliveryScreen() {
 function IconTile({ icon }: { icon: IconName }) {
   return (
     <View style={styles.iconTile}>
-      <MaterialCommunityIcons name={icon} size={22} color={colors.navy} />
+      <Icon name={icon} size={22} color={colors.navy} />
     </View>
   );
 }

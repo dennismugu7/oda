@@ -2,7 +2,6 @@
 // which products are in it (remove with ×, "Add products" picks from the others). Changes
 // save as they're made. Delete is in the ⋮ menu; the products stay, without a category.
 // Not built from the image: dragging products within a category (not in the spec).
-import Feather from '@expo/vector-icons/Feather';
 import { formatKsh } from '@oda/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -27,6 +26,7 @@ import { Button, Field, FormMessage } from '@/ui/auth';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export default function CategoryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -223,7 +223,7 @@ export default function CategoryDetail() {
                 onPress={() => setMembers(inCategory.filter((x) => x.id !== p.id).map((x) => x.id))}
                 style={styles.removeButton}
               >
-                <Feather name="x" size={18} color={colors.navy} />
+                <Icon name="x" size={18} color={colors.navy} />
               </Pressable>
             </View>
           ))}
@@ -236,7 +236,7 @@ export default function CategoryDetail() {
               onPress={() => setPicking(true)}
               style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
             >
-              <Feather name="plus" size={20} color={colors.navy} />
+              <Icon name="plus" size={20} color={colors.navy} />
               <Text style={styles.addText}>Add products</Text>
             </Pressable>
           ) : null}

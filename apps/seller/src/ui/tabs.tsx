@@ -1,11 +1,11 @@
 // Pieces shared by the tab screens (designs 15–20): the navy header with the screen title,
 // and the card a tab shows until its real content arrives in a later milestone.
-import Feather from '@expo/vector-icons/Feather';
 import { StatusBar } from 'expo-status-bar';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, spacing, text } from '@/theme';
+import { Icon, type IconName } from '@/ui/icon';
 
 export function TabScreen({
   title,
@@ -42,7 +42,7 @@ export function TabPlaceholder({
   line,
   children,
 }: {
-  icon: ComponentProps<typeof Feather>['name'];
+  icon: IconName;
   title: string;
   line: string;
   children?: ReactNode;
@@ -50,7 +50,7 @@ export function TabPlaceholder({
   return (
     <View style={styles.card}>
       <View style={styles.iconTile}>
-        <Feather name={icon} size={24} color={colors.primary} />
+        <Icon name={icon} size={24} color={colors.primary} />
       </View>
       <View style={styles.cardText}>
         <Text style={styles.cardTitle}>{title}</Text>

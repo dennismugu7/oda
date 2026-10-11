@@ -1,13 +1,13 @@
 // "Your shop is suspended" (decision #81 d): shown on Home and the Shop tab while oda has
 // suspended the shop. Buyers can't see it; the seller can still finish open orders. Tapping it
 // emails support (the address from GET /api/support, the default one offline).
-import Feather from '@expo/vector-icons/Feather';
 import { suspendedMessage } from '@oda/shared';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FALLBACK_SUPPORT, supportCache } from '@/help/support';
 import { growApi } from '@/insights/api';
 import { useLoaded } from '@/settings/useLoaded';
 import { colors, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export function SuspendedBanner() {
   const { data } = useLoaded(growApi.support, supportCache);
@@ -23,7 +23,7 @@ export function SuspendedBanner() {
       onPress={open}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}
     >
-      <Feather name="alert-triangle" size={20} color={colors.warningTextStrong} />
+      <Icon name="alert-triangle" size={20} color={colors.warningTextStrong} />
       <View style={styles.flex}>
         <Text style={styles.title}>{suspendedMessage(email)}</Text>
         <Text style={styles.body}>

@@ -1,7 +1,6 @@
 // Payments (design 20b-payments, design-changes: saved accounts with one active, radio; no
 // verification wording, decision #72 a): the M-Pesa accounts, the one buyers see at checkout,
 // "When buyers pay" (at least one on) and "oda never touches your money".
-import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,6 +14,7 @@ import { FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export default function PaymentsScreen() {
   const { data, error, offline, reload, keep } = useLoaded(settingsApi.payments, paymentsCache);
@@ -169,7 +169,7 @@ export default function PaymentsScreen() {
             style={({ pressed }) => [styles.addCard, pressed && styles.pressed]}
           >
             <View style={styles.addButton}>
-              <Feather name="plus" size={20} color={colors.navy} />
+              <Icon name="plus" size={20} color={colors.navy} />
               <Text style={styles.addText}>
                 {data.accounts.length ? 'Add another M-Pesa account' : 'Add an M-Pesa account'}
               </Text>
@@ -214,7 +214,7 @@ function AccountBox({
     >
       <View style={styles.boxHead}>
         <View style={styles.iconTile}>
-          <Feather name={icon} size={20} color={colors.navy} />
+          <Icon name={icon} size={20} color={colors.navy} />
         </View>
         <View style={styles.flex}>
           <Text style={styles.boxTitle}>{ACCOUNT_TITLES[account.type]}</Text>

@@ -2,7 +2,6 @@
 // Confirm payment, New · to accept, New · awaiting payment, To send), All and Done, and search
 // by buyer name, phone or order number. Refreshed whenever the tab shows and on pull-down. Offline it shows the last
 // list it loaded, read-only (spec §8). "New order" opens the manual order screen (CP3).
-import Feather from '@expo/vector-icons/Feather';
 import {
   TODO_GROUP_LABELS,
   TODO_GROUP_ORDER,
@@ -30,6 +29,7 @@ import { OrderRow } from '@/orders/OrderRow';
 import { Button, FormMessage } from '@/ui/auth';
 import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const TABS: { key: OrderTab; label: string }[] = [
   { key: 'todo', label: 'To do' },
@@ -146,7 +146,7 @@ export default function OrdersTab() {
       <StatusBar style="light" />
       {searching ? (
         <View style={styles.searchRow}>
-          <Feather name="search" size={20} color={colors.toggleOff} />
+          <Icon name="search" size={20} color={colors.toggleOff} />
           <TextInput
             autoFocus
             value={q}
@@ -164,7 +164,7 @@ export default function OrdersTab() {
             hitSlop={10}
             onPress={closeSearch}
           >
-            <Feather name="x" size={22} color={colors.textOnNavy} />
+            <Icon name="x" size={22} color={colors.textOnNavy} />
           </Pressable>
         </View>
       ) : (
@@ -179,14 +179,14 @@ export default function OrdersTab() {
               onPress={() => setSearching(true)}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             >
-              <Feather name="search" size={22} color={colors.textOnNavy} />
+              <Icon name="search" size={22} color={colors.textOnNavy} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/orders/new')}
               style={({ pressed }) => [styles.newButton, pressed && styles.pressed]}
             >
-              <Feather name="plus" size={20} color={colors.textOnPrimary} />
+              <Icon name="plus" size={20} color={colors.textOnPrimary} />
               <Text style={styles.newText}>New order</Text>
             </Pressable>
           </View>
@@ -314,7 +314,7 @@ export default function OrdersTab() {
                       style={({ pressed }) => [styles.more, pressed && styles.pressed]}
                     >
                       <Text style={styles.moreText}>See {hidden} more</Text>
-                      <Feather name="chevron-down" size={18} color={colors.navy} />
+                      <Icon name="chevron-down" size={18} color={colors.navy} />
                     </Pressable>
                   ) : null}
                 </View>
@@ -383,7 +383,7 @@ function Empty({ title, line }: { title: string; line: string }) {
   return (
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>
-        <Feather name="file-text" size={24} color={colors.primary} />
+        <Icon name="file-text" size={24} color={colors.primary} />
       </View>
       <View style={styles.emptyText}>
         <Text style={styles.emptyTitle}>{title}</Text>

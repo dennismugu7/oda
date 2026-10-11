@@ -1,13 +1,13 @@
 // "Finish your shop" on Home (designs 15, 16; spec §5.3): the 7 checklist items (8 while a
 // product has no photo, decision #93 D1), hidden once complete. Items with a place to go open it (delivery, products, the WhatsApp test). Once the
 // shop has orders it starts folded (16: title, count and bar); a tap opens the items.
-import Feather from '@expo/vector-icons/Feather';
 import type { FinishItem } from '@oda/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export function FinishCard({ compact = false }: { compact?: boolean }) {
   const [state, setState] = useState<OnboardingState | null>(null);
@@ -63,7 +63,7 @@ export function FinishCard({ compact = false }: { compact?: boolean }) {
             {checklist.done} of {checklist.total}
           </Text>
         </View>
-        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
       </Pressable>
       <View
         style={styles.track}
@@ -88,10 +88,10 @@ export function FinishCard({ compact = false }: { compact?: boolean }) {
             ]}
           >
             <View style={[styles.mark, item.done && styles.markDone]}>
-              {item.done ? <Feather name="check" size={14} color={colors.textOnNavy} /> : null}
+              {item.done ? <Icon name="check" size={14} color={colors.textOnNavy} /> : null}
             </View>
             <Text style={[styles.label, item.done && styles.labelDone]}>{item.label}</Text>
-            {action ? <Feather name="chevron-right" size={20} color={colors.textMuted} /> : null}
+            {action ? <Icon name="chevron-right" size={20} color={colors.textMuted} /> : null}
           </Pressable>
         );
       })}

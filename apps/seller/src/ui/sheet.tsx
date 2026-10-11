@@ -1,15 +1,15 @@
 // A bottom sheet with a list of choices (Android alerts show at most three buttons): the
 // category picker, photo actions and the product ⋮ menu.
-import Feather from '@expo/vector-icons/Feather';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, spacing, text } from '@/theme';
+import { Icon, type IconName } from '@/ui/icon';
 
 export interface SheetOption {
   key: string;
   label: string;
-  icon?: ComponentProps<typeof Feather>['name'];
+  icon?: IconName;
   /** A colour swatch instead of an icon. */
   swatch?: string;
   selected?: boolean;
@@ -64,16 +64,12 @@ export function Sheet({
               {o.swatch ? (
                 <View style={[styles.swatch, { backgroundColor: o.swatch }]} />
               ) : o.icon ? (
-                <Feather
-                  name={o.icon}
-                  size={20}
-                  color={o.destructive ? colors.danger : colors.navy}
-                />
+                <Icon name={o.icon} size={20} color={o.destructive ? colors.danger : colors.navy} />
               ) : null}
               <Text style={[styles.optionText, o.destructive && styles.destructive]}>
                 {o.label}
               </Text>
-              {o.selected ? <Feather name="check" size={20} color={colors.green} /> : null}
+              {o.selected ? <Icon name="check" size={20} color={colors.green} /> : null}
             </Pressable>
           ))}
           {children}

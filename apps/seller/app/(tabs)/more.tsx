@@ -2,7 +2,6 @@
 // "Your business" (Insights "KSh x this week", Customers, Reviews "4.8 ★ · 38"), "Your shop"
 // (Shop profile, Payments "Till 123 456", Delivery "3 areas", Categories), Settings and Help and
 // support. Values load fresh whenever the tab shows; offline, the last copy stays (read-only).
-import Feather from '@expo/vector-icons/Feather';
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { openBuyerView } from '@/catalogue/preview';
@@ -15,6 +14,7 @@ import { Card, Row, Section, type FeatherName } from '@/ui/rows';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { TabScreen } from '@/ui/tabs';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 const cache = memoryCache<MoreData>();
 
@@ -43,14 +43,17 @@ export default function MoreTab() {
 
   const card = (
     <View style={styles.card}>
-      <ShopAvatar name={data?.shop.name} logoUrl={data?.shop.logoUrl} size={56} />
-      <View style={styles.cardText}>
-        <Text style={styles.shopName} numberOfLines={1}>
-          {data?.shop.name ?? ' '}
-        </Text>
-        <Text style={styles.shopLink} numberOfLines={1}>
-          {data ? `${data.shop.linkPrefix}${data.shop.slug}` : ' '}
-        </Text>
+      {/* Same rule as the Shop tab: the name wraps on its own line, View beneath (QA round 1). */}
+      <View style={styles.cardTop}>
+        <ShopAvatar name={data?.shop.name} logoUrl={data?.shop.logoUrl} size={56} />
+        <View style={styles.cardText}>
+          <Text style={styles.shopName} numberOfLines={2}>
+            {data?.shop.name ?? ' '}
+          </Text>
+          <Text style={styles.shopLink} numberOfLines={1} ellipsizeMode="tail">
+            {data ? `${data.shop.linkPrefix}${data.shop.slug}` : ' '}
+          </Text>
+        </View>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -59,8 +62,8 @@ export default function MoreTab() {
         onPress={() => data && openBuyerView(data.shop.url)}
         style={({ pressed }) => [styles.view, pressed && styles.pressed]}
       >
-        <Feather name="external-link" size={16} color={colors.navy} />
-        <Text style={styles.viewText}>View</Text>
+        <Icon name="external-link" size={16} color={colors.navy} />
+        <Text style={styles.viewText}>View shop</Text>
       </Pressable>
     </View>
   );
@@ -97,8 +100,6 @@ export default function MoreTab() {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
     backgroundColor: colors.navyRaised,
@@ -107,10 +108,12 @@ const styles = StyleSheet.create({
     borderColor: colors.navyMuted,
     padding: spacing.md,
   },
-  cardText: { flex: 1 },
-  shopName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
-  shopLink: { ...text('body'), color: colors.toggleOff },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardText: { flex: 1, minWidth: 0, gap: spacing.xxs },
+  shopName: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 24, color: colors.textOnNavy },
+  shopLink: { ...text('small'), color: colors.toggleOff },
   view: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -119,6 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 44,
   },
-  viewText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
+  viewText: { ...text('small'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

@@ -1,6 +1,5 @@
 // Pieces of the order detail (17-order-detail, 17b-*): the stepper on the navy header, the
 // bottom sheet the actions open in, and the "Message {buyer} on WhatsApp" toggle.
-import Feather from '@expo/vector-icons/Feather';
 import type { StepperStep } from '@oda/shared';
 import type { ReactNode } from 'react';
 import {
@@ -16,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { Icon } from '@/ui/icon';
 
 export function Stepper({ steps }: { steps: StepperStep[] }) {
   return (
@@ -43,7 +43,7 @@ export function Stepper({ steps }: { steps: StepperStep[] }) {
               ]}
             >
               {s.state === 'done' ? (
-                <Feather name="check" size={16} color={colors.textOnNavy} />
+                <Icon name="check" size={16} color={colors.textOnNavy} />
               ) : s.state === 'in_progress' ? (
                 <View style={styles.dotInner} />
               ) : null}
@@ -116,7 +116,7 @@ export function ActionSheet({
               hitSlop={8}
               style={styles.close}
             >
-              <Feather name="x" size={22} color={colors.navy} />
+              <Icon name="x" size={22} color={colors.navy} />
             </Pressable>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetBody}>
@@ -175,7 +175,7 @@ export function CheckBox({
       style={[styles.check, checked && styles.checkOn]}
     >
       <View style={[styles.box, checked && styles.boxOn]}>
-        {checked ? <Feather name="check" size={18} color={colors.textOnNavy} /> : null}
+        {checked ? <Icon name="check" size={18} color={colors.textOnNavy} /> : null}
       </View>
       <Text style={styles.checkLabel}>{label}</Text>
     </Pressable>

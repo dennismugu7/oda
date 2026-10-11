@@ -1,8 +1,6 @@
 // Onboarding building blocks (designs 09–14): the navy header with back, wordmark, Skip and
 // the 6-segment progress bar (filled = step number, decision #32), choice cards, check rows,
 // chips, and the loading/error states every step shares.
-import Feather from '@expo/vector-icons/Feather';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
@@ -13,6 +11,7 @@ import type { IconName } from '@/onboarding/labels';
 import { previousStep, type OnboardingStepNumber } from '@/onboarding/steps';
 import { colors, fonts, radii, sizes, spacing, text } from '@/theme';
 import { AuthScreen, Button, FormMessage } from './auth';
+import { Icon } from '@/ui/icon';
 
 export type { IconName };
 
@@ -47,7 +46,7 @@ export function OnboardingHeader({
               hitSlop={12}
               onPress={() => goBack(step)}
             >
-              <Feather name="chevron-left" size={30} color={colors.textOnNavy} />
+              <Icon name="chevron-left" size={30} color={colors.textOnNavy} />
             </Pressable>
           ) : null}
         </View>
@@ -169,16 +168,12 @@ export function ChoiceCard({
       ]}
     >
       <View style={[styles.iconTile, selected && styles.iconTileSelected]}>
-        <MaterialCommunityIcons
-          name={icon}
-          size={22}
-          color={selected ? colors.primary : colors.navy}
-        />
+        <Icon name={icon} size={22} color={selected ? colors.primary : colors.navy} />
       </View>
       <Text style={[styles.cardLabel, compact && styles.cardLabelCompact]}>{label}</Text>
       {selected ? (
         <View style={styles.badge}>
-          <Feather name="check" size={14} color={colors.textOnNavy} />
+          <Icon name="check" size={14} color={colors.textOnNavy} />
         </View>
       ) : null}
     </Pressable>
@@ -215,14 +210,14 @@ export function CheckRow({
       style={({ pressed }) => [styles.row, checked && styles.rowChecked, pressed && styles.pressed]}
     >
       <View style={[styles.rowIcon, { backgroundColor: tint }]}>
-        {iconNode ?? <MaterialCommunityIcons name={icon} size={22} color={iconColor} />}
+        {iconNode ?? <Icon name={icon} size={22} color={iconColor} />}
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{title}</Text>
         {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
       </View>
       <View style={[styles.checkbox, checked && styles.checkboxOn]}>
-        {checked ? <Feather name="check" size={16} color={colors.textOnNavy} /> : null}
+        {checked ? <Icon name="check" size={16} color={colors.textOnNavy} /> : null}
       </View>
     </Pressable>
   );
@@ -259,7 +254,7 @@ export function Chip({
 export function GreenNote({ children }: { children: ReactNode }) {
   return (
     <View style={styles.greenNote}>
-      <Feather name="info" size={18} color={colors.green} />
+      <Icon name="info" size={18} color={colors.green} />
       <Text style={styles.greenNoteText}>{children}</Text>
     </View>
   );
