@@ -49,6 +49,8 @@ const config: ExpoConfig = {
     // Google sign-in (decision #107). Without options the plugin uses the Firebase file above
     // (google-services.json, already applied for push); Android needs nothing else.
     '@react-native-google-signin/google-signin',
+    // Local release builds can sign with a private test key (ODA_LOCAL_SIGNING; no-op when unset).
+    './plugins/withLocalSigning',
     [
       'expo-notifications',
       {
