@@ -6,15 +6,7 @@
 import { COLOUR_PRESETS, PRODUCT_PHOTOS_MAX, SIZE_PRESETS, type ProductStatus } from '@oda/shared';
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMe } from '@/auth/useMe';
 import { catalogueApi, type Category, type PhotoInput, type Product } from '@/catalogue/api';
 import {
@@ -47,6 +39,7 @@ import { Sheet, type SheetOption } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { PhotoSourceSheet } from '@/ui/photoSourceSheet';
 import { Icon } from '@/ui/icon';
+import { useConfirm } from '@/ui/confirmSheet';
 
 let slotIds = 0;
 const newSlotId = () => `slot-${++slotIds}`;
@@ -166,6 +159,7 @@ function Editor({
   shopSlug: string | null;
   onCategoryAdded: (category: Category) => void;
 }) {
+  const confirm = useConfirm();
   const [draft, setDraft] = useState<ProductDraft>(() =>
     product ? draftFrom(product) : emptyDraft(),
   );
@@ -318,10 +312,14 @@ function Editor({
       router.back();
       return;
     }
-    Alert.alert('Leave without saving?', 'Your changes to this product will be lost.', [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => router.back() },
-    ]);
+    confirm.ask({
+      title: 'Leave without saving?',
+      message: 'Your changes to this product will be lost.',
+      confirmLabel: 'Leave',
+      destructive: true,
+      cancelLabel: 'Keep editing',
+      onConfirm: () => router.back(),
+    });
   }
 
   async function remove() {
@@ -708,6 +706,7 @@ function Editor({
         </View>
         {colourError ? <Text style={styles.fieldError}>{colourError}</Text> : null}
       </Sheet>
+      {confirm.sheet}
     </AuthScreen>
   );
 }

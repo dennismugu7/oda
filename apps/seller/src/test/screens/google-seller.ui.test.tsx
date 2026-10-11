@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 import type { ApiError } from '@/api';
 import type { Me, MeResult } from '@/auth/route';
 import type { HomeData } from '@/home/api';
 import type { Details } from '@/settings/api';
+import { signOutOnThisPhone } from '@/settings/signOut';
 import { clearSettingsCaches } from '@/settings/useLoaded';
 import HomeTab from '../../../app/(tabs)/home';
 import YourDetails from '../../../app/settings/details';
@@ -94,16 +94,18 @@ describe('Settings for a Google-only seller', () => {
     expect(screen.queryByRole('button', { name: /Set a password/ })).toBeNull();
   });
 
-  it('Log out says they will sign in again with Google', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  it('Log out asks in oda’s sheet with the full account email (decision #109 a)', async () => {
     await render(<SettingsScreen />);
     await fireEvent.press(await screen.findByRole('button', { name: /^Log out/ }));
-    expect(alert).toHaveBeenCalledWith(
-      'Log out?',
-      "You'll need to sign in again with Google.",
-      expect.anything(),
-    );
-    alert.mockRestore();
+    expect(screen.getByRole('header', { name: 'Log out?' })).toBeTruthy();
+    expect(
+      screen.getByText('Are you sure you want to log out of wanjiku.kamau@gmail.com?'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/sign in again with Google/)).toBeNull();
+    // The sheet's button (the Settings row behind it has the same name).
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Log out' }).at(-1)!);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/welcome'));
+    expect(signOutOnThisPhone).toHaveBeenCalledTimes(1);
   });
 
   it('shows the email name, never a blank, in the "Your details" row (§1.5)', async () => {

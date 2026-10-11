@@ -7,7 +7,6 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -27,8 +26,10 @@ import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { useConfirm } from '@/ui/confirmSheet';
 
 export default function CategoryDetail() {
+  const confirm = useConfirm();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [categories, setCategories] = useState<Category[] | null>(null);
@@ -80,22 +81,17 @@ export default function CategoryDetail() {
   }
 
   function remove() {
-    Alert.alert(
-      `Delete "${category?.name ?? 'category'}"?`,
-      'Its products stay in your shop, without a category.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const { error: failed } = await catalogueApi.deleteCategory(id);
-            if (failed) setError(errorMessage(failed));
-            else router.back();
-          },
-        },
-      ],
-    );
+    confirm.ask({
+      title: `Delete "${category?.name ?? 'category'}"?`,
+      message: 'Its products stay in your shop, without a category.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      onConfirm: async () => {
+        const { error: failed } = await catalogueApi.deleteCategory(id);
+        if (failed) setError(errorMessage(failed));
+        else router.back();
+      },
+    });
   }
 
   if (!category || !products) {
@@ -269,6 +265,7 @@ export default function CategoryDetail() {
           },
         ]}
       />
+      {confirm.sheet}
     </View>
   );
 }

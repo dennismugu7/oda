@@ -6,7 +6,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -32,8 +31,10 @@ import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { useConfirm } from '@/ui/confirmSheet';
 
 export default function AreaScreen() {
+  const confirm = useConfirm();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const insets = useSafeAreaInsets();
   const [delivery, setDelivery] = useState<Delivery | null>(deliveryCache.get());
@@ -111,27 +112,22 @@ export default function AreaScreen() {
   function remove() {
     if (!area || !delivery) return;
     const last = delivery.areas.length === 1 && !delivery.pickupEnabled;
-    Alert.alert(
-      `Delete ${area.name}?`,
-      last
+    confirm.ask({
+      title: `Delete ${area.name}?`,
+      message: last
         ? 'This is your only delivery option: your shop will show "Not taking orders yet" until you add another or turn on pickup.'
         : 'Past orders keep the area’s name.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            const { data, error: failed } = await deliveryApi.deleteArea(area.id);
-            setBusy(false);
-            if (!data) return setError(errorMessage(failed));
-            deliveryCache.set(data);
-            back();
-          },
-        },
-      ],
-    );
+      confirmLabel: 'Delete',
+      destructive: true,
+      onConfirm: async () => {
+        setBusy(true);
+        const { data, error: failed } = await deliveryApi.deleteArea(area.id);
+        setBusy(false);
+        if (!data) return setError(errorMessage(failed));
+        deliveryCache.set(data);
+        back();
+      },
+    });
   }
 
   const title = id ? 'Edit delivery area' : 'Add delivery area';
@@ -254,6 +250,7 @@ export default function AreaScreen() {
           },
         ]}
       />
+      {confirm.sheet}
     </KeyboardAvoidingView>
   );
 }

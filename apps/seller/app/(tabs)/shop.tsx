@@ -8,7 +8,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -39,6 +38,7 @@ import { ShopAvatar } from '@/ui/shopAvatar';
 import { SuspendedBanner } from '@/ui/suspended';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { Sheet } from '@/ui/sheet';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
   { status: 'available', label: 'Available' },
@@ -57,6 +57,7 @@ export default function ShopTab() {
   const [filter, setFilter] = useState<ShopFilter>({ kind: 'all' });
   const [searching, setSearching] = useState(false);
   const [search, setSearch] = useState('');
+  const [statusFor, setStatusFor] = useState<ProductSummary | null>(null);
   const [deleted, setDeleted] = useState<Deleted | null>(currentDeleted());
 
   const load = useCallback(async () => {
@@ -112,21 +113,16 @@ export default function ShopTab() {
     await load();
   }
 
+  /** Long press: "Show this product as…" with the other two statuses (decision #109 a). */
   function changeStatus(p: ProductSummary) {
-    Alert.alert(p.name, 'Show this product as…', [
-      ...STATUS_ACTIONS.filter((a) => a.status !== p.status).map((a) => ({
-        text: a.label,
-        onPress: async () => {
-          setProducts((list) =>
-            list ? list.map((x) => (x.id === p.id ? { ...x, status: a.status } : x)) : list,
-          );
-          const { error: failed } = await catalogueApi.update(p.id, { status: a.status });
-          if (failed) setError(errorMessage(failed));
-          await load();
-        },
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setStatusFor(p);
+  }
+
+  async function setStatus(p: ProductSummary, status: ProductStatus) {
+    setProducts((list) => (list ? list.map((x) => (x.id === p.id ? { ...x, status } : x)) : list));
+    const { error: failed } = await catalogueApi.update(p.id, { status });
+    if (failed) setError(errorMessage(failed));
+    await load();
   }
 
   /** The Share screen (19b-share): images, captions and tagged links (M8b). */
@@ -352,11 +348,25 @@ export default function ShopTab() {
           </Pressable>
         </View>
       ) : null}
+      <Sheet
+        visible={!!statusFor}
+        title={statusFor?.name ?? ''}
+        header={<Text style={styles.sheetLine}>Show this product as…</Text>}
+        onClose={() => setStatusFor(null)}
+        options={STATUS_ACTIONS.filter((a) => statusFor && a.status !== statusFor.status).map(
+          (a) => ({
+            key: a.status,
+            label: a.label,
+            onPress: () => statusFor && setStatus(statusFor, a.status),
+          }),
+        )}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  sheetLine: { ...text('body'), color: colors.textSecondary, marginBottom: spacing.xs },
   screen: { flex: 1, backgroundColor: colors.background },
   listContent: { paddingBottom: spacing.xxxl },
   header: {
