@@ -305,14 +305,19 @@ The free queue can take about 2 hours each.
 
 ## CP4 · Closed testing + the real-device check (#92 d) + clean-up
 
-**Owner (Play Console):**
-- create the app if it doesn't exist yet;
-- upload the AAB to **Closed testing** (the first upload must be done by hand in Play
-  Console); privacy policy URL `https://oda.mugu-labs.com/privacy`, account deletion URL
-  `https://oda.mugu-labs.com/delete-account`;
-- add yourself as a tester, then install from the Play link on the Redmi;
-- check Play's **pre-launch report** (Play tests the app automatically on several devices,
-  including 32-bit ones). That is the armeabi-v7a evidence if there is no 32-bit phone (D10).
+**Order (owner, 2026-10-11, decision #106):** Play's **Internal testing** track is the owner's
+private QA channel first; closed testing starts only after the owner's QA passes.
+1. Production release verified; the owner does the web QA (QA round 1 table, rows 1–7).
+2. **Owner (Play Console), one step at a time:** create the app; upload the 0.4.0 bundle
+   (`9ca96eaf`, versionCode 3) to **Internal testing** (the first upload is by hand); privacy
+   policy URL `https://oda.mugu-labs.com/privacy`, account deletion URL
+   `https://oda.mugu-labs.com/delete-account`; add yourself as a tester; **uninstall the 0.3.1
+   app first** (and the local test APK, if installed); install from the internal-testing link.
+3. Once installed: the owner runs **Actions → eas-update-production**; the app gets the update
+   after two restarts; then the app QA (rows 8–17).
+4. Only after that QA passes: promote the build to **Closed testing** (personal account: 12
+   testers for 14 days, #95 e) and check Play's **pre-launch report** (it tests on several
+   devices, including 32-bit ones: the armeabi-v7a evidence if there is no 32-bit phone, D10).
 
 **Real-device check on production (Claude writes it as numbered steps with expected results,
 about 20 minutes, one step at a time):**
