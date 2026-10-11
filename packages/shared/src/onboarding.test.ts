@@ -190,18 +190,28 @@ describe('Finish your shop (7 items)', () => {
     ticks: {},
   };
 
-  it('lists the 7 items in order with spec wording', () => {
+  it('lists the 7 items in order with spec wording; delivery first while missing (#109)', () => {
     const result = finishYourShop(none);
     expect(result.items.map((i) => i.label)).toEqual([
+      'Add delivery options',
       'Shop, first product and payment set',
       'Share your link',
       'Add your shop logo',
       'Add 4 more products',
       'Add more ways buyers reach you',
-      'Add delivery options',
       'Test your WhatsApp link',
     ]);
     expect(result).toMatchObject({ done: 0, total: 7, complete: false });
+    // Once delivery is set it goes back to its place.
+    expect(finishYourShop({ ...none, pickupEnabled: true }).items.map((i) => i.id)).toEqual([
+      'basics',
+      'shared_link',
+      'logo',
+      'more_products',
+      'reach',
+      'delivery',
+      'tested_whatsapp',
+    ]);
   });
 
   it('ticks each item from its own data', () => {
@@ -212,7 +222,7 @@ describe('Finish your shop (7 items)', () => {
     });
     expect(afterOnboarding.done).toBe(1);
     const skippedPayment = finishYourShop({ ...none, productCount: 1 });
-    expect(skippedPayment.items[0]!.done).toBe(false);
+    expect(skippedPayment.items.find((i) => i.id === 'basics')!.done).toBe(false);
 
     const allFacts = {
       productCount: 5,
@@ -225,7 +235,10 @@ describe('Finish your shop (7 items)', () => {
     };
     const all = finishYourShop(allFacts);
     expect(all).toMatchObject({ done: 7, complete: true });
-    expect(finishYourShop({ ...none, productCount: 4 }).items[3]!.done).toBe(false);
+    expect(
+      finishYourShop({ ...none, productCount: 4 }).items.find((i) => i.id === 'more_products')!
+        .done,
+    ).toBe(false);
 
     // A product saved while uploads were paused (decision #93 D1): an 8th item, open, so
     // the checklist isn't complete until the photo is added.

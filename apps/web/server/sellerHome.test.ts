@@ -202,6 +202,30 @@ describe('Home', () => {
     expect(empty.json.sales.days).toHaveLength(7);
     expect(await anonCall(getHome)).toBe(401);
   });
+
+  it('lists what stops buyers ordering, with the buyer web’s rule (decision #109)', async () => {
+    const s = await newSeller();
+    const blockers = async () => (await s.call(getHome)).json.ordering.blockers;
+    // A new shop: no delivery option, no payment account (pay before needs one).
+    expect(await blockers()).toEqual(['delivery', 'payment']);
+
+    await db
+      .insert(t.deliveryAreas)
+      .values({ shopId: s.shopId, name: 'Kilimani', fee: 200, method: 'rider' });
+    expect(await blockers()).toEqual(['payment']);
+
+    await db.insert(t.paymentAccounts).values({
+      shopId: s.shopId,
+      type: 'till',
+      number: '123456',
+      accountName: 'Amani Styles',
+      isActive: true,
+    });
+    expect(await blockers()).toEqual([]);
+
+    await db.update(t.shops).set({ isPaused: true }).where(eq(t.shops.id, s.shopId));
+    expect(await blockers()).toEqual(['paused']);
+  });
 });
 
 describe('notifications', () => {

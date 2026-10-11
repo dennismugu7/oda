@@ -48,20 +48,8 @@ export function whatsappLink(phone: string, shopName: string): string {
   return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
 }
 
-/**
- * Can buyers order at all? A way to pay (pay now or on delivery) and a way to get the order
- * (a delivery area or pickup), and not paused (spec §5.2, decision #61 c).
- */
-export function takingOrders(
-  shop: Pick<
-    PublicShop,
-    'isPaused' | 'payNowAvailable' | 'acceptsPayOnDelivery' | 'hasDeliveryOption'
-  >,
-): boolean {
-  return (
-    !shop.isPaused && (shop.payNowAvailable || shop.acceptsPayOnDelivery) && shop.hasDeliveryOption
-  );
-}
+/** Can buyers order at all? The shared rule (`@oda/shared` ordering), also used by the app's Home. */
+export { takingOrders } from '@oda/shared';
 
 /** Preview images: the largest size up to 28 px at which `link` fits on one line in `width` px. */
 export function linkFontSize(link: string, width: number): number {
