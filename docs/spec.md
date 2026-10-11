@@ -59,6 +59,7 @@ Six steps, resumable if the app is closed. The progress bar has 6 segments; the 
 5. **Where buyers pay you:** Buy Goods Till / Pochi la Biashara / Paybill. Number, the name on the account, and for Paybill the account reference: either a fixed account number (e.g. a bank paybill) or "use the order number". Saving sets verification to `pending` (admin queue). "Skip for now" is allowed: the screen tells the seller that buyers will pay on delivery until they add M-Pesa, and skipping turns on `accepts_pay_on_delivery`.
    - **Pay-now is available only if** `accepts_pay_before` is on **and** an active payment account exists. If neither pay-now nor pay-on-delivery is available, the shop shows "Not taking orders yet" (browse only).
    - **A shop also needs a delivery option** (at least one delivery area, or pickup on) to take orders; without one it shows "Not taking orders yet" too (decision #61).
+   - The seller app's Home says so while a shop can't take orders, with a button to fix each missing item (delivery, a way to get paid, pause); the app and the web share one rule (decision #109 c).
 6. **Your shop is live:** the link with Copy, share buttons, a ready-made post (EN/SW, "Try another"), and the "Finish your shop" checklist.
 
 ### 5.3 Home (screens 15, 16)
