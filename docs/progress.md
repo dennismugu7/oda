@@ -31,6 +31,12 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-11 · Web shop fits a 360 px phone (owner-approved design)
+
+- **Bug:** on a 360 px phone the shop page was 406 px wide: the row "search + filter + green Chat button" didn't fit (the Chat link ended at x = 406).
+- **Fix (branch `web-shop-width`):** Chat moved into the shop header as a round 44 × 44 icon button left of Share (name "Chat with <shop> on WhatsApp", same wa.me link, hidden without a WhatsApp number), showing WhatsApp's official green glyph unmodified (`apps/web/public/brands/whatsapp-glyph-green.svg`, a byte-for-byte copy of the seller app's file; `public/brands/README.md` notes the source; `test/brandAssets.test.ts` checks they match). The search field takes the full row (filter button inside). Product and search page headers checked: they fit. `body { overflow-wrap: anywhere }` so a very long word in a shop, product or area name wraps instead of widening a page.
+- **Test:** `e2e/page-width.spec.ts` at 360 × 780: `scrollWidth` of html and body ≤ 360 on landing, privacy, terms, delete-account, shop, search (query; filters open), product, cart, checkout, pay page, order page and 404, with a 40-character shop name, a 74-character product name and a 50-character area name (long words). `sellerShop` takes `name` and extra `products`. Runs in CI only (local e2e needs Postgres; Docker was off).
+
 ## 2026-10-11 · Faster CI (decision #104)
 
 - **Turbo cache in CI** (`actions/cache` of `.turbo/cache`, no secret): lint, typecheck and unit tests replay for unchanged packages. `turbo.json`: `transit` dependencies so a change in a package reruns its dependants, root config files as `globalDependencies`, and out-of-package test inputs (`docs/help-guides.md` for the seller tests, the seller brand files for the web tests). Vercel Remote Cache not set up (it needs a `TURBO_TOKEN` secret).

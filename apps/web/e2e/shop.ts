@@ -23,6 +23,10 @@ export interface ShopOptions {
   areas?: { name: string; fee: number; etaLabel?: string; freeDeliveryEligible?: boolean }[];
   pickup?: boolean;
   freeDeliveryThreshold?: number | null;
+  /** The shop's name; default "E2E Boutique". */
+  name?: string;
+  /** More products (no sizes or colours, one photo each), after the two default ones. */
+  products?: { name: string; price: number }[];
 }
 
 /**
@@ -67,7 +71,7 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
   await post('/api/onboarding/answers', { step: 1, businessType: 'fashion' });
   await post('/api/onboarding/answers', { step: 2, skip: true });
   // Step 3 twice: going back to change the link leaves the first one in the slug history.
-  const shop = { name: 'E2E Boutique', whatsappPhone: '0712345678' };
+  const shop = { name: opts.name ?? 'E2E Boutique', whatsappPhone: '0712345678' };
   await post('/api/onboarding/shop', { ...shop, slug: `${slug}-old` });
   await post('/api/onboarding/shop', { ...shop, slug });
   await post('/api/onboarding/product', {
@@ -85,6 +89,9 @@ export async function sellerShop(request: APIRequestContext, opts: ShopOptions =
     { name: 'Woven kiondo bag', price: 1800, photos: [await photo()] },
     201,
   );
+  for (const p of opts.products ?? []) {
+    await post('/api/products', { ...p, photos: [await photo()] }, 201);
+  }
   await setDeliveryOptions(slug, {
     areas: opts.areas ?? [{ name: 'CBD', fee: 200, etaLabel: 'Same day' }],
     pickup: opts.pickup,
