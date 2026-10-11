@@ -45,6 +45,7 @@ import { Chip } from '@/ui/onboarding';
 import { ScreenHeader as Header } from '@/ui/screenHeader';
 import { Sheet, type SheetOption } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { PhotoSourceSheet } from '@/ui/photoSourceSheet';
 import { Icon } from '@/ui/icon';
 
 let slotIds = 0;
@@ -175,6 +176,7 @@ function Editor({
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [sheet, setSheet] = useState<'menu' | 'category' | 'colour' | 'photo' | null>(null);
+  const [sourceSheet, setSourceSheet] = useState(false);
   const [photoTarget, setPhotoTarget] = useState<{ slot: Slot; index: number } | null>(null);
   const [addingSize, setAddingSize] = useState(false);
   const [customSize, setCustomSize] = useState('');
@@ -271,11 +273,7 @@ function Editor({
   }
 
   function chooseSource() {
-    Alert.alert('Add photos', undefined, [
-      { text: 'Take a photo', onPress: () => addPhotos('camera') },
-      { text: 'Choose from gallery', onPress: () => addPhotos('library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setSourceSheet(true);
   }
 
   async function save() {
@@ -622,6 +620,11 @@ function Editor({
       </View>
       {error ? <FormMessage>{error}</FormMessage> : null}
 
+      <PhotoSourceSheet
+        visible={sourceSheet}
+        onPick={(source) => addPhotos(source)}
+        onClose={() => setSourceSheet(false)}
+      />
       <Sheet
         visible={sheet === 'menu'}
         title={product?.name ?? ''}

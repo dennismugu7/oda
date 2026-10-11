@@ -7,7 +7,6 @@ import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -24,6 +23,7 @@ import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip, onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
 import { colors, fonts, radii, sizes as sizeTokens, spacing, text } from '@/theme';
+import { PhotoSourceSheet } from '@/ui/photoSourceSheet';
 import { Icon } from '@/ui/icon';
 
 interface Slot {
@@ -74,6 +74,8 @@ function Step({ state }: { state: OnboardingState }) {
   const [sizeError, setSizeError] = useState<string | null>(null);
   // Storage isn't taking photos (decision #93 D1): the product may be saved without one.
   const [paused, setPaused] = useState(false);
+  // The photo sheet: open with the slot it replaces, if any.
+  const [photoSheet, setPhotoSheet] = useState<{ replace?: string } | null>(null);
 
   const uploading = slots.some((s) => s.status === 'uploading');
   const room = PRODUCT_PHOTOS_MAX - slots.length;
@@ -123,11 +125,7 @@ function Step({ state }: { state: OnboardingState }) {
   }
 
   function choose(replace?: string) {
-    Alert.alert(replace ? 'Retake photo' : 'Add a photo', undefined, [
-      { text: 'Take a photo', onPress: () => add('camera', replace) },
-      { text: 'Choose from gallery', onPress: () => add('library', replace) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setPhotoSheet({ replace });
   }
 
   function remove(id: string) {
@@ -325,6 +323,12 @@ function Step({ state }: { state: OnboardingState }) {
         ) : null}
       </View>
       {error ? <FormMessage>{error}</FormMessage> : null}
+      <PhotoSourceSheet
+        visible={photoSheet !== null}
+        title={photoSheet?.replace ? 'Retake photo' : 'Add a photo'}
+        onPick={(pick) => add(pick, photoSheet?.replace)}
+        onClose={() => setPhotoSheet(null)}
+      />
     </OnboardingScreen>
   );
 }
