@@ -35,6 +35,14 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
         columns: { email: true, emailVerified: true },
         where: eq(schema.authUser.id, ctx.userId),
       });
+      // A Google-only seller has no password until they set one (decision #107).
+      const password = await db.query.authAccount.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(schema.authAccount.userId, ctx.userId),
+          eq(schema.authAccount.providerId, 'credential'),
+        ),
+      });
       const profile = await db.query.profiles.findFirst({
         columns: { onboardingDraft: true },
         where: byId,
@@ -65,6 +73,8 @@ export function userRepo(db: Db, ctx: UserCtx | SellerCtx) {
       return {
         email: user!.email,
         emailVerified: user!.emailVerified,
+        /** Settings shows "Set a password" instead of "Change your password" when false. */
+        hasPassword: !!password,
         onboarding: { step, done: step === null },
         shop: shop
           ? {

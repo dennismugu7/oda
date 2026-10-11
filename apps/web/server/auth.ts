@@ -28,8 +28,9 @@ import {
   type Limit,
 } from './rateLimit';
 
-// Better Auth (docs/spec.md §5.1, decisions #34, #43, #49): email + password sign-in,
-// sessions, password reset by emailed link to the web /reset-password page. Sign-up and its
+// Better Auth (docs/spec.md §5.1, decisions #34, #43, #49, #107): email + password sign-in,
+// Google sign-in by ID token (off until GOOGLE_WEB_CLIENT_ID is set), sessions, password
+// reset by emailed link to the web /reset-password page. Sign-up and its
 // 6-digit code are oda's own (server/signup.ts): accounts are created only once the email is
 // proven, so Better Auth's sign-up and email-code endpoints are not served.
 // Sessions: the seller app (cookie in SecureStore via Better Auth's Expo client); bearer
@@ -54,6 +55,18 @@ export function authBaseUrl(env: Record<string, string | undefined> = process.en
   return 'http://localhost:3000';
 }
 
+/**
+ * The Google Web client ID that the app's ID tokens are issued for (decision #107), or null
+ * when Google sign-in is off (the route then answers 404). Not a secret; there is no client
+ * secret: verifying an ID token needs only Google's public keys and this audience.
+ */
+export function googleWebClientId(env: Record<string, string | undefined> = process.env) {
+  return env.GOOGLE_WEB_CLIENT_ID?.trim() || null;
+}
+
+const GOOGLE_EMAIL_NOT_VERIFIED =
+  "Your Google account's email isn't verified. Sign in with your email and password instead.";
+
 /** Rate limits per action (Postgres-backed; Better Auth's in-memory limiter is off). */
 export const AUTH_LIMITS = {
   // Per-IP limits are generous: Kenyan mobile networks put many users behind one IP (#45).
@@ -77,6 +90,8 @@ export const AUTH_ROUTES = {
   GET: ['/get-session'],
   POST: [
     '/sign-in/email',
+    // Google by ID token only (decision #107); 404 while GOOGLE_WEB_CLIENT_ID is unset.
+    '/sign-in/social',
     '/sign-out',
     '/request-password-reset',
     '/reset-password',
@@ -123,8 +138,27 @@ async function lastResetLinksAt(userId: string): Promise<Date[]> {
   return rows.map((r) => r.createdAt);
 }
 
+/**
+ * /sign-in/social takes exactly `{ provider: 'google', idToken: { token } }`: no redirect flow,
+ * no other provider, and no client-supplied access/refresh tokens, user or callback URL.
+ */
+function googleIdTokenBody(body: Record<string, unknown>) {
+  const idToken = body.idToken as { token?: unknown } | null | undefined;
+  const token = idToken && typeof idToken === 'object' ? idToken.token : undefined;
+  if (body.provider !== 'google' || typeof token !== 'string' || !token || token.length > 4096) {
+    throw new APIError('BAD_REQUEST', {
+      code: 'GOOGLE_ID_TOKEN_ONLY',
+      message: "We couldn't sign you in with Google. Try again or use your email.",
+    });
+  }
+  return { provider: 'google', idToken: { token } };
+}
+
 const beforeHook = createAuthMiddleware(async (ctx) => {
   await checkLimitsAndRules(ctx);
+  if (ctx.path === '/sign-in/social') {
+    return { context: { body: googleIdTokenBody((ctx.body ?? {}) as Record<string, unknown>) } };
+  }
   // Emails typed on a phone often carry spaces or capitals; Better Auth only lowercases.
   const body = ctx.body as Record<string, unknown> | undefined;
   if (typeof body?.email === 'string') {
@@ -148,6 +182,11 @@ async function checkLimitsAndRules(ctx: Parameters<Parameters<typeof createAuthM
           secondsLeftInWindow(failures),
         );
       }
+      await limitOrThrow(`signin-ip:${ip}`, AUTH_LIMITS.signInPerIp, 'Too many sign-in attempts.');
+      return;
+    }
+    case '/sign-in/social': {
+      googleIdTokenBody(body);
       await limitOrThrow(`signin-ip:${ip}`, AUTH_LIMITS.signInPerIp, 'Too many sign-in attempts.');
       return;
     }
@@ -247,6 +286,31 @@ export function resetPageUrl(baseUrl: string, token: string): string {
   return `${baseUrl}/reset-password#token=${encodeURIComponent(token)}`;
 }
 
+function withoutProviderTokens<T extends { providerId?: string | null }>(account: T): T {
+  if (account.providerId === 'credential') return account;
+  return { ...account, idToken: null, accessToken: null, refreshToken: null };
+}
+
+/**
+ * Google sign-in (decision #107): ID tokens for the Web client only. The Google name and photo
+ * are not kept (the seller types a name in Settings), and the email must be verified by Google.
+ */
+function googleProvider(clientId: string) {
+  return {
+    clientId,
+    mapProfileToUser(profile: { email_verified?: boolean }) {
+      if (profile.email_verified !== true) {
+        throw new APIError('FORBIDDEN', {
+          code: 'GOOGLE_EMAIL_NOT_VERIFIED',
+          message: GOOGLE_EMAIL_NOT_VERIFIED,
+        });
+      }
+      // `undefined` replaces Google's picture URL, so the user row stores none.
+      return { name: '', image: undefined };
+    },
+  };
+}
+
 /**
  * Everything except the database adapter and env, so tests can compare Better Auth's
  * expected tables (better-auth/db getSchema) with packages/db/src/schema/auth.ts.
@@ -292,6 +356,11 @@ export const authOptions = {
   plugins: [bearer(), expoOrigin],
   hooks: { before: beforeHook, after: afterHook },
   databaseHooks: {
+    // Google's tokens are never kept (decision #107): only the account's Google id (sub).
+    account: {
+      create: { before: async (account) => ({ data: withoutProviderTokens(account) }) },
+      update: { before: async (account) => ({ data: withoutProviderTokens(account) }) },
+    },
     user: {
       create: {
         after: async (user) => {
@@ -323,8 +392,10 @@ export const authOptions = {
 
 function createAuth() {
   const env = authEnvSchema.parse(process.env);
+  const google = googleWebClientId();
   return betterAuth({
     ...authOptions,
+    ...(google ? { socialProviders: { google: googleProvider(google) } } : {}),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: authBaseUrl(),
     database: drizzleAdapter(getDb(), {

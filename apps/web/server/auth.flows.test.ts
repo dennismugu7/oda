@@ -392,6 +392,7 @@ describe('GET /api/me', () => {
     expect(await res.json()).toEqual({
       email: EMAIL,
       emailVerified: true,
+      hasPassword: true,
       onboarding: { step: 1, done: false },
       shop: null,
     });

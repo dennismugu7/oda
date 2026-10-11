@@ -16,7 +16,7 @@ are included below.
 | --- | --- |
 | Does your app collect or share any of the required user data types? | **Yes** |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** (HTTPS only; the app talks only to `https://oda.mugu-labs.com`, Expo and Sentry) |
-| Which of the following methods of account creation does your app support? | **Username and password** (email + password, with an emailed code). No sign-in with Google or others. |
+| Which of the following methods of account creation does your app support? | **Username and password** (email + password, with an emailed code) **and OAuth** (Sign in with Google, decision #107). |
 | Do you provide a way for users to request that their data is deleted? | **Yes**: in the app (More → Settings → Delete account) and on the web |
 | Delete account URL | `https://oda.mugu-labs.com/delete-account` |
 | Privacy policy URL | `https://oda.mugu-labs.com/privacy` |
@@ -33,7 +33,7 @@ days), except where noted.
 | Play category → type | What it is in oda | Required or optional | Purposes to tick |
 | --- | --- | --- | --- |
 | Personal info → **Name** | Seller's first and last name; buyers' names on orders (manual orders are typed in the app) | Required (seller name at sign-up; buyer name on an order) | App functionality, Account management |
-| Personal info → **Email address** | Seller's sign-in email; a buyer's email if they gave one (not shown in the app) | Required | App functionality, Account management, Developer communications (account emails only: codes, resets, deletion) |
+| Personal info → **Email address** | Seller's sign-in email (typed, or from their Google account when they sign in with Google; the Google name and photo aren't kept); a buyer's email if they gave one (not shown in the app) | Required | App functionality, Account management, Developer communications (account emails only: codes, resets, deletion) |
 | Personal info → **Phone number** | Shop WhatsApp number, recovery phone (optional), buyers' phone / WhatsApp numbers on orders | Required (shop WhatsApp; buyer phone on an order) | App functionality |
 | Personal info → **Address** | Buyers' delivery addresses on orders; the shop's location and pickup details as typed (text, not GPS) | Optional | App functionality |
 | Personal info → **Other info** | Setup answers (what you sell, where you sell), social handles | Optional | App functionality |
