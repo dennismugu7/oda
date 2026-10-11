@@ -20,7 +20,7 @@ export interface CspConfig {
   dev: boolean;
   /**
    * The local email outbox (/dev/outbox, 404 on Vercel) previews emails, which link the
-   * Poppins stylesheet from Google Fonts: only that page may load it.
+   * Google Fonts stylesheet (Inter, Bricolage Grotesque): only that page may load it.
    */
   emailPreview?: boolean;
 }

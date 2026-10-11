@@ -20,7 +20,7 @@ import {
   StepStatus,
   StepTitle,
 } from '@/ui/onboarding';
-import { colors, spacing, text } from '@/theme';
+import { colors, fonts, spacing, text } from '@/theme';
 
 export default function Payment() {
   const { state, error, retry } = useOnboarding();
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   types: { flexDirection: 'row', gap: spacing.sm },
   hint: { ...text('body'), color: colors.textSecondary, marginTop: spacing.md },
   form: { marginTop: spacing.md, paddingTop: 0 },
-  number: { fontFamily: 'Poppins_700Bold', fontSize: 18, letterSpacing: 1 },
+  number: { fontFamily: fonts.bold, fontSize: 18, letterSpacing: 1 },
   refBlock: { marginTop: spacing.lg, gap: spacing.sm },
   label: { ...text('bodyStrong'), color: colors.text },
   refChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

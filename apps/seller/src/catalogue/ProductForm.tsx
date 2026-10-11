@@ -45,7 +45,7 @@ import { AuthScreen, Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader as Header } from '@/ui/screenHeader';
 import { Sheet, type SheetOption } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 let slotIds = 0;
 const newSlotId = () => `slot-${++slotIds}`;
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
   },
   segmentTextOn: { color: colors.navy },
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   colourChipOn: { backgroundColor: colors.navy },
-  colourTextOn: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  colourTextOn: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnNavy },
   swatch: {
     width: 18,
     height: 18,

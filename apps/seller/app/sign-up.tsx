@@ -1,5 +1,5 @@
 // 02 Sign up. Changes from the image (design-changes.md): no Google/Facebook buttons and no
-// "or continue with"; Poppins and brand colours; lowercase "oda"; password rules shown.
+// "or continue with"; oda's fonts and brand colours; lowercase "oda"; password rules shown.
 import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';

@@ -30,7 +30,9 @@ test('reset password from the emailed link', async ({ page, request }) => {
   await expect(heading).toBeVisible();
   // Once read, the token is gone from the address bar and history.
   expect(new URL(page.url()).hash).toBe('');
-  expect(await heading.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Poppins/i);
+  expect(await heading.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(
+    /Bricolage Grotesque/i,
+  );
   await page.screenshot({ path: test.info().outputPath('07-reset-password-390x844.png') });
 
   const newPassword = page.getByLabel('New password', { exact: true });

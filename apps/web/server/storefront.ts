@@ -68,17 +68,21 @@ export function linkFontSize(link: string, width: number): number {
   return Math.max(16, Math.min(28, Math.floor(width / (link.length * 0.58))));
 }
 
-/** Preview images draw with Poppins 700/500 (assets/fonts, OFL; traced in next.config.ts). */
+/** The font family name the link-preview images use (see previewFonts). */
+export const PREVIEW_FONT = 'oda';
+
+/** Preview images draw with Bricolage Grotesque 700 and Inter 500 (assets/fonts, OFL; traced in next.config.ts). */
 export async function previewFonts() {
   const { readFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
   const read = (file: string) => readFile(join(process.cwd(), 'assets', 'fonts', file));
   const [bold, medium] = await Promise.all([
-    read('Poppins_700Bold.ttf'),
-    read('Poppins_500Medium.ttf'),
+    read('BricolageGrotesque_700Bold.ttf'),
+    read('Inter_500Medium.ttf'),
   ]);
+  // One family name: bold (names, prices) draws in Bricolage Grotesque, medium in Inter (#102).
   return [
-    { name: 'Poppins', data: bold, weight: 700 as const, style: 'normal' as const },
-    { name: 'Poppins', data: medium, weight: 500 as const, style: 'normal' as const },
+    { name: PREVIEW_FONT, data: bold, weight: 700 as const, style: 'normal' as const },
+    { name: PREVIEW_FONT, data: medium, weight: 500 as const, style: 'normal' as const },
   ];
 }

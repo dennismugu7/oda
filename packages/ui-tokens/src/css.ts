@@ -10,7 +10,8 @@ export function toThemeCss(): string {
   const lines: string[] = [
     '/* Generated from src/tokens.ts by `pnpm --filter @oda/ui-tokens generate`. Do not edit. */',
     '@theme {',
-    '  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;',
+    '  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;',
+    '  --font-heading: var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui, sans-serif;',
   ];
   for (const [name, value] of Object.entries(colors))
     lines.push(`  --color-${kebab(name)}: ${value};`);
@@ -26,7 +27,19 @@ export function toThemeCss(): string {
     lines.push(`  --text-${key}--letter-spacing: ${t.letterSpacing}px;`);
     lines.push(`  --text-${key}--font-weight: ${weightOf(t.weight)};`);
   }
-  lines.push('}', '');
+  lines.push('}');
+  // Headings use Bricolage Grotesque (decision #102); Tailwind's text-* sizes carry no family.
+  const headings = Object.entries(typography)
+    .filter(([, t]) => t.family === 'heading')
+    .map(([name]) => `.text-${kebab(name)}`);
+  lines.push(
+    '@layer utilities {',
+    `  ${headings.join(', ')} {`,
+    '    font-family: var(--font-heading);',
+    '  }',
+    '}',
+    '',
+  );
   return lines.join('\n');
 }
 

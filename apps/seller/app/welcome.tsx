@@ -15,10 +15,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiLabel } from '@/config';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import { ANIMS, END_MS, opacityAt, sample } from '@/welcome/timeline';
 
-const EXTRA_BOLD = 'Poppins_800ExtraBold';
+const EXTRA_BOLD = fonts.display;
 const FINGER = 30;
 
 const tiles = [

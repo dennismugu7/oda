@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@better-auth/expo": "1.7.6",
-    "@expo-google-fonts/poppins": "^0.4.1",
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
     "@oda/shared": "workspace:*",
     "@oda/ui-tokens": "workspace:*",
@@ -41,6 +42,7 @@
     "expo-system-ui": "~57.0.4",
     "expo-updates": "~57.0.25",
     "expo-web-browser": "~57.0.3",
+    "phosphor-react-native": "^3.0.6",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-draggable-flatlist": "4.0.3",

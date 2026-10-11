@@ -7,7 +7,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export function FinishCard({ compact = false }: { compact?: boolean }) {
   const [state, setState] = useState<OnboardingState | null>(null);
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   markDone: { borderStyle: 'solid', backgroundColor: colors.green, borderColor: colors.green },
-  label: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy, flex: 1 },
+  label: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy, flex: 1 },
   labelDone: { color: colors.textSecondary, fontFamily: text('body').fontFamily },
   pressed: { opacity: 0.85 },
 });

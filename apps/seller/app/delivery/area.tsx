@@ -31,7 +31,7 @@ import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export default function AreaScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -275,6 +275,6 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
   prefix: { ...text('bodyStrong'), color: colors.textSecondary },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  switchTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  switchTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   switchHelp: { ...text('body'), color: colors.textSecondary },
 });

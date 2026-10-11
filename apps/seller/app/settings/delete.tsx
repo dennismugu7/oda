@@ -11,7 +11,7 @@ import { signOutOnThisPhone } from '@/settings/signOut';
 import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Card } from '@/ui/rows';
-import { colors, spacing, text } from '@/theme';
+import { colors, fonts, spacing, text } from '@/theme';
 
 const WHAT_HAPPENS = [
   'Your shop link stops working at once. Buyers with open orders see “This shop has closed”.',
@@ -89,7 +89,7 @@ export default function DeleteAccount() {
 }
 
 const styles = StyleSheet.create({
-  title: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  title: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   line: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   icon: { marginTop: 2 },
   lineText: { ...text('body'), color: colors.text, flex: 1 },

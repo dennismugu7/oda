@@ -1,5 +1,5 @@
 // 03 Confirm your email: the 6-digit code for this phone's sign-up attempt (decision #49).
-// Changes from the image: 6 boxes, a 60 s resend countdown, Poppins and brand colours
+// Changes from the image: 6 boxes, a 60 s resend countdown, oda's fonts and brand colours
 // (design-changes.md). The attempt id comes from SecureStore, so a killed app reopens
 // here. Params: email; resumed=1 ("Finish signing up"); codeSent=0|1; retryAfter (seconds).
 import { router, useLocalSearchParams } from 'expo-router';

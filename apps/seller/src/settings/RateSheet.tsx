@@ -9,7 +9,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/ui/auth';
 import { Star } from '@/ui/star';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import { rateButtonTitle, rateNext, STAR_LABELS } from './rate';
 
 export function RateSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -147,14 +147,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: { ...text('title'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  logoText: { ...text('title'), fontFamily: fonts.bold, color: colors.textOnNavy },
   logoDot: { color: colors.greenBright },
   title: { ...text('headline'), color: colors.navy, textAlign: 'center' },
   line: { ...text('body'), color: colors.textSecondary, textAlign: 'center' },
   stars: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
   label: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -164,5 +164,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  notNowText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  notNowText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
 });

@@ -1,12 +1,13 @@
 // The shop's link-preview image (spec §4: WhatsApp, TikTok and Instagram show a rich
 // preview). 1200 × 630, drawn on the server with next/og: the shop's name and link on navy,
-// and up to three product covers. Fonts: Poppins from assets/fonts (OFL).
+// and up to three product covers. Fonts: Bricolage Grotesque and Inter from assets/fonts (OFL).
 import { ImageResponse } from 'next/og';
 import { colors } from '@oda/ui-tokens';
 import {
   initials,
   linkFontSize,
   loadShop,
+  PREVIEW_FONT,
   previewFonts,
   shopData,
   shopLink,
@@ -42,7 +43,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         height: '100%',
         display: 'flex',
         background: colors.navy,
-        fontFamily: 'Poppins',
+        fontFamily: PREVIEW_FONT,
       }}
     >
       <div

@@ -34,7 +34,7 @@ import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -549,10 +549,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowText: { flex: 1 },
-  rowTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  rowTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   rowLine: { ...text('body'), color: colors.textSecondary },
   rowRight: { alignItems: 'flex-end' },
-  fee: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  fee: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   eta: { ...text('small'), color: colors.textSecondary },
   addButton: {
     flexDirection: 'row',
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.toggleOff,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   editor: { gap: spacing.sm, paddingTop: spacing.sm },
   editorButtons: { flexDirection: 'row', gap: spacing.sm },
   prefix: { ...text('bodyStrong'), color: colors.textSecondary },

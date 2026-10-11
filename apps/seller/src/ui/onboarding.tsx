@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_STEPS } from '@oda/shared';
 import type { IconName } from '@/onboarding/labels';
 import { previousStep, type OnboardingStepNumber } from '@/onboarding/steps';
-import { colors, radii, sizes, spacing, text } from '@/theme';
+import { colors, fonts, radii, sizes, spacing, text } from '@/theme';
 import { AuthScreen, Button, FormMessage } from './auth';
 
 export type { IconName };
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   headerLogo: {
     flex: 1,
     textAlign: 'center',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: -1,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   iconTileSelected: { backgroundColor: colors.peach },
   cardLabel: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 16,
     color: colors.navy,
   },
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   rowTitle: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 16,
     color: colors.navy,
   },

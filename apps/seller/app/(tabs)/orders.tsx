@@ -29,7 +29,7 @@ import { ordersApi, ordersCache, type OrderList, type OrderRow as Row } from '@/
 import { OrderRow } from '@/orders/OrderRow';
 import { Button, FormMessage } from '@/ui/auth';
 import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const TABS: { key: OrderTab; label: string }[] = [
   { key: 'todo', label: 'To do' },
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 48,
   },
-  newText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  newText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   title: { ...text('display'), color: colors.textOnNavy, flex: 1 },
   iconButton: {
     width: 48,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   tabOn: { backgroundColor: colors.surface },
-  tabText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  tabText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.toggleOff },
   tabTextOn: { color: colors.navy },
   count: {
     minWidth: 22,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  countText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   groupHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { ...text('overline'), color: colors.textSecondary },
-  groupCount: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  groupCount: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  moreText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  moreText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   empty: {
     flexDirection: 'row',
     gap: spacing.md,

@@ -1,6 +1,7 @@
 /* Generated from src/tokens.ts by `pnpm --filter @oda/ui-tokens generate`. Do not edit. */
 @theme {
-  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --color-primary: #C44323;
   --color-primary-tint: #FDF0EA;
   --color-primary-soft: #F2C7B9;
@@ -42,11 +43,11 @@
   --spacing: 4px;
   --text-display: 34px;
   --text-display--line-height: 38px;
-  --text-display--letter-spacing: -1px;
+  --text-display--letter-spacing: -0.7px;
   --text-display--font-weight: 700;
   --text-headline: 28px;
   --text-headline--line-height: 32px;
-  --text-headline--letter-spacing: -0.8px;
+  --text-headline--letter-spacing: -0.6px;
   --text-headline--font-weight: 700;
   --text-title: 20px;
   --text-title--line-height: 26px;
@@ -76,4 +77,9 @@
   --text-overline--line-height: 16px;
   --text-overline--letter-spacing: 1.2px;
   --text-overline--font-weight: 700;
+}
+@layer utilities {
+  .text-display, .text-headline, .text-title {
+    font-family: var(--font-heading);
+  }
 }

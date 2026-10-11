@@ -14,7 +14,7 @@ import { OfflineBar } from '@/ui/offline';
 import { Card, Row, Section, type FeatherName } from '@/ui/rows';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { TabScreen } from '@/ui/tabs';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const cache = memoryCache<MoreData>();
 
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   cardText: { flex: 1 },
-  shopName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  shopName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
   shopLink: { ...text('body'), color: colors.toggleOff },
   view: {
     flexDirection: 'row',
@@ -119,6 +119,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 44,
   },
-  viewText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  viewText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

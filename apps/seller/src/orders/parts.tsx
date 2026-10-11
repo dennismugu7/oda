@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export function Stepper({ steps }: { steps: StepperStep[] }) {
   return (
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   dotCurrent: { borderColor: colors.warningAccent },
   dotInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.warningAccent },
   stepLabel: { ...text('small'), color: colors.toggleOff },
-  stepLabelCurrent: { fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  stepLabelCurrent: { fontFamily: fonts.bold, color: colors.textOnNavy },
   backdrop: { flex: 1, backgroundColor: 'rgba(28,26,46,0.4)' },
   sheet: {
     backgroundColor: colors.surface,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.md,
   },
-  toggleTitle: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  toggleTitle: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   toggleLine: { ...text('small'), color: colors.textSecondary },
   check: {
     flexDirection: 'row',
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boxOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  checkLabel: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy, flex: 1 },
+  checkLabel: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy, flex: 1 },
   summary: { borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg },
   summaryRow: {
     flexDirection: 'row',
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   summaryLabel: { ...text('body'), color: colors.textSecondary },
   summaryValue: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     flexShrink: 1,
     textAlign: 'right',

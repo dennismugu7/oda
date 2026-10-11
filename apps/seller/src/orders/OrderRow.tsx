@@ -4,7 +4,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { formatKsh, itemsSummary, listTime, needsMoneyAction, orderStatusLabel } from '@oda/shared';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import type { OrderRow as Row } from './api';
 
 export function OrderRow({
@@ -73,13 +73,13 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: {
     ...text('subtitle'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     flexShrink: 1,
   },
   badge: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
     backgroundColor: colors.surfaceMuted,
     paddingHorizontal: spacing.sm,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   line: { ...text('body'), color: colors.textSecondary },
   chip: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     alignSelf: 'flex-start',
     color: colors.textSecondary,
     backgroundColor: colors.surfaceMuted,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   chipAttention: { color: colors.warningTextStrong, backgroundColor: colors.warningTint },
   right: { alignItems: 'flex-end' },
-  total: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  total: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   time: { ...text('small'), color: colors.textSecondary },
   pressed: { opacity: 0.85 },
 });

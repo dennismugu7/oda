@@ -5,7 +5,7 @@
 import { formatKsh } from '@oda/shared';
 import { forwardRef } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import type { ShareData } from './plan';
 
 export const POSTER = { width: 320, height: 400 };
@@ -83,13 +83,13 @@ const styles = StyleSheet.create({
   logo: { width: 32, height: 32, borderRadius: radii.sm },
   shopOnNavy: {
     ...text('subtitle'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textOnNavy,
     flex: 1,
   },
   photoBox: { flex: 1, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.beige },
   photo: { width: '100%', height: '100%' },
-  productName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  productName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
   pill: {
     backgroundColor: colors.surface,
     borderRadius: radii.pill,
@@ -97,16 +97,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
-  pillText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  pillText: { ...text('small'), fontFamily: fonts.bold, color: colors.navy },
   overline: { ...text('bodyStrong'), color: colors.textOnPrimary, letterSpacing: 1 },
   headline: {
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 40,
     lineHeight: 46,
     color: colors.textOnPrimary,
     marginTop: spacing.lg,
   },
   orderOn: { ...text('body'), color: colors.textOnPrimary },
-  link: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  link: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   footer: { ...text('small'), color: colors.textOnPrimary, marginTop: spacing.sm, opacity: 0.9 },
 });

@@ -48,7 +48,7 @@ import { DraftBanner } from '@/restore/DraftBanner';
 import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 type Choice = { kind: 'pickup' } | { kind: 'delivery'; areaId: string } | null;
 
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { ...text('overline'), color: colors.textSecondary },
-  count: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  count: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   switchText: { ...text('body'), color: colors.textSecondary, flex: 1 },
   line: {
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   },
   divider: { borderTopWidth: 1, borderTopColor: colors.border },
   thumb: { width: 48, height: 48, borderRadius: radii.md, backgroundColor: colors.beige },
-  lineName: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  lineName: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   lineSub: { ...text('small'), color: colors.textSecondary },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   stepButton: {
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   qty: {
     ...text('subtitle'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     minWidth: 18,
     textAlign: 'center',
@@ -825,15 +825,15 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.toggleOff,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   feeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
   feeLabel: { ...text('body'), color: colors.textSecondary, flex: 1 },
-  feeValue: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  feeValue: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   feeEdit: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   prefix: { ...text('bodyStrong'), color: colors.textSecondary },
   reset: { minHeight: 52, justifyContent: 'center', marginBottom: spacing.md },
-  resetText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.primary },
+  resetText: { ...text('small'), fontFamily: fonts.bold, color: colors.primary },
   payments: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   payment: {
     flexGrow: 1,
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   paymentOn: { borderWidth: 2, borderColor: colors.borderStrong },
-  paymentText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  paymentText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   hint: { ...text('small'), color: colors.textSecondary },
   footer: {
     paddingHorizontal: spacing.lg,
@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { ...text('title'), color: colors.navy },
   sheetBody: { gap: spacing.md, paddingBottom: spacing.md },
-  pickLabel: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  pickLabel: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 64 },
   created: { paddingHorizontal: spacing.lg, alignItems: 'center', gap: spacing.md },
   check: {

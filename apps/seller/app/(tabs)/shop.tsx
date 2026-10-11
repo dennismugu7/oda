@@ -38,7 +38,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ShopAvatar } from '@/ui/shopAvatar';
 import { SuspendedBanner } from '@/ui/suspended';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const STATUS_ACTIONS: { status: ProductStatus; label: string }[] = [
   { status: 'available', label: 'Available' },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   shopText: { flex: 1 },
-  shopName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  shopName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
   shopLink: { ...text('small'), color: colors.toggleOff },
   shareButton: {
     flexDirection: 'row',
@@ -414,8 +414,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
-  viewText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
-  shareText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  viewText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnNavy },
+  shareText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   listHead: { paddingTop: spacing.lg, gap: spacing.md },
   suspended: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   chips: { paddingHorizontal: spacing.lg, gap: spacing.sm },
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  chipText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chipTextOn: { color: colors.textOnNavy },
   chipCount: { color: colors.textMuted },
   chipCountOn: { color: colors.toggleOff },
@@ -441,9 +441,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   summary: { ...text('body'), color: colors.textSecondary },
-  summaryStrong: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  summaryStrong: { fontFamily: fonts.bold, color: colors.navy },
   categoriesLink: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
-  categoriesText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  categoriesText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pad: { paddingHorizontal: spacing.lg, gap: spacing.md, marginTop: spacing.lg },
   row: {
     flexDirection: 'row',
@@ -475,14 +475,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowText: { flex: 1, gap: 2 },
-  rowName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  rowName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   rowNameMuted: { color: colors.textSecondary },
   rowDetail: { ...text('small'), color: colors.textSecondary },
   rowRight: { alignItems: 'flex-end', gap: spacing.xs },
-  price: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  price: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   badge: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radii.sm,
@@ -533,6 +533,6 @@ const styles = StyleSheet.create({
   },
   snackText: { ...text('body'), color: colors.textOnNavy, flex: 1 },
   undo: { paddingHorizontal: spacing.md, minHeight: 44, justifyContent: 'center' },
-  undoText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.greenBright },
+  undoText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.greenBright },
   pressed: { opacity: 0.85 },
 });

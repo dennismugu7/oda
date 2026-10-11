@@ -2,7 +2,7 @@
 // closed oda (decision #100).
 import Feather from '@expo/vector-icons/Feather';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export const RESTORED_TEXT = 'Unsaved changes restored';
 
@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.md,
     marginBottom: spacing.md,
   },
-  text: { ...text('small'), fontFamily: 'Poppins_600SemiBold', color: colors.navy, flex: 1 },
+  text: { ...text('small'), fontFamily: fonts.semibold, color: colors.navy, flex: 1 },
   discard: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.md },
   discardText: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     textDecorationLine: 'underline',
   },
