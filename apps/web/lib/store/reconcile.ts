@@ -1,7 +1,7 @@
 // The cart against the server's current products (spec §6.3): sold out, gone (hidden,
 // deleted, or an option the seller removed) and price changes are flagged on the line; the
 // line keeps the current price so the totals are right. Pure, unit-tested.
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import type { CartLine } from './cart';
 
 export interface CurrentProduct {
@@ -45,7 +45,7 @@ export function reconcile(
     if (product.price !== line.price) {
       return {
         line: { ...updated, price: product.price },
-        problem: `Price changed from ${formatKes(line.price)} to ${formatKes(product.price)}.`,
+        problem: `Price changed from ${formatKsh(line.price)} to ${formatKsh(product.price)}.`,
         remove: false,
       };
     }

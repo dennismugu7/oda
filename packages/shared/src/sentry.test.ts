@@ -167,7 +167,7 @@ describe('scrubBreadcrumb and scrubString', () => {
     expect(scrubString(`${SECRETS.email} ${SECRETS.phone07} ${SECRETS.mpesa}`)).toBe(
       '[email] [phone] [mpesa-code]',
     );
-    expect(scrubString('KES 2,500 for 3 items')).toBe('KES 2,500 for 3 items');
+    expect(scrubString('KSh 2,500 for 3 items')).toBe('KSh 2,500 for 3 items');
     expect(scrubString('Order #1042')).toBe('Order #1042');
   });
 });

@@ -35,7 +35,7 @@ test('buyer pages and a full checkout work while every photo fails', async ({ pa
   const failed = await failEveryPhoto(page);
 
   await page.goto(`/${slug}`);
-  await expect(page.getByRole('link', { name: /Kitenge wrap dress KES/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Kitenge wrap dress KSh/ })).toBeVisible();
   await expectNoBrokenImages(page);
   expect(failed.length).toBeGreaterThan(0);
 
@@ -48,7 +48,7 @@ test('buyer pages and a full checkout work while every photo fails', async ({ pa
   await fillDetails(page);
   await page.getByRole('radio', { name: /CBD/ }).check();
   await page.getByLabel('Area, street or building').fill('Moi Avenue, Bazaar Plaza');
-  await page.getByRole('button', { name: 'Place order · KES 4,500' }).click();
+  await page.getByRole('button', { name: 'Place order · KSh 4,500' }).click();
 
   await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
   await expect(page.getByRole('heading', { name: 'Order placed!' })).toBeVisible();

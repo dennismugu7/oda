@@ -1,10 +1,10 @@
 'use client';
 
 // The product page's interactive parts (web 02): the photo carousel with "1 / 4", the cart
-// icon with its count, and colour, size, quantity and "Add to cart · KES x" (spec §6.2).
+// icon with its count, and colour, size, quantity and "Add to cart · KSh x" (spec §6.2).
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import { cartCount, MAX_QTY } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
 import { SafeImg } from '@/components/SafeImg';
@@ -277,7 +277,7 @@ export function ProductBuy({
               onClick={addToCart}
               className="h-12 flex-1 rounded-pill bg-primary text-button text-text-on-primary"
             >
-              Add to cart · {formatKes(product.price * qty)}
+              Add to cart · {formatKsh(product.price * qty)}
             </button>
           </div>
         )}

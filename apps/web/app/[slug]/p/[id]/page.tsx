@@ -1,10 +1,10 @@
 // Product page (web 02, with design-changes: no "only 3 left" or arrival date, no size guide;
-// "{units_sold} sold" only from 5; delivery card "Delivery from KES x · Free over KES y";
+// "{units_sold} sold" only from 5; delivery card "Delivery from KSh x · Free over KSh y";
 // payment card "Pay the seller directly on M-Pesa" (+ "or on delivery")). The rating line
 // (linking to the reviews) and the reviews list show once there are some (M7, decision #73).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import { FavouriteButton, VisitBeacon } from '@/components/store/interactive';
 import { CartIcon, Gallery, ProductBuy } from '@/components/store/product';
 import { ProductReviews } from '@/components/store/ProductReviews';
@@ -36,7 +36,7 @@ async function loadProduct({ params, searchParams }: Props) {
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const { shop, product } = await loadProduct(props);
-  const title = `${product.name} · ${formatKes(product.price)} · ${shop.name}`;
+  const title = `${product.name} · ${formatKsh(product.price)} · ${shop.name}`;
   const description =
     product.description ?? `Order ${product.name} from ${shop.name} and pay the seller on M-Pesa.`;
   const url = `${shopLink(shop.slug)}/p/${product.id}`;
@@ -60,8 +60,8 @@ export default async function ProductPage(props: Props) {
   const canOrder = takingOrders(shop);
   const cheapest = areas.length ? Math.min(...areas.map((a) => a.fee)) : null;
   const delivery = [
-    cheapest !== null ? `Delivery from ${formatKes(cheapest)}` : null,
-    shop.freeDeliveryThreshold ? `Free over ${formatKes(shop.freeDeliveryThreshold)}` : null,
+    cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
+    shop.freeDeliveryThreshold ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}` : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -130,10 +130,10 @@ export default async function ProductPage(props: Props) {
         </p>
       ) : null}
       <p className="mt-3 flex flex-wrap items-baseline gap-3">
-        <span className="text-display text-navy">{formatKes(product.price)}</span>
+        <span className="text-display text-navy">{formatKsh(product.price)}</span>
         {product.compareAtPrice ? (
           <span className="text-subtitle text-text-secondary line-through">
-            {formatKes(product.compareAtPrice)}
+            {formatKsh(product.compareAtPrice)}
           </span>
         ) : null}
         {save ? (

@@ -39,12 +39,8 @@ export function shopLink(slug: string): string {
   return `${serverEnv().PUBLIC_SHOP_BASE_URL}/${slug}`;
 }
 
-/** Initials for a shop without a logo: "Demo Duka" → "DD". */
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.length > 1 ? words[0]![0]! + words[1]![0]! : (words[0] ?? '?').slice(0, 2);
-  return letters.toUpperCase();
-}
+/** Initials for a shop without a logo: one rule on app and web (packages/shared/src/initials.ts). */
+export { initials } from '@oda/shared';
 
 /** The seller's WhatsApp chat link with a friendly first line. */
 export function whatsappLink(phone: string, shopName: string): string {

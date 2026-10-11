@@ -8,7 +8,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { formatKes, normalizeKePhone } from '@oda/shared';
+import { formatKsh, normalizeKePhone } from '@oda/shared';
 import { cartCount, readSource, writeSource, type CartLine } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
 import { SafeImg } from '@/components/SafeImg';
@@ -433,7 +433,7 @@ export function CheckoutForm({
           </span>
           <span className="flex-1 text-body text-text-secondary">
             {count} {count === 1 ? 'item' : 'items'} ·{' '}
-            <strong className="text-navy">{formatKes(subtotal)}</strong>
+            <strong className="text-navy">{formatKsh(subtotal)}</strong>
           </span>
           <span className="text-body-strong text-primary">Details</span>
         </summary>
@@ -450,7 +450,7 @@ export function CheckoutForm({
               </span>
               <span className="text-text-secondary">× {l.qty}</span>
               <span className="w-24 text-right text-body-strong text-navy">
-                {formatKes(l.price * l.qty)}
+                {formatKsh(l.price * l.qty)}
               </span>
             </li>
           ))}
@@ -493,7 +493,7 @@ export function CheckoutForm({
           <ul className="mt-2 space-y-1 text-body text-warning-text-strong">
             {changed.map((c) => (
               <li key={`${c.line.productId}-${c.line.size}-${c.line.colour}`}>
-                {c.name}: now <strong>{formatKes(c.now)}</strong> (was {formatKes(c.line.price)})
+                {c.name}: now <strong>{formatKsh(c.now)}</strong> (was {formatKsh(c.line.price)})
               </li>
             ))}
           </ul>
@@ -648,7 +648,7 @@ export function CheckoutForm({
                 title={a.name}
                 subtitle={a.etaLabel}
                 right={
-                  o ? (o.deliveryFee === 0 ? 'Free' : formatKes(o.deliveryFee)) : formatKes(a.fee)
+                  o ? (o.deliveryFee === 0 ? 'Free' : formatKsh(o.deliveryFee)) : formatKsh(a.fee)
                 }
               />
             );
@@ -753,7 +753,7 @@ export function CheckoutForm({
       <dl className="mt-6 space-y-2 text-body">
         <div className="flex justify-between">
           <dt className="text-text-secondary">Subtotal</dt>
-          <dd className="text-body-strong text-navy">{formatKes(subtotal)}</dd>
+          <dd className="text-body-strong text-navy">{formatKsh(subtotal)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-text-secondary">{choice === 'pickup' ? 'Pickup' : 'Delivery'}</dt>
@@ -763,7 +763,7 @@ export function CheckoutForm({
                 ? option.freeDeliveryApplied
                   ? 'Free delivery'
                   : 'Free'
-                : formatKes(option.deliveryFee)
+                : formatKsh(option.deliveryFee)
               : 'Choose an option'}
           </dd>
         </div>
@@ -800,7 +800,7 @@ export function CheckoutForm({
               : !quote && !quoteError
                 ? 'Loading prices…'
                 : option
-                  ? `Place order · ${formatKes(option.total)}`
+                  ? `Place order · ${formatKsh(option.total)}`
                   : 'Place order'}
         </button>
         <p className="mt-2 text-center text-small text-text-secondary">

@@ -4,7 +4,7 @@
 // "+" quick add), the sticky cart bar, Share and the one-time visit beacon.
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { formatKes } from '@oda/shared';
+import { formatKsh } from '@oda/shared';
 import { cartCount, cartTotal, inCart, writeSource } from '@/lib/store/cart';
 import { useCart, useFavourites, useHydrated } from './useShopStore';
 
@@ -187,7 +187,7 @@ export function CartBar({ shopId, slug }: { shopId: string; slug: string }) {
           <span className="block text-small text-toggle-off">
             {count} {count === 1 ? 'item' : 'items'}
           </span>
-          <span className="block text-title">{formatKes(cartTotal(lines))}</span>
+          <span className="block text-title">{formatKsh(cartTotal(lines))}</span>
         </span>
         <Link
           id="cart-bar-link"

@@ -5,7 +5,7 @@ import {
   clock24,
   shortDate,
   formatKePhone,
-  formatKes,
+  formatKsh,
   OTP_TTL_SECONDS,
   RESET_LINK_TTL_SECONDS,
   type CancelReason,
@@ -347,14 +347,14 @@ function itemRows(o: OrderEmailData): { html: string; text: string } {
       ? 'Pickup'
       : `Delivery${o.deliveryAreaName ? ` · ${escapeHtml(o.deliveryAreaName)}` : ''}`;
   const html = `<tr><td style="padding-bottom:24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-${o.items.map((i) => row(`${escapeHtml(label(i))} × ${i.qty}`, formatKes(i.unitPrice * i.qty))).join('\n')}
-${row(delivery, o.deliveryFee === 0 ? 'Free' : formatKes(o.deliveryFee))}
-${row('Total', formatKes(o.total), true)}
+${o.items.map((i) => row(`${escapeHtml(label(i))} × ${i.qty}`, formatKsh(i.unitPrice * i.qty))).join('\n')}
+${row(delivery, o.deliveryFee === 0 ? 'Free' : formatKsh(o.deliveryFee))}
+${row('Total', formatKsh(o.total), true)}
 </table></td></tr>`;
   const text = [
-    ...o.items.map((i) => `${label(i)} × ${i.qty}: ${formatKes(i.unitPrice * i.qty)}`),
-    `${o.fulfilment === 'pickup' ? 'Pickup' : `Delivery${o.deliveryAreaName ? ` (${o.deliveryAreaName})` : ''}`}: ${o.deliveryFee === 0 ? 'Free' : formatKes(o.deliveryFee)}`,
-    `Total: ${formatKes(o.total)}`,
+    ...o.items.map((i) => `${label(i)} × ${i.qty}: ${formatKsh(i.unitPrice * i.qty)}`),
+    `${o.fulfilment === 'pickup' ? 'Pickup' : `Delivery${o.deliveryAreaName ? ` (${o.deliveryAreaName})` : ''}`}: ${o.deliveryFee === 0 ? 'Free' : formatKsh(o.deliveryFee)}`,
+    `Total: ${formatKsh(o.total)}`,
   ].join('\n');
   return { html, text };
 }
@@ -372,8 +372,8 @@ export function orderReceiptEmail(o: OrderEmailData): Email {
   const shop = escapeHtml(o.shopName);
   const nextStep =
     o.paymentMethod === 'pay_on_delivery'
-      ? `${o.shopName} will accept your order and get it to you. You pay ${formatKes(o.total)} on delivery.`
-      : `Pay ${formatKes(o.total)} to ${o.shopName} on M-Pesa. The exact steps are on your order page.`;
+      ? `${o.shopName} will accept your order and get it to you. You pay ${formatKsh(o.total)} on delivery.`
+      : `Pay ${formatKsh(o.total)} to ${o.shopName} on M-Pesa. The exact steps are on your order page.`;
   const items = itemRows(o);
   const html = layout(
     `Your order #${o.number} from ${o.shopName}`,
@@ -416,13 +416,13 @@ export function orderCancelledEmail(o: OrderEmailData & { claimed: boolean }): E
   const html = layout(
     `You cancelled order #${o.number}`,
     `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order cancelled</td></tr>
-<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, you cancelled your order <strong style="color:${colors.text};">#${o.number}</strong> from ${shop} (${formatKes(o.total)}).</td></tr>
+<tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, you cancelled your order <strong style="color:${colors.text};">#${o.number}</strong> from ${shop} (${formatKsh(o.total)}).</td></tr>
 <tr><td style="font-size:15px;line-height:24px;padding-bottom:24px;">${escapeHtml(money)}</td></tr>
 ${orderButton(o.link, 'See your order')}`,
   );
   const text = `Order cancelled
 
-Hi ${o.buyerName}, you cancelled your order #${o.number} from ${o.shopName} (${formatKes(o.total)}).
+Hi ${o.buyerName}, you cancelled your order #${o.number} from ${o.shopName} (${formatKsh(o.total)}).
 
 ${money}
 
@@ -471,7 +471,7 @@ export function orderUpdateEmail(
   o: OrderEmailData,
   f: OrderUpdateFacts,
 ): Email {
-  const total = formatKes(o.total);
+  const total = formatKsh(o.total);
   const n = `#${o.number}`;
   let heading: string;
   let subject: string;

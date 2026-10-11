@@ -1,5 +1,5 @@
 import 'server-only';
-import { formatKes, type PushType, type SideEffect } from '@oda/shared';
+import { formatKsh, type PushType, type SideEffect } from '@oda/shared';
 import { schema, type Db } from '@oda/db';
 
 // In-app notification rows for the seller (decision #61 e): written from the machine's push
@@ -11,7 +11,7 @@ type OrderRow = typeof schema.orders.$inferSelect;
 /** The seller's notification text. The buyer's name is link-free (checkout strips links). */
 export function notificationText(order: OrderRow, type: PushType): { title: string; body: string } {
   const n = `#${order.number}`;
-  const total = formatKes(order.total);
+  const total = formatKsh(order.total);
   const buyer = order.buyerName;
   switch (type) {
     case 'new_order':

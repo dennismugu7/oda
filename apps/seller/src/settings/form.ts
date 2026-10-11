@@ -120,13 +120,8 @@ export function displayName(first: string | null, last: string | null, email: st
   return name || email.split('@')[0] || email;
 }
 
-/** Up to two initials ("AW"). */
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
+/** Avatar initials: the shared rule (packages/shared/src/initials.ts). */
+export { initials } from '@oda/shared';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

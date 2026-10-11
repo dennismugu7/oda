@@ -17,7 +17,7 @@ test('pay now: pay page → I’ve paid → waiting → cancel (refund copy)', a
   await placePayNowOrder(page, slug);
 
   // Pay page: exact Till steps with copy buttons and the account name.
-  await expect(page.getByRole('heading', { name: 'Pay KES 4,500 to E2E Boutique' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pay KSh 4,500 to E2E Boutique' })).toBeVisible();
   await expect(page.getByText('Buy Goods and Services')).toBeVisible();
   await expect(page.getByText('5123456')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy till number' })).toBeVisible();
@@ -57,7 +57,7 @@ test('pay on delivery instead, and report a problem', async ({ page, request }) 
   await placePayNowOrder(page, slug);
   await page.getByRole('button', { name: 'Pay on delivery instead' }).click();
   await expect(page.getByText('Waiting for E2E Boutique to accept')).toBeVisible();
-  await expect(page.getByText('You pay KES 4,500 on delivery')).toBeVisible();
+  await expect(page.getByText('You pay KSh 4,500 on delivery')).toBeVisible();
 
   await page.getByRole('button', { name: /Report a problem to oda/ }).click();
   await page.getByLabel('What went wrong?').fill('The seller is not answering.');

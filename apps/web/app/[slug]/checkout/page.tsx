@@ -1,5 +1,5 @@
 // Checkout (web 4-checkout-details, with design-changes: 2 Delivery as a radio list with an
-// address, 3 Payment as radios per the shop's settings, "Place order · KES x"). The page gives
+// address, 3 Payment as radios per the shop's settings, "Place order · KSh x"). The page gives
 // the client the shop's delivery and payment options; prices come from the server's quote and
 // the order is priced again when it's placed.
 import type { Metadata } from 'next';

@@ -2,7 +2,7 @@
 // heart and the cart action over the photo, name, rating (once there are reviews), price and
 // was-price. Server-rendered; the heart and cart action are small client components.
 import Link from 'next/link';
-import { formatKes, type ProductBadge } from '@oda/shared';
+import { formatKsh, type ProductBadge } from '@oda/shared';
 import { CardCartAction, FavouriteButton } from './interactive';
 import { SafeImg } from '@/components/SafeImg';
 
@@ -74,10 +74,10 @@ export function ProductGrid({
               </p>
             ) : null}
             <p className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-subtitle font-bold text-navy">{formatKes(p.price)}</span>
+              <span className="text-subtitle font-bold text-navy">{formatKsh(p.price)}</span>
               {p.compareAtPrice ? (
                 <span className="text-small text-text-secondary line-through">
-                  {formatKes(p.compareAtPrice)}
+                  {formatKsh(p.compareAtPrice)}
                 </span>
               ) : null}
             </p>

@@ -363,7 +363,7 @@ describe('seller actions', () => {
     const email = testOutbox.last()!;
     expect(email.kind).toBe('order-cancelled');
     expect(email.text).toContain('Reason: Out of stock.');
-    expect(email.text).toContain('will send your KES 3,900 back');
+    expect(email.text).toContain('will send your KSh 3,900 back');
     // The seller's private note never reaches the buyer.
     expect(email.text).not.toContain('Last one sold');
 

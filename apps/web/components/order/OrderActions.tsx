@@ -6,7 +6,7 @@
 // /api/o/:token/* (transitionOrder() on the server); the page then reloads its data.
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
-import { extractMpesaCode, formatKePhone, formatKes } from '@oda/shared';
+import { extractMpesaCode, formatKePhone, formatKsh } from '@oda/shared';
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -162,7 +162,7 @@ export function PayPanel({
               ) : null}
             </>
           )}
-          <CopyRow label="Amount" value={String(total)} shown={formatKes(total)} />
+          <CopyRow label="Amount" value={String(total)} shown={formatKsh(total)} />
         </Step>
         <Step n={3}>
           <p className="text-body text-navy">

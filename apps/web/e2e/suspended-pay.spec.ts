@@ -35,7 +35,7 @@ test('suspended shop: no pay details, cancel only; unsuspended: the pay page is 
   // Unsuspended: the normal pay page again.
   await setSuspended(slug, false);
   await page.goto(orderUrl);
-  await expect(page.getByRole('heading', { name: 'Pay KES 4,500 to E2E Boutique' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pay KSh 4,500 to E2E Boutique' })).toBeVisible();
   await expect(page.getByText('5123456')).toBeVisible();
 
   // Suspended again: the buyer can still cancel.
