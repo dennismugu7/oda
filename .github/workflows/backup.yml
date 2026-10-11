@@ -39,7 +39,8 @@ permissions:
 jobs:
   backup:
     name: Back up Neon ${{ matrix.target }}
-    if: github.event.schedule != '50 23 * * *' || vars.PRODUCTION_LIVE == 'true'
+    # Main only (public repo hardening); production only once PRODUCTION_LIVE.
+    if: github.ref == 'refs/heads/main' && (github.event.schedule != '50 23 * * *' || vars.PRODUCTION_LIVE == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:

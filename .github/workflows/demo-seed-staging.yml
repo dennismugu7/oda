@@ -17,6 +17,8 @@ permissions:
 
 jobs:
   seed:
+    # Runs only from main (public repo hardening): no other branch reaches these secrets.
+    if: github.ref == 'refs/heads/main'
     name: Seed the staging demo shop
     runs-on: ubuntu-24.04
     # Staging only (M11 CP2): this Environment holds no production secret or address;

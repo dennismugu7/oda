@@ -29,6 +29,8 @@ permissions:
 
 jobs:
   digest:
+    # Runs only from main (public repo hardening): no other branch reaches these secrets.
+    if: github.ref == 'refs/heads/main'
     name: Send the support digest (${{ matrix.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 5
