@@ -2,87 +2,173 @@
 // in the native build, so icon changes ship as an EAS Update). Each icon is imported on its own
 // so the bundle only carries the ones listed here. Keys keep the names the screens already used.
 // Brand marks (WhatsApp, Instagram, Facebook) stay the official files in brandIcons.tsx.
+import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import type { ColorValue, StyleProp, ViewStyle } from 'react-native';
-import { ArrowBendUpLeftIcon } from 'phosphor-react-native/src/icons/ArrowBendUpLeft';
-import { ArrowClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowClockwise';
-import { ArrowCounterClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowCounterClockwise';
-import { ArrowDownIcon } from 'phosphor-react-native/src/icons/ArrowDown';
-import { ArrowLeftIcon } from 'phosphor-react-native/src/icons/ArrowLeft';
-import { ArrowRightIcon } from 'phosphor-react-native/src/icons/ArrowRight';
-import { ArrowSquareOutIcon } from 'phosphor-react-native/src/icons/ArrowSquareOut';
-import { ArrowUpIcon } from 'phosphor-react-native/src/icons/ArrowUp';
-import { BabyIcon } from 'phosphor-react-native/src/icons/Baby';
-import { BellIcon } from 'phosphor-react-native/src/icons/Bell';
-import { BowlFoodIcon } from 'phosphor-react-native/src/icons/BowlFood';
-import { CameraIcon } from 'phosphor-react-native/src/icons/Camera';
-import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
-import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
-import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
-import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp';
-import { ChartBarIcon } from 'phosphor-react-native/src/icons/ChartBar';
-import { ChatCircleIcon } from 'phosphor-react-native/src/icons/ChatCircle';
-import { ChatTextIcon } from 'phosphor-react-native/src/icons/ChatText';
-import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
-import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
-import { CircleIcon } from 'phosphor-react-native/src/icons/Circle';
-import { ClockIcon } from 'phosphor-react-native/src/icons/Clock';
-import { CopyIcon } from 'phosphor-react-native/src/icons/Copy';
-import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
-import { DeviceMobileIcon } from 'phosphor-react-native/src/icons/DeviceMobile';
-import { DotsThreeIcon } from 'phosphor-react-native/src/icons/DotsThree';
-import { DotsThreeVerticalIcon } from 'phosphor-react-native/src/icons/DotsThreeVertical';
-import { DropIcon } from 'phosphor-react-native/src/icons/Drop';
-import { EyeIcon } from 'phosphor-react-native/src/icons/Eye';
-import { EyeSlashIcon } from 'phosphor-react-native/src/icons/EyeSlash';
-import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
-import { FlagIcon } from 'phosphor-react-native/src/icons/Flag';
-import { GearIcon } from 'phosphor-react-native/src/icons/Gear';
-import { GiftIcon } from 'phosphor-react-native/src/icons/Gift';
-import { HandbagIcon } from 'phosphor-react-native/src/icons/Handbag';
-import { HeartIcon } from 'phosphor-react-native/src/icons/Heart';
-import { HouseIcon } from 'phosphor-react-native/src/icons/House';
-import { ImagesIcon } from 'phosphor-react-native/src/icons/Images';
-import { InfoIcon } from 'phosphor-react-native/src/icons/Info';
-import { InstagramLogoIcon } from 'phosphor-react-native/src/icons/InstagramLogo';
-import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning';
-import { ListIcon } from 'phosphor-react-native/src/icons/List';
-import { LockIcon } from 'phosphor-react-native/src/icons/Lock';
-import { MagnifyingGlassIcon } from 'phosphor-react-native/src/icons/MagnifyingGlass';
-import { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin';
-import { MinusIcon } from 'phosphor-react-native/src/icons/Minus';
-import { MoneyIcon } from 'phosphor-react-native/src/icons/Money';
-import { MotorcycleIcon } from 'phosphor-react-native/src/icons/Motorcycle';
-import { MusicNotesIcon } from 'phosphor-react-native/src/icons/MusicNotes';
-import { PackageIcon } from 'phosphor-react-native/src/icons/Package';
-import { PauseCircleIcon } from 'phosphor-react-native/src/icons/PauseCircle';
-import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
-import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
-import { PhoneIcon } from 'phosphor-react-native/src/icons/Phone';
-import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
-import { PlusCircleIcon } from 'phosphor-react-native/src/icons/PlusCircle';
-import { QrCodeIcon } from 'phosphor-react-native/src/icons/QrCode';
-import { QuestionIcon } from 'phosphor-react-native/src/icons/Question';
-import { ReceiptIcon } from 'phosphor-react-native/src/icons/Receipt';
-import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
-import { ShieldCheckIcon } from 'phosphor-react-native/src/icons/ShieldCheck';
-import { ShoppingBagIcon } from 'phosphor-react-native/src/icons/ShoppingBag';
-import { SignOutIcon } from 'phosphor-react-native/src/icons/SignOut';
-import { SquaresFourIcon } from 'phosphor-react-native/src/icons/SquaresFour';
-import { StarIcon } from 'phosphor-react-native/src/icons/Star';
-import { StorefrontIcon } from 'phosphor-react-native/src/icons/Storefront';
-import { TShirtIcon } from 'phosphor-react-native/src/icons/TShirt';
-import { TextTIcon } from 'phosphor-react-native/src/icons/TextT';
-import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
-import { TruckIcon } from 'phosphor-react-native/src/icons/Truck';
-import { UserIcon } from 'phosphor-react-native/src/icons/User';
-import { UsersIcon } from 'phosphor-react-native/src/icons/Users';
-import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
-import { WarningIcon } from 'phosphor-react-native/src/icons/Warning';
-import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
-import { WifiSlashIcon } from 'phosphor-react-native/src/icons/WifiSlash';
-import { WrenchIcon } from 'phosphor-react-native/src/icons/Wrench';
-import { XIcon } from 'phosphor-react-native/src/icons/X';
-import { XCircleIcon } from 'phosphor-react-native/src/icons/XCircle';
+
+// Each icon is required from its own file: Metro bundles only these (the package index would
+// pull in all ~1,500). require() keeps TypeScript out of Phosphor's .tsx sources (they don't
+// typecheck against our react-native-svg); the type comes from the package's public typings.
+/* eslint-disable @typescript-eslint/no-require-imports */
+const icon = (mod: Record<string, PhosphorIcon>, name: string): PhosphorIcon => mod[name]!;
+const ArrowBendUpLeftIcon = icon(
+  require('phosphor-react-native/src/icons/ArrowBendUpLeft'),
+  'ArrowBendUpLeftIcon',
+);
+const ArrowClockwiseIcon = icon(
+  require('phosphor-react-native/src/icons/ArrowClockwise'),
+  'ArrowClockwiseIcon',
+);
+const ArrowCounterClockwiseIcon = icon(
+  require('phosphor-react-native/src/icons/ArrowCounterClockwise'),
+  'ArrowCounterClockwiseIcon',
+);
+const ArrowDownIcon = icon(require('phosphor-react-native/src/icons/ArrowDown'), 'ArrowDownIcon');
+const ArrowLeftIcon = icon(require('phosphor-react-native/src/icons/ArrowLeft'), 'ArrowLeftIcon');
+const ArrowRightIcon = icon(
+  require('phosphor-react-native/src/icons/ArrowRight'),
+  'ArrowRightIcon',
+);
+const ArrowSquareOutIcon = icon(
+  require('phosphor-react-native/src/icons/ArrowSquareOut'),
+  'ArrowSquareOutIcon',
+);
+const ArrowUpIcon = icon(require('phosphor-react-native/src/icons/ArrowUp'), 'ArrowUpIcon');
+const BabyIcon = icon(require('phosphor-react-native/src/icons/Baby'), 'BabyIcon');
+const BellIcon = icon(require('phosphor-react-native/src/icons/Bell'), 'BellIcon');
+const BowlFoodIcon = icon(require('phosphor-react-native/src/icons/BowlFood'), 'BowlFoodIcon');
+const CameraIcon = icon(require('phosphor-react-native/src/icons/Camera'), 'CameraIcon');
+const CaretDownIcon = icon(require('phosphor-react-native/src/icons/CaretDown'), 'CaretDownIcon');
+const CaretLeftIcon = icon(require('phosphor-react-native/src/icons/CaretLeft'), 'CaretLeftIcon');
+const CaretRightIcon = icon(
+  require('phosphor-react-native/src/icons/CaretRight'),
+  'CaretRightIcon',
+);
+const CaretUpIcon = icon(require('phosphor-react-native/src/icons/CaretUp'), 'CaretUpIcon');
+const ChartBarIcon = icon(require('phosphor-react-native/src/icons/ChartBar'), 'ChartBarIcon');
+const ChatCircleIcon = icon(
+  require('phosphor-react-native/src/icons/ChatCircle'),
+  'ChatCircleIcon',
+);
+const ChatTextIcon = icon(require('phosphor-react-native/src/icons/ChatText'), 'ChatTextIcon');
+const CheckIcon = icon(require('phosphor-react-native/src/icons/Check'), 'CheckIcon');
+const CheckCircleIcon = icon(
+  require('phosphor-react-native/src/icons/CheckCircle'),
+  'CheckCircleIcon',
+);
+const CircleIcon = icon(require('phosphor-react-native/src/icons/Circle'), 'CircleIcon');
+const ClockIcon = icon(require('phosphor-react-native/src/icons/Clock'), 'ClockIcon');
+const CopyIcon = icon(require('phosphor-react-native/src/icons/Copy'), 'CopyIcon');
+const CreditCardIcon = icon(
+  require('phosphor-react-native/src/icons/CreditCard'),
+  'CreditCardIcon',
+);
+const DeviceMobileIcon = icon(
+  require('phosphor-react-native/src/icons/DeviceMobile'),
+  'DeviceMobileIcon',
+);
+const DotsThreeIcon = icon(require('phosphor-react-native/src/icons/DotsThree'), 'DotsThreeIcon');
+const DotsThreeVerticalIcon = icon(
+  require('phosphor-react-native/src/icons/DotsThreeVertical'),
+  'DotsThreeVerticalIcon',
+);
+const DropIcon = icon(require('phosphor-react-native/src/icons/Drop'), 'DropIcon');
+const EyeIcon = icon(require('phosphor-react-native/src/icons/Eye'), 'EyeIcon');
+const EyeSlashIcon = icon(require('phosphor-react-native/src/icons/EyeSlash'), 'EyeSlashIcon');
+const FileTextIcon = icon(require('phosphor-react-native/src/icons/FileText'), 'FileTextIcon');
+const FlagIcon = icon(require('phosphor-react-native/src/icons/Flag'), 'FlagIcon');
+const GearIcon = icon(require('phosphor-react-native/src/icons/Gear'), 'GearIcon');
+const GiftIcon = icon(require('phosphor-react-native/src/icons/Gift'), 'GiftIcon');
+const HandbagIcon = icon(require('phosphor-react-native/src/icons/Handbag'), 'HandbagIcon');
+const HeartIcon = icon(require('phosphor-react-native/src/icons/Heart'), 'HeartIcon');
+const HouseIcon = icon(require('phosphor-react-native/src/icons/House'), 'HouseIcon');
+const ImagesIcon = icon(require('phosphor-react-native/src/icons/Images'), 'ImagesIcon');
+const InfoIcon = icon(require('phosphor-react-native/src/icons/Info'), 'InfoIcon');
+const InstagramLogoIcon = icon(
+  require('phosphor-react-native/src/icons/InstagramLogo'),
+  'InstagramLogoIcon',
+);
+const LightningIcon = icon(require('phosphor-react-native/src/icons/Lightning'), 'LightningIcon');
+const ListIcon = icon(require('phosphor-react-native/src/icons/List'), 'ListIcon');
+const LockIcon = icon(require('phosphor-react-native/src/icons/Lock'), 'LockIcon');
+const MagnifyingGlassIcon = icon(
+  require('phosphor-react-native/src/icons/MagnifyingGlass'),
+  'MagnifyingGlassIcon',
+);
+const MapPinIcon = icon(require('phosphor-react-native/src/icons/MapPin'), 'MapPinIcon');
+const MinusIcon = icon(require('phosphor-react-native/src/icons/Minus'), 'MinusIcon');
+const MoneyIcon = icon(require('phosphor-react-native/src/icons/Money'), 'MoneyIcon');
+const MotorcycleIcon = icon(
+  require('phosphor-react-native/src/icons/Motorcycle'),
+  'MotorcycleIcon',
+);
+const MusicNotesIcon = icon(
+  require('phosphor-react-native/src/icons/MusicNotes'),
+  'MusicNotesIcon',
+);
+const PackageIcon = icon(require('phosphor-react-native/src/icons/Package'), 'PackageIcon');
+const PauseCircleIcon = icon(
+  require('phosphor-react-native/src/icons/PauseCircle'),
+  'PauseCircleIcon',
+);
+const PencilSimpleIcon = icon(
+  require('phosphor-react-native/src/icons/PencilSimple'),
+  'PencilSimpleIcon',
+);
+const PencilSimpleLineIcon = icon(
+  require('phosphor-react-native/src/icons/PencilSimpleLine'),
+  'PencilSimpleLineIcon',
+);
+const PhoneIcon = icon(require('phosphor-react-native/src/icons/Phone'), 'PhoneIcon');
+const PlusIcon = icon(require('phosphor-react-native/src/icons/Plus'), 'PlusIcon');
+const PlusCircleIcon = icon(
+  require('phosphor-react-native/src/icons/PlusCircle'),
+  'PlusCircleIcon',
+);
+const QrCodeIcon = icon(require('phosphor-react-native/src/icons/QrCode'), 'QrCodeIcon');
+const QuestionIcon = icon(require('phosphor-react-native/src/icons/Question'), 'QuestionIcon');
+const ReceiptIcon = icon(require('phosphor-react-native/src/icons/Receipt'), 'ReceiptIcon');
+const ShareNetworkIcon = icon(
+  require('phosphor-react-native/src/icons/ShareNetwork'),
+  'ShareNetworkIcon',
+);
+const ShieldCheckIcon = icon(
+  require('phosphor-react-native/src/icons/ShieldCheck'),
+  'ShieldCheckIcon',
+);
+const ShoppingBagIcon = icon(
+  require('phosphor-react-native/src/icons/ShoppingBag'),
+  'ShoppingBagIcon',
+);
+const SignOutIcon = icon(require('phosphor-react-native/src/icons/SignOut'), 'SignOutIcon');
+const SquaresFourIcon = icon(
+  require('phosphor-react-native/src/icons/SquaresFour'),
+  'SquaresFourIcon',
+);
+const StarIcon = icon(require('phosphor-react-native/src/icons/Star'), 'StarIcon');
+const StorefrontIcon = icon(
+  require('phosphor-react-native/src/icons/Storefront'),
+  'StorefrontIcon',
+);
+const TShirtIcon = icon(require('phosphor-react-native/src/icons/TShirt'), 'TShirtIcon');
+const TextTIcon = icon(require('phosphor-react-native/src/icons/TextT'), 'TextTIcon');
+const TrashIcon = icon(require('phosphor-react-native/src/icons/Trash'), 'TrashIcon');
+const TruckIcon = icon(require('phosphor-react-native/src/icons/Truck'), 'TruckIcon');
+const UserIcon = icon(require('phosphor-react-native/src/icons/User'), 'UserIcon');
+const UsersIcon = icon(require('phosphor-react-native/src/icons/Users'), 'UsersIcon');
+const UsersThreeIcon = icon(
+  require('phosphor-react-native/src/icons/UsersThree'),
+  'UsersThreeIcon',
+);
+const WarningIcon = icon(require('phosphor-react-native/src/icons/Warning'), 'WarningIcon');
+const WarningCircleIcon = icon(
+  require('phosphor-react-native/src/icons/WarningCircle'),
+  'WarningCircleIcon',
+);
+const WifiSlashIcon = icon(require('phosphor-react-native/src/icons/WifiSlash'), 'WifiSlashIcon');
+const WrenchIcon = icon(require('phosphor-react-native/src/icons/Wrench'), 'WrenchIcon');
+const XIcon = icon(require('phosphor-react-native/src/icons/X'), 'XIcon');
+const XCircleIcon = icon(require('phosphor-react-native/src/icons/XCircle'), 'XCircleIcon');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const ICONS = {
   check: CheckIcon,
