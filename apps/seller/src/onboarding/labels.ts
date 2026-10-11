@@ -26,9 +26,10 @@ export const CHANNEL_OPTIONS: {
   value: Channel;
   title: string;
   subtitle?: string;
-  icon: IconName;
-  /** Shown instead of `icon`: an official brand mark, or WhatsApp's Status ring (#55). */
-  mark?: 'whatsapp' | 'instagram' | 'facebook' | 'status';
+  /** Shown when there is no `mark`. */
+  icon?: IconName;
+  /** Shown instead of `icon`: an official brand mark, or WhatsApp's Status ring (#55, #108). */
+  mark?: 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'status';
   tint: string;
   iconColor: string;
 }[] = [
@@ -52,7 +53,7 @@ export const CHANNEL_OPTIONS: {
   {
     value: 'tiktok',
     title: 'TikTok',
-    icon: 'music-note',
+    mark: 'tiktok',
     tint: colors.surfaceMuted,
     iconColor: colors.navy,
   },

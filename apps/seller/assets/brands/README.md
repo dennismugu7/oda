@@ -13,6 +13,11 @@ embedded in `src/ui/brandSvgs.ts`, and a test checks it is identical to these fi
 
 `google-g.svg`: Google's standard multicolour "G" for "Sign in with Google" buttons (decision #107), as published in Google's Sign in with Google branding guidelines (developers.google.com/identity/branding-guidelines): four official colours, never recoloured, outlined or distorted, on a white button with Google's button wording ("Sign up with Google", "Continue with Google"). The path data is the published standard "G"; compare it with the "Sign in with Google" pack before the public launch if in doubt.
 
-TikTok: TikTok's developer guidelines forbid using its logo without written permission, so
-the TikTok button and choice use a neutral music-note icon with the word "TikTok".
-WhatsApp Status uses oda's own ring drawing in WhatsApp green (not a logo).
+`tiktok-icon-black-circle.png` (decision #108, amends #101 c): TikTok's official full-colour icon on its black circle, copied byte for byte from TikTok's developer logo pack.
+
+- Source: https://developers.tiktok.com/doc/getting-started-design-guidelines → "logo-pack.zip" (https://sf16-va.tiktokcdn.com/obj/eden-va2/uvzhqeh7nuhd/tt4d/logo-pack.zip, 6,588,461 bytes, sha256 `b3f31728ceb6ce6fc1a0ae8c635a0223e35ac2f7d203b2743e713541bf2085cd`), downloaded 2026-10-11.
+- File in the pack: `Dev Portal Logo Pack/TikTok Logo Pack/TikTok – Icons/TikTok_Icon_Black_Circle.png` (1200 × 1200, 18,423 bytes), sha256 `a21b43e31bb9def6d01c8c433a577353ae3efc8003a6257e8f3db3fd2dc94e61` (a test checks it).
+- Why this file: the pack has no full-colour icon on its own for light backgrounds (the icon SVGs in the button pack are one colour; the light-background colour logos include the "TikTok" wordmark; the rest are `.ai` files). The owner chose the black circle, used unmodified.
+- Shown at 24 dp on the same light tiles and white circles as the other marks, next to the word "TikTok"; scaled only, never recoloured, outlined or cropped.
+- TikTok's guidelines say its logos need prior written permission. The owner knows and accepts this (#108); the permission request (`docs/tiktok-logo-request.md`) is still to be sent. The zip is not in the repo.
+  WhatsApp Status uses oda's own ring drawing in WhatsApp green (not a logo).

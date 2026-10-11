@@ -34,7 +34,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onboardingApi, type OnboardingState } from '@/onboarding/api';
-import type { IconName } from '@/onboarding/labels';
 import { openBuyerView } from '@/catalogue/preview';
 import { shareTo, type ShareDeps } from '@/onboarding/shareActions';
 import { setOnboardingState, useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
@@ -44,16 +43,12 @@ import { StepStatus } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
 
-// Official brand marks for WhatsApp, Instagram and Facebook; TikTok needs written
-// permission, so a neutral icon with its name (decision #55).
+// Official brand marks for WhatsApp, Instagram, Facebook and TikTok (decisions #55, #108).
 const BRANDS: Partial<Record<ShareTarget, Brand>> = {
   whatsapp: 'whatsapp',
   instagram: 'instagram',
   facebook: 'facebook',
-};
-const NEUTRAL_ICONS: Partial<Record<ShareTarget, IconName>> = {
-  tiktok: 'music-note',
-  more: 'dots-horizontal',
+  tiktok: 'tiktok',
 };
 
 const phoneShare: ShareDeps = {
@@ -252,11 +247,7 @@ function Step({ state }: { state: OnboardingState }) {
                       ) : BRANDS[target] ? (
                         <BrandIcon brand={BRANDS[target]!} size={28} />
                       ) : (
-                        <Icon
-                          name={NEUTRAL_ICONS[target] ?? 'dots-horizontal'}
-                          size={26}
-                          color={colors.navy}
-                        />
+                        <Icon name="dots-horizontal" size={26} color={colors.navy} />
                       )}
                     </View>
                     <Text
