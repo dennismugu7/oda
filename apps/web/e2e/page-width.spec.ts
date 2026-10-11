@@ -23,15 +23,16 @@ async function tooWide(page: Page, name: string): Promise<string[]> {
   const w = await page.evaluate(() => ({
     html: document.documentElement.scrollWidth,
     body: document.body.scrollWidth,
-    // The widest element, to say what to fix.
+    // The widest elements, to say what to fix. Against the 360 px screen, not innerWidth: a
+    // mobile viewport widens to fit an overflowing page, so nothing would look too wide.
     widest: [...document.querySelectorAll('body *')]
       .map((el) => ({ el, right: el.getBoundingClientRect().right }))
-      .filter(({ right }) => right > window.innerWidth + 0.5)
+      .filter(({ right }) => right > 360.5)
       .sort((a, b) => b.right - a.right)
-      .slice(0, 3)
+      .slice(0, 5)
       .map(
         ({ el, right }) =>
-          `${el.tagName.toLowerCase()} "${((el as HTMLElement).innerText || el.getAttribute('aria-label') || '').slice(0, 40)}" ends at ${Math.round(right)}`,
+          `${el.tagName.toLowerCase()}.${String(el.getAttribute('class') ?? '').slice(0, 60)} "${((el as HTMLElement).innerText || el.getAttribute('aria-label') || '').slice(0, 40)}" ends at ${Math.round(right)}`,
       ),
   }));
   if (w.html <= 360 && w.body <= 360) return [];

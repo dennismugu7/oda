@@ -613,11 +613,14 @@ export function CheckoutForm({
             />
           </svg>
           {/* Matches what sellers can do (Customers list, WhatsApp) and /privacy (#98). */}
-          {shopName} sees these details to handle your orders and may contact you on WhatsApp or by
-          phone.{' '}
-          <Link href="/privacy" className="underline">
-            Privacy
-          </Link>
+          {/* One flex item, so the Privacy link stays inline in the sentence (a11y.spec). */}
+          <span>
+            {shopName} sees these details to handle your orders and may contact you on WhatsApp or
+            by phone.{' '}
+            <Link href="/privacy" className="underline">
+              Privacy
+            </Link>
+          </span>
         </p>
       </section>
 
