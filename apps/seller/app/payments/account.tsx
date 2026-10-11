@@ -11,7 +11,7 @@ import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip, ChoiceCard } from '@/ui/onboarding';
 import { Card } from '@/ui/rows';
-import { colors, spacing, text } from '@/theme';
+import { colors, fonts, spacing, text } from '@/theme';
 
 export default function AccountScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -153,7 +153,7 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   types: { flexDirection: 'row', gap: spacing.sm },
   hint: { ...text('body'), color: colors.textSecondary },
-  number: { fontFamily: 'Poppins_700Bold', fontSize: 18, letterSpacing: 1 },
+  number: { fontFamily: fonts.bold, fontSize: 18, letterSpacing: 1 },
   refBlock: { marginTop: spacing.sm, gap: spacing.sm },
   label: { ...text('bodyStrong'), color: colors.text },
   refChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

@@ -42,7 +42,7 @@ import { restoreStore } from '@/restore/native';
 import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const PRIMARY_LABELS: Record<string, string> = {
   confirmPayment: 'Confirm payment',
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   },
   statusWarning: { backgroundColor: colors.warningTint },
   statusSuccess: { backgroundColor: colors.greenTint },
-  statusTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  statusTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   statusTitleWarning: { color: colors.warningTextStrong },
   statusTitleSuccess: { color: colors.green },
   cardText: { ...text('body'), color: colors.textSecondary },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 44,
   },
-  copyText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  copyText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   duplicate: { ...text('bodyStrong'), color: colors.danger },
   card: {
     backgroundColor: colors.surface,
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { ...text('title'), color: colors.primary },
-  buyerName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  buyerName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   buyerLine: { ...text('body'), color: colors.textSecondary },
   round: {
     width: 48,
@@ -713,9 +713,9 @@ const styles = StyleSheet.create({
   divider: { borderTopWidth: 1, borderTopColor: colors.border },
   thumb: { width: 48, height: 48, borderRadius: radii.md, backgroundColor: colors.beige },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  itemName: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  itemName: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   itemLine: { ...text('small'), color: colors.textSecondary },
-  itemPrice: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  itemPrice: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   moneyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   totalValue: { ...text('title'), color: colors.navy },
   paysTo: { ...text('small'), color: colors.textSecondary },
   overline: { ...text('overline'), color: colors.textSecondary, marginBottom: spacing.xs },
-  deliveryTitle: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  deliveryTitle: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   deliveryLine: { ...text('body'), color: colors.textSecondary },
   deliveryHint: { ...text('small'), color: colors.textSecondary, marginTop: spacing.sm },
   footer: {

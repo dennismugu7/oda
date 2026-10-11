@@ -19,7 +19,7 @@ import { DraftBanner } from '@/restore/DraftBanner';
 import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import type { OrderDetail } from './api';
 import { ActionSheet, CheckBox, Summary, TextButton, WhatsAppToggle } from './parts';
 
@@ -489,7 +489,7 @@ export function OrderSheet({ kind, ...props }: SheetProps & { kind: SheetKind | 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  label: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  label: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
     flexDirection: 'row',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  optionTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   optionLine: { ...text('body'), color: colors.textSecondary },
   radio: {
     width: 26,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   refundTitle: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.warningTextStrong,
   },
   refundText: { ...text('body'), color: colors.warningTextStrong },

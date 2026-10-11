@@ -24,7 +24,7 @@ import { ONBOARDING_ROUTES } from '@/onboarding/steps';
 import { useOnboarding, useSubmit } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { Chip, onboardingStyles, OnboardingScreen, StepStatus, StepTitle } from '@/ui/onboarding';
-import { colors, radii, sizes as sizeTokens, spacing, text } from '@/theme';
+import { colors, fonts, radii, sizes as sizeTokens, spacing, text } from '@/theme';
 
 interface Slot {
   id: string;
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
     padding: spacing.sm,
   },
-  addTitle: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addTitle: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   addSub: { ...text('small'), color: colors.textSecondary, textAlign: 'center' },
   tip: {
     flex: 1,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
   },
-  retakeText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  retakeText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   coverChip: {
     position: 'absolute',
     left: spacing.sm,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs,
   },
-  coverChipText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  coverChipText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnNavy },
   thumbs: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   thumb: {
     width: 64,
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   overlayText: { ...text('small'), color: colors.textOnNavy },
 
   form: { marginTop: spacing.lg, paddingTop: 0 },
-  priceInput: { fontFamily: 'Poppins_700Bold', fontSize: 18 },
+  priceInput: { fontFamily: fonts.bold, fontSize: 18 },
   prefixStrong: { ...text('bodyStrong'), fontSize: 16, color: colors.navy },
   sizesHead: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
   label: { ...text('bodyStrong'), color: colors.text },

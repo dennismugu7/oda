@@ -18,7 +18,7 @@ const SHAPES: Record<DemoProduct['shape'], string> = {
 let fonts: Promise<Buffer[]> | undefined;
 function loadFonts() {
   fonts ??= Promise.all(
-    ['Poppins_700Bold.ttf', 'Poppins_500Medium.ttf'].map((f) =>
+    ['BricolageGrotesque_700Bold.ttf', 'Inter_500Medium.ttf'].map((f) =>
       readFile(join(process.cwd(), 'assets', 'fonts', f)),
     ),
   );
@@ -39,7 +39,7 @@ export async function placeholderPhoto(product: DemoProduct, side: number): Prom
         alignItems: 'center',
         justifyContent: 'center',
         background: product.colour,
-        fontFamily: 'Poppins',
+        fontFamily: 'oda',
       }}
     >
       <svg width={200 * scale} height={200 * scale} viewBox="0 0 200 200">
@@ -63,7 +63,7 @@ export async function placeholderPhoto(product: DemoProduct, side: number): Prom
     {
       width: side,
       height: side,
-      fonts: [{ name: 'Poppins', data: bold!, weight: 700, style: 'normal' }],
+      fonts: [{ name: 'oda', data: bold!, weight: 700, style: 'normal' }],
     },
   );
   return new Uint8Array(await response.arrayBuffer());

@@ -24,7 +24,7 @@ import { errorMessage } from '@/onboarding/labels';
 import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const ICONS: Record<NotificationItem['type'], ComponentProps<typeof Feather>['name']> = {
   new_order: 'shopping-bag',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: { ...text('bodyStrong'), color: colors.navy },
-  titleUnread: { fontFamily: 'Poppins_700Bold' },
+  titleUnread: { fontFamily: fonts.bold },
   line: { ...text('body'), color: colors.textSecondary },
   time: { ...text('small'), color: colors.textSecondary, marginTop: 2 },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary, marginTop: 6 },

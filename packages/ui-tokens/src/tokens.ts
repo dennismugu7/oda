@@ -45,12 +45,24 @@ export const colors = {
   infoTint: '#E6EDF8',
 } as const;
 
+/** Body text: Inter (decision #102). The app loads one font file per weight. */
 export const fontFamily = {
-  regular: 'Poppins_400Regular',
-  medium: 'Poppins_500Medium',
-  semibold: 'Poppins_600SemiBold',
-  bold: 'Poppins_700Bold',
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
 } as const;
+
+/** Headings (display, headline, title): Bricolage Grotesque (decision #102). */
+export const headingFontFamily = {
+  regular: 'BricolageGrotesque_600SemiBold',
+  medium: 'BricolageGrotesque_600SemiBold',
+  semibold: 'BricolageGrotesque_600SemiBold',
+  bold: 'BricolageGrotesque_700Bold',
+} as const;
+
+/** The welcome logo and hero headline (extra bold). */
+export const displayFontFamily = 'BricolageGrotesque_800ExtraBold';
 
 /** Web uses one family with weights; the app loads one font file per weight. */
 export const fontWeight = { regular: 400, medium: 500, semibold: 600, bold: 700 } as const;
@@ -60,18 +72,20 @@ type TextStyle = {
   lineHeight: number;
   weight: keyof typeof fontWeight;
   letterSpacing: number;
+  /** heading = Bricolage Grotesque, body = Inter. */
+  family: 'heading' | 'body';
 };
 
 export const typography = {
-  display: { size: 34, lineHeight: 38, weight: 'bold', letterSpacing: -1 }, // "Turn your posts into orders."
-  headline: { size: 28, lineHeight: 32, weight: 'bold', letterSpacing: -0.8 }, // screen titles, "What do you sell?"
-  title: { size: 20, lineHeight: 26, weight: 'bold', letterSpacing: -0.3 }, // card titles, sheet titles
-  subtitle: { size: 17, lineHeight: 24, weight: 'semibold', letterSpacing: 0 }, // list row titles
-  button: { size: 17, lineHeight: 22, weight: 'bold', letterSpacing: 0 },
-  body: { size: 15, lineHeight: 22, weight: 'regular', letterSpacing: 0 },
-  bodyStrong: { size: 15, lineHeight: 22, weight: 'semibold', letterSpacing: 0 },
-  small: { size: 13, lineHeight: 18, weight: 'regular', letterSpacing: 0 },
-  overline: { size: 12, lineHeight: 16, weight: 'bold', letterSpacing: 1.2 }, // "BUYER", "YOUR BUSINESS"
+  display: { size: 34, lineHeight: 38, weight: 'bold', letterSpacing: -0.7, family: 'heading' }, // "Turn your posts into orders."
+  headline: { size: 28, lineHeight: 32, weight: 'bold', letterSpacing: -0.6, family: 'heading' }, // screen titles, "What do you sell?"
+  title: { size: 20, lineHeight: 26, weight: 'bold', letterSpacing: -0.3, family: 'heading' }, // card titles, sheet titles
+  subtitle: { size: 17, lineHeight: 24, weight: 'semibold', letterSpacing: 0, family: 'body' }, // list row titles
+  button: { size: 17, lineHeight: 22, weight: 'bold', letterSpacing: 0, family: 'body' },
+  body: { size: 15, lineHeight: 22, weight: 'regular', letterSpacing: 0, family: 'body' },
+  bodyStrong: { size: 15, lineHeight: 22, weight: 'semibold', letterSpacing: 0, family: 'body' },
+  small: { size: 13, lineHeight: 18, weight: 'regular', letterSpacing: 0, family: 'body' },
+  overline: { size: 12, lineHeight: 16, weight: 'bold', letterSpacing: 1.2, family: 'body' }, // "BUYER", "YOUR BUSINESS"
 } as const satisfies Record<string, TextStyle>;
 
 /** 4-point scale. Screen side padding is `lg` (20). */

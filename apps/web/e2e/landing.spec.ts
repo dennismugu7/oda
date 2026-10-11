@@ -1,12 +1,14 @@
 import { expect, test } from './test';
 
-test('landing page renders in Poppins and brand colours', async ({ page }) => {
+test('landing page renders in the oda fonts and brand colours', async ({ page }) => {
   await page.goto('/');
   const heading = page.getByRole('heading', { name: 'Turn your posts into orders.' });
   await expect(heading).toBeVisible();
 
   const font = await heading.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(font).toMatch(/Poppins/i);
+  expect(font).toMatch(/Bricolage Grotesque/i);
+  const body = await page.locator('body').evaluate((el) => getComputedStyle(el).fontFamily);
+  expect(body).toMatch(/Inter/i);
 
   const logo = page.getByLabel('oda');
   const logoColour = await logo.evaluate((el) => getComputedStyle(el).color);

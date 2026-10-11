@@ -16,7 +16,7 @@ import { useLoaded } from '@/settings/useLoaded';
 import { Button } from '@/ui/auth';
 import { Card, Row, rowStyles, Section } from '@/ui/rows';
 import { ScreenHeader } from '@/ui/screenHeader';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 import { appVersion, canSendTestError, sendTestError } from '@/sentry';
 
 export default function HelpScreen() {
@@ -154,6 +154,6 @@ const styles = StyleSheet.create({
   },
   searchInput: { ...text('body'), color: colors.text, flex: 1 },
   talk: { ...text('body'), color: colors.textSecondary },
-  strong: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  strong: { fontFamily: fonts.bold, color: colors.navy },
   empty: { ...text('body'), color: colors.textSecondary },
 });

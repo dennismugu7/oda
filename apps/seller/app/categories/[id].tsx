@@ -26,7 +26,7 @@ import { useDraft } from '@/restore/useDraft';
 import { Button, Field, FormMessage } from '@/ui/auth';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export default function CategoryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   hint: { ...text('body'), color: colors.textMuted, flexShrink: 1 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   toggleText: { flex: 1 },
-  toggleTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  toggleTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   toggleHelp: { ...text('body'), color: colors.textSecondary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  chipText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chipTextOn: { color: colors.textOnNavy },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
@@ -313,14 +313,14 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowName: {
     ...text('subtitle'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     flexShrink: 1,
   },
   price: { ...text('body'), color: colors.textSecondary },
   badge: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
     backgroundColor: colors.surfaceMuted,
     paddingHorizontal: spacing.sm,
@@ -347,6 +347,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.toggleOff,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

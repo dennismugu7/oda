@@ -19,7 +19,7 @@ import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, Field, FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, Row, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const cache = memoryCache<ShopProfile>();
 
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   removeLogo: { ...text('small'), color: colors.textSecondary, textDecorationLine: 'underline' },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   link: { ...text('body'), color: colors.textSecondary, flex: 1 },
-  linkSlug: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  linkSlug: { fontFamily: fonts.bold, color: colors.navy },
   change: { ...text('bodyStrong'), color: colors.navy, textDecorationLine: 'underline' },
   about: { minHeight: 72, textAlignVertical: 'top', paddingTop: spacing.sm },
   label: { ...text('bodyStrong'), color: colors.navy, marginBottom: spacing.xs },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  badgeText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  badgeText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnNavy },
   add: { ...text('bodyStrong'), color: colors.navy, textDecorationLine: 'underline' },
   sheetBody: { gap: spacing.sm, paddingVertical: spacing.sm },
   at: { ...text('bodyStrong'), color: colors.textSecondary },

@@ -1,5 +1,5 @@
 // Building blocks for the auth screens (designs 02, 03, 05 and the new forgot-password
-// screen): page layout, wordmark, fields, buttons and notices. Brand colours and Poppins
+// screen): page layout, wordmark, fields, buttons and notices. Brand colours and oda's fonts
 // everywhere (docs/design-changes.md).
 import Feather from '@expo/vector-icons/Feather';
 import { router } from 'expo-router';
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: colors.danger },
   // Android draws the placeholder off-centre when a TextInput has a lineHeight (and adds
-  // Poppins' font padding). No lineHeight, no font padding, no vertical padding, centred
+  // the font's padding). No lineHeight, no font padding, no vertical padding, centred
   // vertically: typed text, placeholder and the eye icon share one centre line.
   input: {
     fontFamily: text('body').fontFamily,

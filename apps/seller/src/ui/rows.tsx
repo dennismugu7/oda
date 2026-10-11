@@ -4,7 +4,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export type FeatherName = ComponentProps<typeof Feather>['name'];
 
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowText: { flex: 1 },
-  title: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  title: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   line: { ...text('body'), color: colors.textSecondary },
   value: { ...text('body'), color: colors.textSecondary, maxWidth: '45%' },
   pressed: { opacity: 0.85 },

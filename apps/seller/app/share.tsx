@@ -34,7 +34,7 @@ import { CollectionPoster, NewInPoster } from '@/share/Posters';
 import { Button, FormMessage } from '@/ui/auth';
 import { BrandIcon, StatusRing } from '@/ui/brandIcons';
 import { rowStyles } from '@/ui/rows';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const cache = memoryCache<ShareData>();
 
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  channelText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  channelText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.toggleOff },
   channelTextOn: { color: colors.navy },
   card: {
     backgroundColor: colors.surface,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   thumbNavy: { backgroundColor: colors.navy },
   thumbOrange: { backgroundColor: colors.primary },
-  thumbShop: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  thumbShop: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnNavy },
   thumbPhoto: { flex: 1, borderRadius: radii.sm, backgroundColor: colors.beige },
   thumbPill: {
     backgroundColor: colors.surface,
@@ -411,10 +411,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     alignItems: 'center',
   },
-  thumbPillText: { fontFamily: 'Poppins_700Bold', fontSize: 10, color: colors.navy },
-  thumbOverline: { fontFamily: 'Poppins_600SemiBold', fontSize: 10, color: colors.textOnPrimary },
+  thumbPillText: { fontFamily: fonts.bold, fontSize: 10, color: colors.navy },
+  thumbOverline: { fontFamily: fonts.semibold, fontSize: 10, color: colors.textOnPrimary },
   thumbHeadline: {
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 20,
     lineHeight: 24,
     color: colors.textOnPrimary,
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   imageTitle: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     marginTop: spacing.xs,
   },
@@ -454,18 +454,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   langOn: { backgroundColor: colors.navy },
-  langText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textSecondary },
+  langText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textSecondary },
   langTextOn: { color: colors.textOnNavy },
   captionBox: { backgroundColor: colors.surfaceMuted, borderRadius: radii.lg, padding: spacing.md },
   captionText: { ...text('body'), color: colors.text },
-  captionLink: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  captionLink: { fontFamily: fonts.bold, color: colors.navy },
   captionActions: { flexDirection: 'row', justifyContent: 'space-between' },
   textAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
-  textActionLabel: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  textActionLabel: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   linkCard: { flexDirection: 'row', alignItems: 'center' },
   muted: { ...text('body'), color: colors.textSecondary },
   link: { ...text('subtitle'), color: colors.textSecondary },
-  linkSlug: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  linkSlug: { fontFamily: fonts.bold, color: colors.navy },
   copyButton: {
     flexDirection: 'row',
     alignItems: 'center',

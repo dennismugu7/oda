@@ -11,7 +11,7 @@ import { growApi } from '@/insights/api';
 import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { useLoaded } from '@/settings/useLoaded';
 import { Card } from '@/ui/rows';
-import { colors, spacing, text } from '@/theme';
+import { colors, fonts, spacing, text } from '@/theme';
 
 export default function GuideScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +52,7 @@ export default function GuideScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  heading: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   body: { ...text('body'), color: colors.text, marginTop: spacing.xs },
-  bold: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  bold: { fontFamily: fonts.bold, color: colors.navy },
 });

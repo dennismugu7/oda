@@ -5,7 +5,14 @@ import { ImageResponse } from 'next/og';
 import { formatKsh } from '@oda/shared';
 import { colors } from '@oda/ui-tokens';
 import { HttpError } from '@/server/errors';
-import { linkFontSize, loadShop, previewFonts, shopData, shopLink } from '@/server/storefront';
+import {
+  linkFontSize,
+  loadShop,
+  PREVIEW_FONT,
+  previewFonts,
+  shopData,
+  shopLink,
+} from '@/server/storefront';
 
 export const alt = 'A product on oda';
 export const size = { width: 1200, height: 630 };
@@ -31,7 +38,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         height: '100%',
         display: 'flex',
         background: colors.navy,
-        fontFamily: 'Poppins',
+        fontFamily: PREVIEW_FONT,
       }}
     >
       <div style={{ display: 'flex', width: 630, height: 630, background: colors.beige }}>

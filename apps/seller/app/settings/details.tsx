@@ -13,7 +13,7 @@ import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
 import { Card } from '@/ui/rows';
-import { colors, spacing, text } from '@/theme';
+import { colors, fonts, spacing, text } from '@/theme';
 
 const cache = memoryCache<Details>();
 
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { ...text('title'), color: colors.primary },
   headText: { flex: 1 },
-  name: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  name: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   owner: { ...text('body'), color: colors.textSecondary },
   names: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },

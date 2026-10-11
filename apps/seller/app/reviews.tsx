@@ -31,7 +31,7 @@ import { Button, Field, FormMessage } from '@/ui/auth';
 import { LoadMoreFailed, OfflineBar } from '@/ui/offline';
 import { Sheet } from '@/ui/sheet';
 import { Star } from '@/ui/star';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   tabOn: { backgroundColor: colors.surface },
-  tabText: { ...text('body'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  tabText: { ...text('body'), fontFamily: fonts.bold, color: colors.toggleOff },
   tabTextOn: { color: colors.navy },
   body: { padding: spacing.lg, gap: spacing.md },
   headerGap: { gap: spacing.md },
@@ -673,8 +673,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold' },
-  name: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  avatarText: { ...text('subtitle'), fontFamily: fonts.bold },
+  name: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   starsRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   menu: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   item: { gap: spacing.xs },
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
   },
-  chipText: { ...text('small'), fontFamily: 'Poppins_600SemiBold', color: colors.navyMuted },
+  chipText: { ...text('small'), fontFamily: fonts.semibold, color: colors.navyMuted },
   tags: { ...text('small'), color: colors.textSecondary },
   photos: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
   photo: { width: 72, height: 72, borderRadius: radii.md, backgroundColor: colors.beige },
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   },
   reportedText: {
     ...text('small'),
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: fonts.semibold,
     color: colors.warningTextStrong,
   },
   noReply: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: spacing.sm,
   },
-  replyButtonText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  replyButtonText: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   reply: {
     backgroundColor: colors.background,
     borderRadius: radii.lg,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   replyHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  replyTitle: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  replyTitle: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   replyText: { ...text('body'), color: colors.textSecondary },
   link: { ...text('bodyStrong'), color: colors.primary },
   muted: { ...text('body'), color: colors.textSecondary },

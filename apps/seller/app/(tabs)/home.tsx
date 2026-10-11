@@ -40,7 +40,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ShopLinkText } from '@/ui/shopLink';
 import { SuspendedBanner } from '@/ui/suspended';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 type TodoTab = 'confirm' | 'send' | 'new';
 
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   link: { ...text('body'), color: colors.toggleOff, flex: 1 },
-  linkSlug: { fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  linkSlug: { fontFamily: fonts.bold, color: colors.textOnNavy },
   copy: {
     width: 44,
     height: 44,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
   },
-  shareText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  shareText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   body: { padding: spacing.lg, gap: spacing.md },
   loading: { marginTop: spacing.xl },
   card: {
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
-  pillText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  pillText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   attention: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  chipText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chipTextOn: { color: colors.textOnNavy },
   chipCount: {
     minWidth: 28,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipCountOn: { backgroundColor: colors.primary },
-  chipCountText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  chipCountText: { ...text('small'), fontFamily: fonts.bold, color: colors.navy },
   chipCountTextOn: { color: colors.textOnPrimary },
   none: { ...text('body'), color: colors.textSecondary, paddingVertical: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
@@ -512,17 +512,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.primary },
+  avatarText: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.primary },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowName: {
     ...text('subtitle'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     flexShrink: 1,
   },
   rowChip: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.warningText,
     backgroundColor: colors.warningTint,
     borderRadius: radii.sm,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  quickText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textOnPrimary },
+  quickText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textOnPrimary },
   seeAll: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -547,13 +547,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  seeAllText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  seeAllText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   salesHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   salesLabel: { ...text('body'), color: colors.textSecondary },
   salesTotal: { ...text('display'), color: colors.navy },
   change: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.green,
     backgroundColor: colors.greenTint,
     borderRadius: radii.pill,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   barToday: { backgroundColor: colors.primary },
   barFuture: { backgroundColor: colors.track },
   barLabel: { ...text('small'), color: colors.textSecondary },
-  barLabelToday: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  barLabelToday: { fontFamily: fonts.bold, color: colors.navy },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'center',

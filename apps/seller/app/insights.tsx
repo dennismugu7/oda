@@ -26,7 +26,7 @@ import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { rowStyles } from '@/ui/rows';
 import { ScreenHeader } from '@/ui/screenHeader';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const PERIOD_LABELS: Record<InsightPeriod, string> = {
   today: 'Today',
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabOn: { backgroundColor: colors.surface },
-  tabText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  tabText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.toggleOff },
   tabTextOn: { color: colors.navy },
   card: {
     backgroundColor: colors.surface,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   pillDown: { backgroundColor: colors.warningTint },
-  pillText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.green },
+  pillText: { ...text('small'), fontFamily: fonts.bold, color: colors.green },
   pillTextDown: { color: colors.warningTextStrong },
   empty: { ...text('body'), color: colors.textSecondary },
   chart: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     minWidth: 28,
     textAlign: 'center',
   },
-  barLabelNow: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  barLabelNow: { fontFamily: fonts.bold, color: colors.navy },
   stats: { flexDirection: 'row', gap: spacing.sm },
   stat: {
     flex: 1,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   sourceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 36 },
   sourceName: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     width: 96,
   },
@@ -341,6 +341,6 @@ const styles = StyleSheet.create({
   divider: { borderTopWidth: 1, borderTopColor: colors.border },
   thumb: { width: 48, height: 48, borderRadius: radii.md, backgroundColor: colors.beige },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  productName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy, flex: 1 },
+  productName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy, flex: 1 },
   sold: { ...text('body'), color: colors.textSecondary },
 });

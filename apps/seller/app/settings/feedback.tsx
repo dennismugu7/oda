@@ -18,7 +18,7 @@ import { goBack, SettingsLayout } from '@/settings/SettingsLayout';
 import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, FormMessage } from '@/ui/auth';
 import { Card, rowStyles, ToggleRow } from '@/ui/rows';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const cache = memoryCache<FeedbackForm>();
 
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  chipText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   chipTextOn: { color: colors.textOnNavy },
   message: {
     ...text('body'),
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  addText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('small'), fontFamily: fonts.bold, color: colors.navy },
   shotRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   shot: { width: 72, height: 96, borderRadius: radii.md, backgroundColor: colors.beige },
   remove: {

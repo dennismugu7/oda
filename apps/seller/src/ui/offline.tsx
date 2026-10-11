@@ -2,7 +2,7 @@
 // read-only and nothing is queued. `saved={false}` when there's no saved copy to show.
 import Feather from '@expo/vector-icons/Feather';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export function OfflineBar({ saved = true }: { saved?: boolean }) {
   return (
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  text: { ...text('small'), fontFamily: 'Poppins_600SemiBold', color: colors.textOnNavy },
+  text: { ...text('small'), fontFamily: fonts.semibold, color: colors.textOnNavy },
   more: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
     marginTop: spacing.sm,
   },
-  moreText: { ...text('small'), fontFamily: 'Poppins_600SemiBold', color: colors.textSecondary },
+  moreText: { ...text('small'), fontFamily: fonts.semibold, color: colors.textSecondary },
   pressed: { opacity: 0.85 },
 });

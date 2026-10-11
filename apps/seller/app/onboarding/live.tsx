@@ -43,7 +43,7 @@ import { setOnboardingState, useOnboarding, useSubmit } from '@/onboarding/useOn
 import { Button, FormMessage } from '@/ui/auth';
 import { BrandIcon, StatusRing, type Brand } from '@/ui/brandIcons';
 import { StepStatus } from '@/ui/onboarding';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 // Official brand marks for WhatsApp, Instagram and Facebook; TikTok needs written
 // permission, so a neutral icon with its name (decision #55).
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   logo: {
     flex: 1,
     textAlign: 'center',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: -1,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   },
   logoDot: { color: colors.greenBright },
   doneButton: { minHeight: 44, justifyContent: 'center' },
-  done: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  done: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xl },
   liveCheck: {
     width: 46,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   linkText: { ...text('body'), fontSize: 16, color: colors.toggleOff, flex: 1 },
-  linkSlug: { fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  linkSlug: { fontFamily: fonts.bold, color: colors.textOnNavy },
   copy: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -516,8 +516,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignSelf: 'flex-start',
   },
-  seeBuyersText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
-  copyText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  seeBuyersText: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.textOnNavy },
+  copyText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
 
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, marginTop: spacing.lg },
   shareRow: { flexDirection: 'row', gap: spacing.xs },
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     textAlign: 'center',
   },
-  shareLabelMain: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  shareLabelMain: { fontFamily: fonts.bold, color: colors.navy },
 
   card: {
     backgroundColor: colors.surface,
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
-  countText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  countText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.track, overflow: 'hidden' },
   trackFill: { height: 6, borderRadius: 3, backgroundColor: colors.green },
   item: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
   },
   itemMarkDone: { borderStyle: 'solid', backgroundColor: colors.green, borderColor: colors.green },
   itemBody: { flex: 1, gap: spacing.xs },
-  itemLabel: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  itemLabel: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   itemLabelDone: { color: colors.textSecondary },
   itemHelp: { ...text('body'), color: colors.textSecondary },
   itemButton: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   },
   itemButtonText: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textOnPrimary,
   },
 
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: spacing.xs,
   },
-  miniShop: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  miniShop: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnNavy },
   miniPhoto: {
     height: 64,
     borderRadius: radii.sm,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
     alignItems: 'center',
   },
-  miniOrderText: { fontFamily: 'Poppins_700Bold', fontSize: 10, color: colors.navy },
+  miniOrderText: { fontFamily: fonts.bold, fontSize: 10, color: colors.navy },
   postHead: { flex: 1, gap: spacing.xs },
   postTitle: { ...text('title'), fontSize: 18, color: colors.navy },
   postHint: { ...text('small'), color: colors.textSecondary },
@@ -651,9 +651,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   langOn: { backgroundColor: colors.navy },
-  langText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.textSecondary },
+  langText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.textSecondary },
   langTextOn: { color: colors.textOnNavy },
   another: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
-  anotherText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  anotherText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

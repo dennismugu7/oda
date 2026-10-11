@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from 'next';
-import { Poppins } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import { connection } from 'next/server';
 import { colors } from '@oda/ui-tokens';
 import './globals.css';
 
-const poppins = Poppins({
+// Inter for text, Bricolage Grotesque for headings (decision #102); both self-hosted by Next.
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-poppins',
+  variable: '--font-bricolage',
 });
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // scripts (proxy.ts, decision #81 c); a prerendered page would carry none and be blocked.
   await connection();
   return (
-    <html lang="en" className={poppins.variable}>
+    <html lang="en" className={`${inter.variable} ${bricolage.variable}`}>
       <body className="font-sans">{children}</body>
     </html>
   );

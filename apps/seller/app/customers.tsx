@@ -25,7 +25,7 @@ import { memoryCache } from '@/settings/useLoaded';
 import { Button, FormMessage } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 const FILTERS: { key: CustomerFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -271,9 +271,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navyRaised,
   },
   chipOn: { backgroundColor: colors.surface },
-  chipText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  chipText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.toggleOff },
   chipTextOn: { color: colors.navy },
-  chipCount: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.toggleOff },
+  chipCount: { ...text('small'), fontFamily: fonts.bold, color: colors.toggleOff },
   chipCountOn: { color: colors.textSecondary },
   listHead: { gap: spacing.md, marginBottom: spacing.md },
   sorted: { ...text('body'), color: colors.textSecondary },
@@ -301,9 +301,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { ...text('subtitle'), fontFamily: 'Poppins_700Bold' },
+  avatarText: { ...text('subtitle'), fontFamily: fonts.bold },
   rowText: { flex: 1 },
-  name: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  name: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   lineRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   line: { ...text('body'), color: colors.textSecondary },
   badge: {
@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 1,
   },
-  badgeText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.green },
+  badgeText: { ...text('small'), fontFamily: fonts.bold, color: colors.green },
   spent: { alignItems: 'flex-end' },
-  amount: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  amount: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   spentLabel: { ...text('small'), color: colors.textSecondary },
   wa: {
     width: 44,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.xl,
   },
-  emptyTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  emptyTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   emptyText: { ...text('body'), color: colors.textSecondary, textAlign: 'center' },
   pressed: { opacity: 0.85 },
 });

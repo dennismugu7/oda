@@ -17,7 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import type { PhotoInput } from './api';
 import type { Picked } from '@/onboarding/photos';
 import { DragBoundary } from '@/ui/dragBoundary';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export interface Slot {
   id: string;
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     alignItems: 'center',
   },
-  coverText: { ...text('small'), fontFamily: 'Poppins_700Bold', color: colors.textOnNavy },
+  coverText: { ...text('small'), fontFamily: fonts.bold, color: colors.textOnNavy },
   add: {
     backgroundColor: colors.surface,
     borderWidth: 1.5,
@@ -192,6 +192,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

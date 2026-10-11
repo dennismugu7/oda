@@ -1,4 +1,4 @@
-// 05 Sign in. Changes from the image: no Google/Facebook buttons; Poppins and brand colours.
+// 05 Sign in. Changes from the image: no Google/Facebook buttons; oda's fonts and brand colours.
 // Also opened by the web page 08's "Open oda app" link (oda://sign-in).
 import Feather from '@expo/vector-icons/Feather';
 import { router, useLocalSearchParams } from 'expo-router';

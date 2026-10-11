@@ -26,7 +26,7 @@ import { Button, FormMessage, InfoNote } from '@/ui/auth';
 import { Chip } from '@/ui/onboarding';
 import { ScreenHeader } from '@/ui/screenHeader';
 import { DragBoundary } from '@/ui/dragBoundary';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 /** How far each move arrow's target reaches into the row's padding. */
 const ARROW_SLOP = spacing.md;
@@ -322,12 +322,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   rowText: { flex: 1 },
-  rowName: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  rowName: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   muted: { color: colors.textSecondary },
   rowCount: { ...text('body'), color: colors.textSecondary },
   badge: {
     ...text('small'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
     backgroundColor: colors.surfaceMuted,
     paddingHorizontal: spacing.sm,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.toggleOff,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   addRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   addInput: {
     flex: 1,

@@ -14,7 +14,7 @@ import { useLoaded } from '@/settings/useLoaded';
 import { FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
-import { colors, radii, spacing, text } from '@/theme';
+import { colors, fonts, radii, spacing, text } from '@/theme';
 
 export default function PaymentsScreen() {
   const { data, error, offline, reload, keep } = useLoaded(settingsApi.payments, paymentsCache);
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boxTitle: { ...text('subtitle'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  boxTitle: { ...text('subtitle'), fontFamily: fonts.bold, color: colors.navy },
   boxLine: { ...text('body'), color: colors.textSecondary },
   radio: {
     width: 22,
@@ -290,13 +290,13 @@ const styles = StyleSheet.create({
   detailLabel: { ...text('body'), color: colors.textSecondary },
   detailValue: {
     ...text('bodyStrong'),
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: fonts.bold,
     color: colors.navy,
     flexShrink: 1,
   },
   example: { backgroundColor: colors.surfaceMuted, borderRadius: radii.lg, padding: spacing.md },
   exampleText: { ...text('body'), color: colors.textSecondary },
-  exampleStrong: { fontFamily: 'Poppins_700Bold', color: colors.navy },
+  exampleStrong: { fontFamily: fonts.bold, color: colors.navy },
   warn: { ...text('small'), color: colors.warningTextStrong },
   addCard: {
     backgroundColor: colors.surface,
@@ -316,6 +316,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.toggleOff,
   },
-  addText: { ...text('bodyStrong'), fontFamily: 'Poppins_700Bold', color: colors.navy },
+  addText: { ...text('bodyStrong'), fontFamily: fonts.bold, color: colors.navy },
   pressed: { opacity: 0.85 },
 });

@@ -19,11 +19,13 @@ import type { Email } from './transport';
 // Buyer emails (M5, decision #61 f): the receipt and "you cancelled", with the order link; M6
 // adds the seller-triggered updates (confirmed, accepted, sent, delivered, cancelled by the
 // seller, expired, refunded).
-// Plain HTML tables with inline styles, which every mail app renders. Poppins where the
-// mail app allows web fonts, Arial otherwise. Brand always lowercase "oda". No social icons
+// Plain HTML tables with inline styles, which every mail app renders. Inter for text and
+// Bricolage Grotesque for headings where the mail app allows web fonts (decision #102), Arial
+// otherwise. Brand always lowercase "oda". No social icons
 // and no "Contact us" until M8 (decision #43).
 
-const FONT = "Poppins, 'Segoe UI', Roboto, Arial, sans-serif";
+const FONT = "Inter, 'Segoe UI', Roboto, Arial, sans-serif";
+const HEADING_FONT = `'Bricolage Grotesque', ${FONT}`;
 
 function escapeHtml(value: string): string {
   return value
@@ -35,7 +37,7 @@ function escapeHtml(value: string): string {
 }
 
 function wordmark(size: number): string {
-  return `<span style="font-family:${FONT};font-size:${size}px;font-weight:700;letter-spacing:-1px;color:${colors.primary};">oda</span><span style="font-family:${FONT};font-size:${size}px;font-weight:700;color:${colors.greenBright};">.</span>`;
+  return `<span style="font-family:${HEADING_FONT};font-size:${size}px;font-weight:700;letter-spacing:-1px;color:${colors.primary};">oda</span><span style="font-family:${HEADING_FONT};font-size:${size}px;font-weight:700;color:${colors.greenBright};">.</span>`;
 }
 
 function layout(title: string, body: string): string {
@@ -46,7 +48,7 @@ function layout(title: string, body: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>${escapeHtml(title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:${colors.background};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${colors.background};">
@@ -71,7 +73,7 @@ export function verificationCodeEmail(to: string, code: string): Email {
   const minutes = Math.round(OTP_TTL_SECONDS / 60);
   const html = layout(
     'Your oda code',
-    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Here's your one-time verification code</td></tr>
+    `<tr><td align="center" style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Here's your one-time verification code</td></tr>
 <tr><td align="center" style="padding-bottom:16px;">
 <div style="display:inline-block;background:${colors.surfaceMuted};border-radius:16px;padding:16px 32px;font-size:34px;line-height:42px;font-weight:700;letter-spacing:8px;color:${colors.text};">${escapeHtml(code)}</div>
 </td></tr>
@@ -96,7 +98,7 @@ export function resetPasswordEmail(to: string, url: string): Email {
   const safeUrl = escapeHtml(url);
   const html = layout(
     'Reset your oda password',
-    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Reset your password</td></tr>
+    `<tr><td align="center" style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Reset your password</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">We received a request to reset your password. Follow the link below to choose a new one. It works for ${hours} hour.</td></tr>
 <tr><td align="center" style="padding-bottom:24px;">
 <a href="${safeUrl}" style="display:inline-block;background:${colors.primary};color:${colors.textOnPrimary};text-decoration:none;font-weight:600;font-size:16px;line-height:24px;padding:14px 32px;border-radius:999px;">Reset password</a>
@@ -122,7 +124,7 @@ export function passwordChangedEmail(to: string): Email {
     "Your oda password was just changed. If this wasn't you, reset your password from the oda app's sign-in screen (Forgot password) and email support@mugu-labs.com.";
   const html = layout(
     'Your oda password was changed',
-    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Your password was changed</td></tr>
+    `<tr><td align="center" style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Your password was changed</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};">${escapeHtml(line)}</td></tr>`,
   );
   const text = `Your password was changed
@@ -142,7 +144,7 @@ export function deleteAccountLinkEmail(to: string, url: string): Email {
   const notYou = "If you didn't ask for this, ignore this email: nothing changes.";
   const html = layout(
     'Delete your oda account',
-    `<tr><td align="center" style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Delete your oda account?</td></tr>
+    `<tr><td align="center" style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:24px;">Delete your oda account?</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">${escapeHtml(what)}</td></tr>
 <tr><td align="center" style="padding-bottom:24px;">
 <a href="${safeUrl}" style="display:inline-block;background:${colors.danger};color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;line-height:24px;padding:14px 32px;border-radius:999px;">Review and confirm</a>
@@ -284,7 +286,7 @@ ${item.link ? `<div style="font-size:14px;line-height:21px;"><a href="${escapeHt
 </td></tr>`;
   const html = layout(
     subject,
-    `<tr><td style="font-size:22px;line-height:30px;font-weight:700;padding-bottom:8px;">Support digest</td></tr>
+    `<tr><td style="font-family:${HEADING_FONT};font-size:22px;line-height:30px;font-weight:700;padding-bottom:8px;">Support digest</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:16px;">New since the last digest: ${escapeHtml(counts.join(', '))}. Reply to sellers and buyers outside oda (email or WhatsApp).</td></tr>
 ${sections
   .map(
@@ -377,7 +379,7 @@ export function orderReceiptEmail(o: OrderEmailData): Email {
   const items = itemRows(o);
   const html = layout(
     `Your order #${o.number} from ${o.shopName}`,
-    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order placed!</td></tr>
+    `<tr><td style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order placed!</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, thanks for ordering from ${shop}. This is your order <strong style="color:${colors.text};">#${o.number}</strong>.</td></tr>
 ${items.html}
 <tr><td style="font-size:15px;line-height:24px;padding-bottom:24px;">${escapeHtml(nextStep)}</td></tr>
@@ -415,7 +417,7 @@ export function orderCancelledEmail(o: OrderEmailData & { claimed: boolean }): E
     : 'You haven’t been charged for this order.';
   const html = layout(
     `You cancelled order #${o.number}`,
-    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order cancelled</td></tr>
+    `<tr><td style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">Order cancelled</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:24px;">Hi ${escapeHtml(o.buyerName)}, you cancelled your order <strong style="color:${colors.text};">#${o.number}</strong> from ${shop} (${formatKsh(o.total)}).</td></tr>
 <tr><td style="font-size:15px;line-height:24px;padding-bottom:24px;">${escapeHtml(money)}</td></tr>
 ${orderButton(o.link, 'See your order')}`,
@@ -558,7 +560,7 @@ export function orderUpdateEmail(
   }
   const html = layout(
     subject,
-    `<tr><td style="font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">${escapeHtml(heading)}</td></tr>
+    `<tr><td style="font-family:${HEADING_FONT};font-size:26px;line-height:34px;font-weight:700;padding-bottom:8px;">${escapeHtml(heading)}</td></tr>
 <tr><td style="font-size:15px;line-height:24px;color:${colors.textSecondary};padding-bottom:16px;">Hi ${escapeHtml(o.buyerName)},</td></tr>
 ${lines.map((l) => `<tr><td style="font-size:15px;line-height:24px;padding-bottom:16px;">${escapeHtml(l)}</td></tr>`).join('\n')}
 ${orderButton(link, button)}`,
