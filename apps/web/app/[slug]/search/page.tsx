@@ -104,7 +104,7 @@ export default async function Search({ params, searchParams }: Props) {
         </Link>
         <form
           action={`/${shop.slug}/search`}
-          className="flex flex-1 items-center gap-2 rounded-pill border-2 border-navy px-4 focus-within:ring-2 focus-within:ring-primary"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-pill border-2 border-navy px-4 focus-within:ring-2 focus-within:ring-primary"
         >
           <label className="sr-only" htmlFor="q">
             Search {shop.name}
