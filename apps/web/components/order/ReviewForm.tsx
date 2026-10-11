@@ -7,6 +7,7 @@
 // the stored bytes again when the review is saved. Within 7 days the same form edits it.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CameraIcon, ShieldCheckIcon, XIcon } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { RATING_LABELS, REVIEW_TAGS, REVIEW_TEXT_MAX } from '@oda/shared';
 import { SafeImg } from '@/components/SafeImg';
@@ -270,14 +271,7 @@ export function ReviewForm({
           aria-label="Close and go back to your order"
           className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M6 6l12 12M18 6L6 18"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-            />
-          </svg>
+          <XIcon size={22} aria-hidden="true" />
         </Link>
       </div>
 
@@ -430,15 +424,7 @@ export function ReviewForm({
                         onClick={() => files.current[item.orderItemId]?.click()}
                         className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-lg border border-dashed border-text-muted px-4 text-body text-text-secondary disabled:opacity-60"
                       >
-                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                          <path
-                            d="M4 8h3l2-2h6l2 2h3v11H4zM12 17a4 4 0 100-8 4 4 0 000 8z"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <CameraIcon size={20} aria-hidden="true" />
                         {s.uploading ? 'Adding photo…' : 'Add photo'}
                       </button>
                     </>
@@ -474,22 +460,7 @@ export function ReviewForm({
             {busy ? 'Saving…' : existing ? 'Save changes' : 'Submit review'}
           </button>
           <p className="mt-2 flex items-center justify-center gap-1.5 text-small text-text-secondary">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              aria-hidden="true"
-              className="text-green"
-            >
-              <path
-                d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM8.5 12l2.5 2.5 4.5-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </svg>
+            <ShieldCheckIcon size={16} aria-hidden="true" className="text-green" />
             Shows as <span className="font-semibold text-navy">{displayName}</span> · Verified buyer
           </p>
         </div>

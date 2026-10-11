@@ -8,6 +8,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ShieldCheckIcon } from '@phosphor-icons/react';
 import { formatKsh, normalizeKePhone } from '@oda/shared';
 import { cartCount, readSource, writeSource, type CartLine } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
@@ -597,21 +598,7 @@ export function CheckoutForm({
           </button>
         )}
         <p className="mt-3 flex gap-2 border-t border-border pt-3 text-small text-text-secondary">
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            className="mt-0.5 shrink-0"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ShieldCheckIcon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
           {/* Matches what sellers can do (Customers list, WhatsApp) and /privacy (#98). */}
           {/* One flex item, so the Privacy link stays inline in the sentence (a11y.spec). */}
           <span>

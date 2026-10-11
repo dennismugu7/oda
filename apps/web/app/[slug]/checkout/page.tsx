@@ -4,6 +4,7 @@
 // the order is priced again when it's placed.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CaretLeftIcon, LockIcon } from '@phosphor-icons/react/dist/ssr';
 import { CheckoutForm } from '@/components/store/CheckoutForm';
 import { loadShop, restOf, shopData, takingOrders } from '@/server/storefront';
 
@@ -33,23 +34,11 @@ export default async function Checkout({ params, searchParams }: Props) {
           aria-label="Back to your cart"
           className="flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-navy"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              d="M15 5l-7 7 7 7"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <CaretLeftIcon size={22} aria-hidden="true" />
         </Link>
         <h1 className="flex-1 text-headline text-navy">Checkout</h1>
         <span className="flex items-center gap-1 text-body-strong text-green">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <rect x="5" y="10" width="14" height="10" rx="2" fill="currentColor" />
-            <path d="M8 10V7a4 4 0 018 0v3" fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
+          <LockIcon size={18} aria-hidden="true" />
           Secure
         </span>
       </div>

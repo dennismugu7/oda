@@ -6,6 +6,7 @@
 // anything sold out, gone or repriced, blocking checkout until it's resolved (spec §6.3).
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { MinusIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react';
 import { formatKsh } from '@oda/shared';
 import { cartCount, cartTotal, type CartLine } from '@/lib/store/cart';
 import { reconcile, type CurrentProduct } from '@/lib/store/reconcile';
@@ -229,15 +230,7 @@ export function CartView({
                   onClick={() => setLineQty(i, 0)}
                   className="-mt-1 -mr-2 flex size-11 items-center justify-center text-text-secondary"
                 >
-                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                    <path
-                      d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <TrashIcon size={20} aria-hidden="true" />
                 </button>
               </div>
               {c.line.colour || c.line.size ? (
@@ -259,9 +252,9 @@ export function CartView({
                     type="button"
                     aria-label={`One less ${c.line.name}`}
                     onClick={() => setLineQty(i, c.line.qty - 1)}
-                    className="size-11 text-title text-navy"
+                    className="flex size-11 items-center justify-center text-navy"
                   >
-                    −
+                    <MinusIcon size={18} aria-hidden="true" />
                   </button>
                   <span aria-live="polite" className="w-6 text-center text-body-strong text-navy">
                     <span className="sr-only">Quantity </span>
@@ -271,9 +264,9 @@ export function CartView({
                     type="button"
                     aria-label={`One more ${c.line.name}`}
                     onClick={() => setLineQty(i, c.line.qty + 1)}
-                    className="size-11 text-title text-navy"
+                    className="flex size-11 items-center justify-center text-navy"
                   >
-                    +
+                    <PlusIcon size={18} aria-hidden="true" />
                   </button>
                 </div>
               </div>

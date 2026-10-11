@@ -36,7 +36,7 @@ test('browse → search → product → cart', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Add to cart · KSh 5,000' })).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('02-product-390x844.png'), fullPage: true });
   await page.getByRole('button', { name: 'Add to cart · KSh 5,000' }).click();
-  await page.getByRole('link', { name: 'View cart →' }).click();
+  await page.getByRole('link', { name: 'View cart', exact: true }).click();
 
   // Cart (03): both lines, checked with the server, subtotal KSh 6,800.
   await expect(page.getByRole('heading', { name: 'Your cart' })).toBeVisible();

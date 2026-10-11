@@ -4,6 +4,13 @@
 // icon with its count, and colour, size, quantity and "Add to cart · KSh x" (spec §6.2).
 import Link from 'next/link';
 import { useRef, useState } from 'react';
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  MinusIcon,
+  PlusIcon,
+  ShoppingBagIcon,
+} from '@phosphor-icons/react';
 import { formatKsh } from '@oda/shared';
 import { cartCount, MAX_QTY } from '@/lib/store/cart';
 import { useCart } from './useShopStore';
@@ -73,15 +80,7 @@ export function CartIcon({ shopId, slug }: { shopId: string; slug: string }) {
       aria-label={count ? `Cart, ${count} items` : 'Cart'}
       className="relative flex size-12 items-center justify-center rounded-pill bg-surface text-navy shadow-sm"
     >
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path
-          d="M6 8h12l-1 12H7L6 8zm3 0a3 3 0 016 0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <ShoppingBagIcon size={22} aria-hidden="true" />
       {count ? (
         <span className="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-pill bg-primary text-small font-bold text-text-on-primary">
           {count}
@@ -180,16 +179,8 @@ export function ProductBuy({
                       aria-hidden="true"
                       className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-pill bg-navy text-text-on-navy"
                     >
-                      <svg viewBox="0 0 24 24" width="12" height="12">
-                        <path
-                          d="M5 12.5l4.5 4.5L19 7.5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      {/* Bold: a regular stroke is under 1 px at this size. */}
+                      <CheckIcon size={12} weight="bold" aria-hidden="true" />
                     </span>
                   ) : null}
                 </button>
@@ -240,9 +231,9 @@ export function ProductBuy({
             </p>
             <Link
               href={`/${slug}/cart`}
-              className="flex h-12 items-center rounded-pill bg-primary px-5 text-button text-text-on-primary"
+              className="flex h-12 items-center gap-2 rounded-pill bg-primary px-5 text-button text-text-on-primary"
             >
-              View cart →
+              View cart <ArrowRightIcon size={18} aria-hidden="true" />
             </Link>
           </div>
         ) : soldOut || !canOrder ? (
@@ -256,9 +247,9 @@ export function ProductBuy({
                 type="button"
                 aria-label="One less"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="size-12 text-title text-navy"
+                className="flex size-12 items-center justify-center text-navy"
               >
-                −
+                <MinusIcon size={20} aria-hidden="true" />
               </button>
               <span aria-live="polite" className="w-6 text-center text-subtitle text-navy">
                 {qty}
@@ -267,9 +258,9 @@ export function ProductBuy({
                 type="button"
                 aria-label="One more"
                 onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}
-                className="size-12 text-title text-navy"
+                className="flex size-12 items-center justify-center text-navy"
               >
-                +
+                <PlusIcon size={20} aria-hidden="true" />
               </button>
             </div>
             <button

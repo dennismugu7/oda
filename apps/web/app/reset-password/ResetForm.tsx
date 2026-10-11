@@ -1,24 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { useId, useState } from 'react';
 import { passwordChecks, passwordProblem } from '@oda/shared';
 
 type Status = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
-
-function EyeIcon({ open }: { open: boolean }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-      <path
-        d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-      {open ? null : <path d="M4 4l16 16" stroke="currentColor" strokeWidth="1.8" />}
-    </svg>
-  );
-}
 
 function PasswordField(props: {
   label: string;
@@ -56,7 +43,11 @@ function PasswordField(props: {
           aria-label={visible ? 'Hide password' : 'Show password'}
           className="text-text-secondary flex h-11 w-11 items-center justify-center"
         >
-          <EyeIcon open={!visible} />
+          {visible ? (
+            <EyeSlashIcon size={24} aria-hidden="true" />
+          ) : (
+            <EyeIcon size={24} aria-hidden="true" />
+          )}
         </button>
       </div>
       {props.error ? (

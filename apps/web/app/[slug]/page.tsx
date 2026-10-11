@@ -4,6 +4,7 @@
 // visit count run in the browser. `?c=` filters by category, `?q=` searches.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MagnifyingGlassIcon, SlidersHorizontalIcon } from '@phosphor-icons/react/dist/ssr';
 import { formatKsh, storeQuery } from '@oda/shared';
 import { CartBar, ShareButton, VisitBeacon } from '@/components/store/interactive';
 import { ProductGrid } from '@/components/store/ProductGrid';
@@ -121,21 +122,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
           action={`/${shop.slug}/search`}
           className="flex items-center gap-2 rounded-pill border border-border px-4 focus-within:border-navy focus-within:ring-2 focus-within:ring-navy"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="20"
-            height="20"
-            aria-hidden="true"
-            className="shrink-0 text-navy"
-          >
-            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path
-              d="M16.5 16.5L21 21"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <MagnifyingGlassIcon size={20} aria-hidden="true" className="shrink-0 text-navy" />
           <label className="sr-only" htmlFor="q">
             Search this shop
           </label>
@@ -151,16 +138,7 @@ export default async function ShopHome({ params, searchParams }: Props) {
             aria-label="Filters and sort"
             className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-pill text-navy"
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                d="M4 7h10M18 7h2M4 17h4M12 17h8"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
-              <circle cx="10" cy="17" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
-            </svg>
+            <SlidersHorizontalIcon size={20} aria-hidden="true" />
           </Link>
         </form>
       </div>
