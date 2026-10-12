@@ -1,6 +1,8 @@
 // Demo Duka's sample orders (M5, docs/m5-plan.md → Demo shop): one order in each state the
 // buyer pages show, made only through insertOrder() / transitionOrder() (the same machine as
-// real orders), and replaced on every run so they're always in their intended state.
+// real orders), and replaced on every run so they're always in their intended state. One is
+// arranged with the buyer (decision #110): a manual order, since Demo Duka lists delivery areas
+// and pickup (a buyer can only arrange delivery with a shop that lists neither).
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import type { SellerCtx } from '../authz';
@@ -20,8 +22,10 @@ type Step = TransitionAction & { by: 'buyer' | 'seller' | 'system' };
 interface Sample {
   label: string;
   buyer: string;
-  kind: 'buyer_pay_now' | 'buyer_pay_on_delivery';
+  kind: 'buyer_pay_now' | 'buyer_pay_on_delivery' | 'manual_pay_on_delivery';
   pickup?: boolean;
+  /** Arranged with the buyer (decision #110), with the buyer's note. */
+  arranged?: string;
   product: string;
   size?: string;
   colour?: string;
@@ -144,6 +148,16 @@ const SAMPLES: Sample[] = [
     steps: [{ by: 'system', type: 'autoExpire' }],
     placedAgo: 3 * DAY,
   },
+  {
+    label: 'Arranged with the buyer (pay on delivery, ready to collect)',
+    buyer: 'Jabali (demo buyer)',
+    kind: 'manual_pay_on_delivery',
+    arranged: 'Near the matatu stage, after 5pm',
+    product: 'Demo maxi dress',
+    size: 'L',
+    steps: [{ by: 'seller', type: 'markSent', sentMethod: 'pickup' }],
+    placedAgo: 1 * DAY,
+  },
 ];
 
 const STEP_COLUMNS = {
@@ -194,9 +208,11 @@ export async function resetSampleOrders(
       kind: s.kind,
       source: 'wa',
       buyer: { name: s.buyer, phone: SAMPLE_BUYER_PHONE, whatsapp: true, email: null },
-      fulfilment: s.pickup
-        ? { kind: 'pickup' }
-        : { kind: 'delivery', areaId: cbd!.id, addressText: 'Demo street 1, Demo town' },
+      fulfilment: s.arranged
+        ? { kind: 'arranged', note: s.arranged }
+        : s.pickup
+          ? { kind: 'pickup' }
+          : { kind: 'delivery', areaId: cbd!.id, addressText: 'Demo street 1, Demo town' },
       lines: [{ productId: product.id, qty: 1, size: s.size ?? null, colour: s.colour ?? null }],
     };
     const { order } = await insertOrder(db, input);

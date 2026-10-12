@@ -1,6 +1,6 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { backdateOrder, demoTokens } from '../test/regressionDb';
+import { backdateOrder, demoTokens, removeWayToPay } from '../test/regressionDb';
 import {
   cron,
   emailLink,
@@ -16,8 +16,9 @@ import {
   tokenOf,
 } from './lib';
 
-// M10 CP6 · the full regression on staging (decision #92), in the order of
-// docs/regression-script.md: Sitting 1 (sign-up, onboarding, catalogue, the shop on the web),
+// M10 CP6 · the full regression on staging (decision #92), updated for the release-0.5.0 stack
+// (Google sign-in #107, TikTok mark #108, app fixes #109, optional delivery #110), in the order
+// of docs/regression-script.md: Sitting 1 (sign-up, onboarding, catalogue, the shop on the web),
 // Sitting 2 (orders end to end), Sitting 3 (reviews, grow and manage, settings, suspend,
 // delete). Seller steps are the seller app's own API calls; buyer steps run in a browser at
 // 390 × 844. Shops are this run's own (reg-<run id>-a/-b); the workflow's clean-up step
@@ -193,19 +194,100 @@ test('Sitting 1 · 1B Onboarding (M2)', async () => {
     const done = await a.ok('POST', '/api/onboarding/complete', {});
     expect(done.done).toBe(true);
   });
-  await test.step('1.13 Home: no orders yet', async () => {
+  await test.step('1.13 Home: no orders yet, and no "not taking orders" banner', async () => {
     const home = await a.ok('GET', '/api/home');
     expect(home.hasOrders).toBe(false);
+    expect(home.ordering.blockers).toEqual([]);
   });
 });
 
 test('Sitting 1 · 1C Delivery and catalogue (M3, M6)', async ({ page }) => {
-  await test.step('1.14 Before delivery options: not taking orders yet', async () => {
+  await test.step('1.14 No delivery options: the shop takes orders (decision #110)', async () => {
     const delivery = await a.ok('GET', '/api/delivery');
-    expect(delivery.hasDeliveryOption).toBe(false);
+    expect(delivery).toMatchObject({ hasDeliveryOption: false, arrangeDelivery: false });
+    expect((await a.ok('GET', '/api/home')).ordering.blockers).toEqual([]);
     await page.goto(`/${A.slug}`);
-    await expect(page.getByText(/Not taking orders yet/)).toBeVisible();
-    await shot(page, '1.14-not-taking-orders');
+    await expect(page.getByText(/Not taking orders yet/)).toHaveCount(0);
+    await expect(page.getByText('Delivery arranged with the seller after you order')).toBeVisible();
+    await shot(page, '1.14-no-delivery-options');
+  });
+  await test.step('1.14a Payments: On delivery turned on (a Till alone means pay now only)', async () => {
+    const before = await a.ok('GET', '/api/payments');
+    expect(before.acceptsPayBefore).toBe(true);
+    expect(before.acceptsPayOnDelivery).toBe(false);
+    const after = await a.ok('PATCH', '/api/payments', { acceptsPayOnDelivery: true });
+    expect(after.acceptsPayOnDelivery).toBe(true);
+  });
+  await test.step('1.14b Arranged order, end to end: checkout, order page, accept, Buyer collects, delivered', async () => {
+    await addDress(page);
+    await page.getByRole('link', { name: 'Checkout' }).click();
+    await expect(page.getByText('The seller will contact you to arrange delivery')).toBeVisible();
+    await expect(page.getByLabel('Area, street or building')).toHaveCount(0);
+    // Kenya's flag before +254 (#109 b, #110 h): the real file, loaded, whole at 20 × 15.
+    const flag = page.locator('img[src="/flags/ke.svg"]');
+    await expect(flag).toBeVisible();
+    await expect
+      .poll(() => flag.evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBeGreaterThan(0);
+    expect(await flag.boundingBox()).toMatchObject({ width: 20, height: 15 });
+    await page.getByLabel('Your name').fill('Buyer Arranged');
+    await page.getByLabel('Phone number').fill('712 000 009');
+    await page.getByLabel('Note for the seller (optional)').fill('Near Yaya Centre, after 5pm');
+    await page.getByRole('radio', { name: /Pay on delivery/ }).check();
+    await expect(page.getByText('Pay when you get your order.')).toBeVisible();
+    await expect(page.getByText('Not included')).toBeVisible();
+    await shot(page, '1.14b-checkout-arranged');
+    await page.getByRole('button', { name: `Place order · ${KSH(1500)}` }).click();
+    await expect(page).toHaveURL(/\/o\/[A-Za-z0-9_-]{12}$/);
+    tokens.arranged = page.url().split('/o/')[1]!;
+    mask(tokens.arranged);
+    await expect(page.getByText(`Delivery · arranged with ${A.name}`)).toBeVisible();
+    await expect(page.getByText('Your note: Near Yaya Centre, after 5pm')).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: new RegExp(`Message ${A.name} to arrange delivery`) }),
+    ).toBeVisible();
+    await shot(page, '1.14b-order-arranged');
+    const order = await a.latestOrder();
+    ids.arranged = order.id;
+    const detail = await a.ok('GET', `/api/orders/${order.id}`);
+    expect(detail).toMatchObject({ fulfilment: 'arranged', deliveryFee: 0, total: 1500 });
+    // An older app (no X-Oda-App-Features) gets it as a delivery "Arranged with buyer" (#110 f).
+    const old = await a.request.get(`/api/orders/${order.id}`, {
+      headers: { 'expo-origin': 'oda://', authorization: `Bearer ${a.token}` },
+    });
+    expect(await old.json()).toMatchObject({
+      fulfilment: 'delivery',
+      deliveryAreaName: 'Arranged with buyer',
+    });
+    await a.action(order.id, { type: 'accept' });
+    const sent = await a.action(order.id, { type: 'markSent', sentMethod: 'pickup' });
+    expect(sent.whatsapp.text).toContain('is ready to collect, as we arranged');
+    await page.reload();
+    await expect(page.getByText('Ready to collect').first()).toBeVisible();
+    await shot(page, '1.14b-ready-to-collect');
+    const done = await a.action(order.id, { type: 'markDelivered', collected: true });
+    expect(done.order).toMatchObject({ status: 'delivered', paymentStatus: 'paid' });
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Delivered' })).toBeVisible();
+  });
+  await test.step('1.14c “I’ll arrange delivery with buyers” ticks “Add delivery options”', async () => {
+    const state = await a.ok('POST', '/api/onboarding/checklist', { item: 'arrange_delivery' });
+    expect(state.checklist.items.find((i: { id: string }) => i.id === 'delivery')).toMatchObject({
+      done: true,
+    });
+    expect((await a.ok('GET', '/api/delivery')).arrangeDelivery).toBe(true);
+  });
+  await test.step('1.14d The flag and the TikTok mark served as published (#108, #109 b)', async () => {
+    const sha = async (path: string) =>
+      createHash('sha256')
+        .update(await (await api.get(path)).body())
+        .digest('hex');
+    expect(await sha('/flags/ke.svg')).toBe(
+      '699163d87382eb969d8a26d4ce1a99a00264e8b7b95276abf585476506f46e82',
+    );
+    expect(await sha('/brands/tiktok-icon-black-circle.png')).toBe(
+      'a21b43e31bb9def6d01c8c433a577353ae3efc8003a6257e8f3db3fd2dc94e61',
+    );
   });
   await test.step('1.15 Kilimani KSh 200 by rider, and pickup at Yaya Centre', async () => {
     const view = await a.ok(
@@ -222,12 +304,32 @@ test('Sitting 1 · 1C Delivery and catalogue (M3, M6)', async ({ page }) => {
     });
     expect(after.hasDeliveryOption).toBe(true);
   });
-  await test.step('1.15b Payments: On delivery turned on (a Till alone means pay now only)', async () => {
-    const before = await a.ok('GET', '/api/payments');
-    expect(before.acceptsPayBefore).toBe(true);
-    expect(before.acceptsPayOnDelivery).toBe(false);
-    const after = await a.ok('PATCH', '/api/payments', { acceptsPayOnDelivery: true });
-    expect(after.acceptsPayOnDelivery).toBe(true);
+  await test.step('1.15a With areas and pickup, checkout offers only those (no arranged)', async () => {
+    const lines = [{ productId: ids.dress, qty: 1, size: 'M' }];
+    const quote = await (await api.post(`/api/shops/${A.slug}/quote`, { data: { lines } })).json();
+    expect(quote.options.map((o: { kind: string }) => o.kind)).toEqual(['delivery', 'pickup']);
+    const res = await api.post(`/api/shops/${A.slug}/orders`, {
+      data: {
+        idempotencyKey: `reg-${runId}-${randomBytes(8).toString('hex')}`,
+        buyer: { name: 'Api Buyer', phone: '0712000010', whatsapp: true },
+        fulfilment: { kind: 'arranged' },
+        payment: 'pay_on_delivery',
+        lines,
+        expectedTotal: 1500,
+      },
+    });
+    expect(res.status()).toBe(422);
+  });
+  await test.step('1.15c Delete area (the “Delete area?” sheet’s action): a temporary area goes', async () => {
+    const view = await a.ok(
+      'POST',
+      '/api/delivery/areas',
+      { name: 'Temp area', fee: 100, method: 'rider' },
+      201,
+    );
+    const temp = view.areas.find((x: { name: string }) => x.name === 'Temp area');
+    const after = await a.ok('DELETE', `/api/delivery/areas/${temp.id}`);
+    expect(after.areas.map((x: { name: string }) => x.name)).toEqual(['Kilimani']);
   });
   await test.step('1.16 Categories Dresses and Tops; Tops moved up', async () => {
     ids.dresses = (await a.ok('POST', '/api/categories', { name: 'Dresses' }, 201)).id;
@@ -622,6 +724,13 @@ test('Sitting 2 · 2D Demo Duka’s states and expiry (M5, M6)', async ({ page, 
     await page.goto(`/o/${demo.Esther}`);
     await expect(page.getByText('Sent out').first()).toBeVisible();
   });
+  await test.step('2.24b Arranged with the buyer: "Ready to collect" and the buyer’s note (#110)', async () => {
+    await page.goto(`/o/${demo.Jabali}`);
+    await expect(page.getByText('Ready to collect').first()).toBeVisible();
+    await expect(page.getByText('Delivery · arranged with Demo Duka')).toBeVisible();
+    await expect(page.getByText('Your note: Near the matatu stage, after 5pm')).toBeVisible();
+    await shot(page, '2.24b-demo-arranged');
+  });
   await test.step('2.25 An unpaid order made 49 h old expires on the next job run', async () => {
     const token = await apiOrder(request, '0712000007', 'pay_now');
     const order = await a.latestOrder();
@@ -767,6 +876,12 @@ test('Sitting 3 · 3C Settings (M8a)', async ({ page, request }) => {
     a.password = next;
     expect(await a.signIn()).toBe(200);
   });
+  await test.step('3.14b Log out (the “Log out of <email>?” sheet’s action): the session ends', async () => {
+    const out = await a.call('POST', '/api/auth/sign-out', {});
+    expect(out.status()).toBe(200);
+    expect((await a.call('GET', '/api/me')).status()).toBe(401);
+    expect(await a.signIn()).toBe(200);
+  });
   await test.step('3.15 Change link: the old link redirects to the new one', async () => {
     const next = `reg-${runId}-a2`;
     await a.ok('PATCH', '/api/shop/profile', { slug: next });
@@ -789,6 +904,11 @@ test('Sitting 3 · 3C Settings (M8a)', async ({ page, request }) => {
     );
     const paybill = view.accounts.find((x: { type: string }) => x.type === 'paybill');
     await a.ok('POST', `/api/payments/accounts/${paybill.id}/activate`);
+    await test.step('3.16b Remove payment account (the “Remove …?” sheet’s action): the old Till goes', async () => {
+      const till = view.accounts.find((x: { type: string }) => x.type === 'till');
+      const after = await a.ok('DELETE', `/api/payments/accounts/${till.id}`);
+      expect(after.accounts.map((x: { type: string }) => x.type)).toEqual(['paybill']);
+    });
     await a.ok('PATCH', '/api/payments', { acceptsPayOnDelivery: false });
     const token = await apiOrder(request, '0712000008', 'pay_now');
     await page.goto(`/o/${token}`);
@@ -803,8 +923,9 @@ test('Sitting 3 · 3C Settings (M8a)', async ({ page, request }) => {
     await expect(page.getByRole('radio', { name: /Pay on delivery/ })).toHaveCount(0);
     await a.ok('PATCH', '/api/payments', { acceptsPayOnDelivery: true });
   });
-  await test.step('3.17 Pause: "taking a break", no Add to cart; resume: ordering is back', async () => {
+  await test.step('3.17 Pause: "taking a break", no Add to cart, the Home banner; resume: ordering is back', async () => {
     await a.ok('PATCH', '/api/shop/pause', { paused: true });
+    expect((await a.ok('GET', '/api/home')).ordering.blockers).toEqual(['paused']);
     await page.goto(`/${shopSlug}/p/${ids.dress}`);
     await expect(page.getByText(`${A.name} is taking a break`).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Add to cart/ })).toHaveCount(0);
@@ -812,6 +933,7 @@ test('Sitting 3 · 3C Settings (M8a)', async ({ page, request }) => {
     await a.ok('PATCH', '/api/shop/pause', { paused: false });
     await page.reload();
     await expect(page.getByRole('button', { name: /Add to cart/ })).toBeVisible();
+    expect((await a.ok('GET', '/api/home')).ordering.blockers).toEqual([]);
   });
   await test.step('3.18 Share feedback (with a screenshot when the store is on)', async () => {
     const info = await a.ok('GET', '/api/feedback');
@@ -907,6 +1029,18 @@ test('Sitting 3 · 3E Delete: web, then app; the digest (M8a)', async ({ page, r
     });
     await b.ok('POST', '/api/onboarding/payment', { skip: true });
     expect((await b.ok('POST', '/api/onboarding/complete', {})).done).toBe(true);
+    await test.step('3.24a B (pay on delivery, no delivery options) takes orders: no banner', async () => {
+      expect((await b.ok('GET', '/api/home')).ordering.blockers).toEqual([]);
+      await page.goto(`/${B.slug}`);
+      await expect(page.getByText(/Not taking orders yet/)).toHaveCount(0);
+    });
+    await test.step('3.24b No way to get paid: the Home banner says "payment"; the shop says "Not taking orders yet"', async () => {
+      await removeWayToPay(B.slug);
+      expect((await b.ok('GET', '/api/home')).ordering.blockers).toEqual(['payment']);
+      await page.goto(`/${B.slug}`);
+      await expect(page.getByText(/Not taking orders yet/)).toBeVisible();
+      await shot(page, '3.24b-not-taking-orders');
+    });
     await test.step('3.25 Delete account in the app (type DELETE): its link 404s', async () => {
       await b.ok('POST', '/api/me/delete', { confirm: 'DELETE' }, 204);
       expect((await request.get(`/${B.slug}`)).status()).toBe(404);

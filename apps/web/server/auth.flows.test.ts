@@ -385,6 +385,18 @@ describe('GET /api/me', () => {
     expect((await me()).status).toBe(401);
   });
 
+  it('sign-out with the app’s bearer token ends that session (staging regression 3.14b)', async () => {
+    const token = await signedUpAndVerified();
+    expect((await me(bearer(token))).status).toBe(200);
+    const out = await call(
+      '/sign-out',
+      {},
+      { headers: { ...bearer(token), 'expo-origin': 'oda://' } },
+    );
+    expect(out.status).toBe(200);
+    expect((await me(bearer(token))).status).toBe(401);
+  });
+
   it('starts a new seller at onboarding step 1', async () => {
     const token = await signedUpAndVerified();
     const res = await me(bearer(token));

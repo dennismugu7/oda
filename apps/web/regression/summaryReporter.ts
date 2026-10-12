@@ -7,6 +7,7 @@ import type {
   TestResult,
   TestStep,
 } from '@playwright/test/reporter';
+import { MANUAL_STEPS } from './manualSteps';
 
 // The staging regression's only reporter (decision #92): one line per script step in the job
 // summary and the log, ✅ / ❌ / ⏭. Worker output is dropped except GitHub's ::add-mask::
@@ -84,7 +85,12 @@ export default class SummaryReporter implements Reporter {
       `Result: **${result.status}**: ${this.counts.passed} sections passed, ${this.counts.failed} failed, ${this.counts.skipped} skipped.`,
       'Screenshots of the buyer pages: the run’s `regression-screens` artifact (7 days).',
     ];
-    const text = [...head, ...this.lines, ''].join('\n');
+    const manual = [
+      '',
+      '**Manual on the phone (not checked by this run)**',
+      ...MANUAL_STEPS.map((m) => `  - ${m}`),
+    ];
+    const text = [...head, ...this.lines, ...manual, ''].join('\n');
     const dir = path.resolve('regression-output');
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'summary.md'), text);

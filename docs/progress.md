@@ -20,7 +20,7 @@ Newest entries at the top.
 
 **Repository:** public since 2026-10-11 (#105): secret scanning and push protection on, fork PR workflows need approval, manual jobs run only from `main`. Billing had blocked every Actions job from 07:34 UTC until the flip.
 
-**Note:** Actions → staging-regression can't run now: the Resend key `oda-staging-regression` and the GitHub secret `RESEND_API_KEY` were deleted after CP6 (#92 b). Running it again needs a new key, with the owner's go-ahead.
+**Note:** Actions → staging-regression can't run until the owner creates the Resend key `oda-staging-regression` (Full access) and the `staging` environment secret `RESEND_API_KEY` again (#92 b); exact steps in `docs/release-0.5.0-merge-plan.md`. The script now covers the 0.5.0 stack (2026-10-12).
 
 **Open items**
 - **Owner:** Gmail shows the email sender with quotes although `EMAIL_FROM` (staging and production) has none: send the `From:` line from Gmail → Show original, then fix by PR (#101 d reopened).
@@ -35,6 +35,13 @@ Newest entries at the top.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-12 · Optional delivery CP4: demo seed, staging regression, merge plan (decision #110; branch `optional-delivery-cp4`, draft PR, not merged)
+
+- **Review stop C passed** (CP3, PR #115).
+- **Done:** Demo Duka's 10th sample order, arranged with the buyer (manual, pay on delivery, ready to collect, with a note); the staging regression updated for the whole 0.5.0 stack: 1.13 and 3.17 check the Home banner (none / paused), 1.14–1.14d an arranged order end to end with the old-app shape, the Kenya flag (20 × 15, loaded) and the published flag / TikTok files, 1.15a no arranged with areas, 1.15c / 3.14b / 3.16b the actions behind the delete-area, log-out and remove-account sheets, 2.24b Demo Duka's arranged sample, 3.24a–b seller B without delivery options and without a way to get paid (set in the database: the API never allows it); the manual phone steps (Google sign-in, the app's own screens) in `regression/manualSteps.ts`, printed in every run's summary; `docs/regression-script.md` updated to match. Merge plan: `docs/release-0.5.0-merge-plan.md` (order, staging checks after each merge, when to run the regression, the Resend key steps, what release-production changes).
+- **Tests:** `demoSeedOrders.test.ts` (10 samples, the arranged one, idempotent); `auth.flows.test.ts` (sign-out with the app's bearer token ends the session, which 3.14b relies on). The regression itself runs only on staging (typechecked and linted here).
+- **Next:** review stop D (owner): the merge plan, then the owner creates the Resend key; merges only on the owner's go.
 
 ## 2026-10-12 · Optional delivery CP3: seller app (decision #110; branch `optional-delivery-cp3`, draft PR, not merged)
 
