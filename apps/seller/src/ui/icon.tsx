@@ -101,10 +101,6 @@ const MotorcycleIcon = icon(
   require('phosphor-react-native/src/icons/Motorcycle'),
   'MotorcycleIcon',
 );
-const MusicNotesIcon = icon(
-  require('phosphor-react-native/src/icons/MusicNotes'),
-  'MusicNotesIcon',
-);
 const PackageIcon = icon(require('phosphor-react-native/src/icons/Package'), 'PackageIcon');
 const PauseCircleIcon = icon(
   require('phosphor-react-native/src/icons/PauseCircle'),
@@ -222,8 +218,6 @@ const ICONS = {
   heart: HeartIcon,
   flag: FlagIcon,
   phone: PhoneIcon,
-  music: MusicNotesIcon,
-  'music-note': MusicNotesIcon,
   eye: EyeIcon,
   'eye-off': EyeSlashIcon,
   edit: PencilSimpleIcon,

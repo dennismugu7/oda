@@ -193,7 +193,7 @@ export function CheckRow({
 }: {
   title: string;
   subtitle?: string;
-  icon: IconName;
+  icon?: IconName;
   /** Replaces `icon` (e.g. a brand mark). */
   iconNode?: ReactNode;
   tint: string;
@@ -210,7 +210,7 @@ export function CheckRow({
       style={({ pressed }) => [styles.row, checked && styles.rowChecked, pressed && styles.pressed]}
     >
       <View style={[styles.rowIcon, { backgroundColor: tint }]}>
-        {iconNode ?? <Icon name={icon} size={22} color={iconColor} />}
+        {iconNode ?? (icon ? <Icon name={icon} size={22} color={iconColor} /> : null)}
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{title}</Text>

@@ -23,22 +23,26 @@ export function Card({ children, padded = false }: { children: ReactNode; padded
 
 export function IconTile({
   icon,
+  mark,
   tint = colors.surfaceMuted,
   color = colors.navy,
 }: {
-  icon: FeatherName;
+  icon?: FeatherName;
+  /** Replaces `icon` (e.g. a brand mark). */
+  mark?: ReactNode;
   tint?: string;
   color?: string;
 }) {
   return (
     <View style={[styles.iconTile, { backgroundColor: tint }]}>
-      <Icon name={icon} size={20} color={color} />
+      {mark ?? (icon ? <Icon name={icon} size={20} color={color} /> : null)}
     </View>
   );
 }
 
 export function Row({
   icon,
+  mark,
   title,
   line,
   value,
@@ -50,6 +54,8 @@ export function Row({
   accessibilityLabel,
 }: {
   icon?: FeatherName;
+  /** Replaces `icon` in the tile (e.g. a brand mark). */
+  mark?: ReactNode;
   title: string;
   /** Under the title (e.g. "+254 712 345 678"). */
   line?: string | null;
@@ -65,7 +71,9 @@ export function Row({
 }) {
   const body = (
     <>
-      {icon ? <IconTile icon={icon} color={danger ? colors.danger : colors.navy} /> : null}
+      {icon || mark ? (
+        <IconTile icon={icon} mark={mark} color={danger ? colors.danger : colors.navy} />
+      ) : null}
       <View style={styles.rowText}>
         <Text style={[styles.title, danger && { color: colors.danger }]} numberOfLines={2}>
           {title}

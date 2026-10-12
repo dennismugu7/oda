@@ -24,7 +24,7 @@ Newest entries at the top.
 
 **Open items**
 - **Owner:** Gmail shows the email sender with quotes although `EMAIL_FROM` (staging and production) has none: send the `From:` line from Gmail → Show original, then fix by PR (#101 d reopened).
-- **Owner:** send the TikTok logo request (`docs/tiktok-logo-request.md`); switch to the real logo only with written approval (#101 c).
+- **Owner:** send the TikTok logo request (`docs/tiktok-logo-request.md`). The app already shows TikTok's official icon (owner's decision #108, branch `google-signin-tiktok-logo`), without written permission yet; the request is still to be sent.
 - **Later (owner, 2026-10-11):** after the Play launch, a separate clean showcase repo for the owner's portfolio.
 - **Play account (D13, answered 2026-10-10, #100 b):** Personal: closed testing with 12 testers for 14 days before production access (the owner has done it before). The M11 gate still ends at closed testing live + the real-device check.
 - **Launch checklist L1 (before real sellers, outside the M11 gate):** upgrade `oda-production` to Vercel Pro, or get Vercel support's written OK for Hobby (#93 D1).
@@ -35,6 +35,14 @@ Newest entries at the top.
 - **Owner:** delete the oda admin-SDK key file from Downloads (if not done yet).
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
+
+## 2026-10-11 · TikTok's official logo (decision #108; branch `google-signin-tiktok-logo`, draft PR, not merged)
+
+- **Done:** TikTok's developer logo pack (6.6 MB) downloaded from the design-guidelines page; `TikTok_Icon_Black_Circle.png` (owner's choice: the pack has no full-colour icon alone for light backgrounds, nor an SVG of it) copied unmodified to `apps/seller/assets/brands/` and `apps/web/public/brands/` with README notes (URL, date, file, sha256). It replaces the music note on step 2, the step 6 share buttons, Share your shop and Shop profile (`BrandIcon brand="tiktok"`; `Row`/`IconTile` take a `mark`). `MusicNotes` removed from the icon set.
+- **Tests:** sha256 of both copies (seller `brandIcons.test.ts`, web `brandAssets.test.ts`), no music note left in `app/` or `src/`, and `tiktok-logo.ui.test.tsx` (each of the four places renders the official file).
+- **Deviations:** the file is the icon on TikTok's black circle, not a light-background icon (none in the pack). The web has no TikTok mark, so only the file copy changed there.
+- **Open:** the permission request is still to be sent; its draft still says "Until we hear from you, we use a neutral icon" (owner to reword before sending).
+- **Next:** owner review; merges with `google-signin-app` for the next release APK.
 
 ## 2026-10-11 · Google sign-in CP2: the app (branch `google-signin-app`, draft PR, not merged)
 

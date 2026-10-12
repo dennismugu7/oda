@@ -6,17 +6,23 @@ import { SvgCss } from 'react-native-svg/css';
 import { WHATSAPP_GREEN } from './brand';
 import { GOOGLE_G_SVG, INSTAGRAM_GLYPH_BLACK_SVG, WHATSAPP_GLYPH_GREEN_SVG } from './brandSvgs';
 
-export type Brand = 'whatsapp' | 'instagram' | 'facebook';
+export type Brand = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok';
 
-const facebookLogo = require('../../assets/brands/facebook-logo-primary.png');
+// PNG marks (their packs have no SVG of the variant used).
+const PNG_MARKS = {
+  facebook: require('../../assets/brands/facebook-logo-primary.png'),
+  // TikTok's full-colour icon on its black circle, from TikTok's developer logo pack
+  // (decision #108, amends #101 c).
+  tiktok: require('../../assets/brands/tiktok-icon-black-circle.png'),
+};
 
 /** At least 16 dp (Facebook's digital minimum); square, so the aspect ratio is kept. */
 export function BrandIcon({ brand, size = 26 }: { brand: Brand; size?: number }) {
   const side = Math.max(16, size);
-  if (brand === 'facebook') {
+  if (brand === 'facebook' || brand === 'tiktok') {
     return (
       <Image
-        source={facebookLogo}
+        source={PNG_MARKS[brand]}
         style={{ width: side, height: side }}
         resizeMode="contain"
         accessibilityIgnoresInvertColors

@@ -17,6 +17,7 @@ import { SettingsLayout } from '@/settings/SettingsLayout';
 import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { Button, Field, FormMessage, InfoNote, LinkButton } from '@/ui/auth';
 import { Card, Row, rowStyles, ToggleRow } from '@/ui/rows';
+import { BrandIcon } from '@/ui/brandIcons';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
@@ -338,7 +339,7 @@ function ProfileEditor({
           onToggle={(callsEnabled) => set({ callsEnabled })}
         />
         <Row
-          icon="music"
+          mark={<BrandIcon brand="tiktok" size={24} />}
           title="TikTok"
           line={handleLabel(form.tiktokHandle)}
           onPress={() => open('tiktok')}

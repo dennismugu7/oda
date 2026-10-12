@@ -100,7 +100,7 @@ const CHANNEL_NAMES: Record<ShareChannel, string> = {
   facebook: 'Facebook',
 };
 
-/** Official marks on a white circle (decision #56); TikTok stays a neutral note. */
+/** Official marks on a white circle (decisions #56, #108). */
 function ChannelMark({ channel }: { channel: ShareChannel }) {
   return (
     <View style={styles.markCircle}>
@@ -113,7 +113,7 @@ function ChannelMark({ channel }: { channel: ShareChannel }) {
       ) : channel === 'facebook' ? (
         <BrandIcon brand="facebook" size={24} />
       ) : (
-        <Icon name="music" size={20} color={colors.navy} />
+        <BrandIcon brand="tiktok" size={24} />
       )}
     </View>
   );
