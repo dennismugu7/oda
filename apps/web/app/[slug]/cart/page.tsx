@@ -22,7 +22,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 export default async function Cart({ params, searchParams }: Props) {
   const { slug } = await params;
   const shop = await loadShop(slug, restOf('/cart', await searchParams));
-  const popular = (await shopData(shop).catalog({ sort: 'popular' }))
+  const data = shopData(shop);
+  const areas = await data.deliveryAreas();
+  const popular = (await data.catalog({ sort: 'popular' }))
     .filter((p) => p.status === 'available')
     .slice(0, 12);
   return (
@@ -49,7 +51,11 @@ export default async function Cart({ params, searchParams }: Props) {
         shopId={shop.id}
         slug={shop.slug}
         shopName={shop.name}
-        freeDeliveryThreshold={shop.freeDeliveryThreshold}
+        // Free delivery only means something with an eligible area (decision #110).
+        freeDeliveryThreshold={
+          areas.some((a) => a.freeDeliveryEligible) ? shop.freeDeliveryThreshold : null
+        }
+        arranged={!shop.hasDeliveryOption}
         canOrder={takingOrders(shop)}
         blockedReason={shop.isPaused ? `${shop.name} is taking a break` : 'Not taking orders yet'}
         suggestions={popular.map((p) => ({

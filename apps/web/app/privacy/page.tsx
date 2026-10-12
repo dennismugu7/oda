@@ -19,7 +19,7 @@ const mail = (
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy" updated="11 October 2026">
+    <LegalPage title="Privacy" updated="12 October 2026">
       <section>
         <h2>Who we are</h2>
         <p>
@@ -69,7 +69,10 @@ export default function Privacy() {
             Your name, phone number, whether you use WhatsApp, and your email if you give one (for
             receipts).
           </li>
-          <li>Your delivery area and address, or that you will pick up.</li>
+          <li>
+            Your delivery area and address, that you will pick up, or that you will arrange delivery
+            with the seller, and any note you leave for the seller.
+          </li>
           <li>What you ordered and how you chose to pay.</li>
           <li>
             The M-Pesa code you enter after paying. We keep only the code, not the rest of the

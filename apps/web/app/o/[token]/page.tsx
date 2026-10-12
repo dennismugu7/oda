@@ -80,10 +80,14 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const itemCount = order.items.reduce((n, i) => n + i.qty, 0);
   const summary = `${shopName} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${formatKsh(order.total)}`;
   const demo = order.shop && isDemoShop(order.shop.slug);
+  // The shop lists no delivery option: buyer and seller arrange it (decision #110).
+  const arranged = order.fulfilment === 'arranged';
   const whatsapp =
     order.shop && !shop.closed
       ? `https://wa.me/${order.shop.whatsappPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
-          `Hi ${shopName}, about my order #${order.number} on oda.`,
+          arranged
+            ? `Hi ${shopName}, about delivery for my order #${order.number} on oda.`
+            : `Hi ${shopName}, about my order #${order.number} on oda.`,
         )}`
       : null;
 
@@ -122,9 +126,13 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             <ChatCircleIcon size={22} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-body-strong text-navy">Message {shopName}</span>
+            <span className="block text-body-strong text-navy">
+              {arranged ? `Message ${shopName} to arrange delivery` : `Message ${shopName}`}
+            </span>
             <span className="block text-small text-text-secondary">
-              Questions about sizes, items or delivery
+              {arranged
+                ? 'Where you are and when suits you'
+                : 'Questions about sizes, items or delivery'}
             </span>
           </span>
           <CaretRightIcon size={20} aria-hidden="true" className="shrink-0 text-navy" />
@@ -149,6 +157,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
           </h1>
           <p className="mt-1 text-body text-text-secondary">
             Your order is placed. Pay on M-Pesa, then tell {shopName} you’ve paid.
+            {arranged ? ` Delivery isn’t included: arrange it with ${shopName}.` : null}
           </p>
           {order.paymentNotFound ? (
             <div
@@ -182,6 +191,8 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const cancelled = order.status === 'cancelled';
   const expired = cancelled && order.cancelReason === 'expired';
   const pickup = order.fulfilment === 'pickup';
+  /** An arranged order the seller marked "Buyer collects" (decision #110 d). */
+  const collect = arranged && order.sentMethod === 'pickup';
   const timeline =
     cancelled || noPayments ? [] : buyerTimeline(order, shopName, { reviewable, reviewedAt });
 
@@ -205,8 +216,12 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             {order.status === 'payment_claimed'
               ? `${shopName} is checking your M-Pesa payment.`
               : order.paymentMethod === 'pay_on_delivery'
-                ? `${shopName} will accept your order and get it to you. You pay ${formatKsh(order.total)} ${pickup ? 'when you collect it' : 'on delivery'}.`
-                : `${shopName} will be in touch.`}
+                ? arranged
+                  ? `${shopName} will contact you to arrange delivery. You pay ${formatKsh(order.total)} when you get your order.`
+                  : `${shopName} will accept your order and get it to you. You pay ${formatKsh(order.total)} ${pickup ? 'when you collect it' : 'on delivery'}.`
+                : arranged
+                  ? `${shopName} will contact you to arrange delivery.`
+                  : `${shopName} will be in touch.`}
           </p>
         </div>
       </div>
@@ -220,23 +235,29 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             : 'Payment confirmed'}
         </h2>
         <p className="mt-1 text-body text-text-secondary">
-          {shopName} is getting your order ready.
+          {arranged
+            ? `${shopName} is getting your order ready and will contact you to arrange delivery.`
+            : `${shopName} is getting your order ready.`}
         </p>
       </div>
     );
   } else if (order.status === 'sent') {
     hero = (
       <div className="mt-5 rounded-xl bg-green-tint p-4">
-        <h2 className="text-title text-navy">{pickup ? 'Ready for pickup' : 'Sent out'}</h2>
+        <h2 className="text-title text-navy">
+          {pickup ? 'Ready for pickup' : collect ? 'Ready to collect' : 'Sent out'}
+        </h2>
         <p className="mt-1 text-body text-text-secondary">
-          {pickup
-            ? [order.shop?.pickupLocation, order.shop?.pickupHours].filter(Boolean).join(' · ') ||
-              `Collect it from ${shopName}.`
-            : order.sentMethod === 'parcel'
-              ? 'By parcel service.'
-              : 'With a rider.'}
+          {collect
+            ? `${shopName} will tell you where, if they haven’t already.`
+            : pickup
+              ? [order.shop?.pickupLocation, order.shop?.pickupHours].filter(Boolean).join(' · ') ||
+                `Collect it from ${shopName}.`
+              : order.sentMethod === 'parcel'
+                ? 'By parcel service.'
+                : 'With a rider.'}
         </p>
-        {order.riderPhone && !pickup ? (
+        {order.riderPhone && !pickup && !collect ? (
           <a
             href={`tel:${order.riderPhone}`}
             className="mt-2 inline-flex min-h-11 items-center text-body-strong text-primary"
@@ -339,7 +360,9 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
     order.paymentMethod === 'pay_on_delivery'
       ? order.paymentStatus === 'paid'
         ? 'Paid on delivery'
-        : `Pay on ${pickup ? 'collection' : 'delivery'}`
+        : arranged
+          ? 'Pay when you get your order'
+          : `Pay on ${pickup ? 'collection' : 'delivery'}`
       : order.paymentStatus === 'paid'
         ? `Paid with M-Pesa${order.mpesaCode ? ` · ${order.mpesaCode}` : ''}`
         : order.mpesaCode && order.paymentStatus === 'claimed'
@@ -471,12 +494,18 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
           <dl className="mt-2 space-y-1 border-t border-border pt-3 text-body">
             <div className="flex justify-between gap-3">
               <dt className="text-text-secondary">
-                {pickup
-                  ? 'Pickup'
-                  : `Delivery${order.deliveryAreaName ? ` · ${order.deliveryAreaName}` : ''}`}
+                {arranged
+                  ? `Delivery · arranged with ${shopName}`
+                  : pickup
+                    ? 'Pickup'
+                    : `Delivery${order.deliveryAreaName ? ` · ${order.deliveryAreaName}` : ''}`}
               </dt>
-              <dd className="text-navy">
-                {order.deliveryFee === 0 ? 'Free' : formatKsh(order.deliveryFee)}
+              <dd className="shrink-0 text-navy">
+                {order.deliveryFee > 0
+                  ? formatKsh(order.deliveryFee)
+                  : arranged
+                    ? 'Not included'
+                    : 'Free'}
               </dd>
             </div>
             <div className="flex justify-between text-body-strong text-navy">
@@ -485,10 +514,15 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
             </div>
           </dl>
           <p className="mt-3 text-small text-text-secondary">
-            {pickup
-              ? [order.shop?.pickupLocation, order.shop?.pickupHours].filter(Boolean).join(' · ') ||
-                'Pickup'
-              : order.addressText}
+            {arranged
+              ? order.addressText
+                ? `Your note: ${order.addressText}`
+                : null
+              : pickup
+                ? [order.shop?.pickupLocation, order.shop?.pickupHours]
+                    .filter(Boolean)
+                    .join(' · ') || 'Pickup'
+                : order.addressText}
           </p>
           <p className="text-small text-text-secondary">{payLine}</p>
         </section>

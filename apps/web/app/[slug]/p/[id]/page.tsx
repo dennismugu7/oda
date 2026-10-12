@@ -60,12 +60,18 @@ export default async function ProductPage(props: Props) {
   const badge = cards.find((c) => c.id === product.id)?.badge ?? null;
   const canOrder = takingOrders(shop);
   const cheapest = areas.length ? Math.min(...areas.map((a) => a.fee)) : null;
-  const delivery = [
-    cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
-    shop.freeDeliveryThreshold ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const delivery = shop.hasDeliveryOption
+    ? [
+        cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
+        // Free delivery only applies to eligible areas (decision #110).
+        shop.freeDeliveryThreshold && areas.some((a) => a.freeDeliveryEligible)
+          ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : // No delivery option listed: buyer and seller arrange it (decision #110).
+      'Delivery arranged with the seller after you order';
   const pickup = shop.pickupEnabled
     ? `Pickup${shop.pickupLocation ? ` in ${shop.pickupLocation}` : ''}`
     : null;

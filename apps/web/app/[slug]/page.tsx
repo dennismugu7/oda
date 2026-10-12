@@ -57,13 +57,21 @@ export default async function ShopHome({ params, searchParams }: Props) {
   ]);
   const canOrder = takingOrders(shop);
   const cheapest = areas.length ? Math.min(...areas.map((a) => a.fee)) : null;
-  const deliveryLine = [
-    cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
-    shop.freeDeliveryThreshold ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}` : null,
-    shop.pickupEnabled ? `Pickup${shop.pickupLocation ? ` in ${shop.pickupLocation}` : ''}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // No delivery option listed: buyer and seller arrange it (decision #110). Free delivery only
+  // applies to eligible areas.
+  const deliveryLine = shop.hasDeliveryOption
+    ? [
+        cheapest !== null ? `Delivery from ${formatKsh(cheapest)}` : null,
+        shop.freeDeliveryThreshold && areas.some((a) => a.freeDeliveryEligible)
+          ? `Free over ${formatKsh(shop.freeDeliveryThreshold)}`
+          : null,
+        shop.pickupEnabled
+          ? `Pickup${shop.pickupLocation ? ` in ${shop.pickupLocation}` : ''}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : 'Delivery arranged with the seller after you order';
   const meta = [
     shop.ratingCount > 0 ? `★ ${Number(shop.ratingAvg).toFixed(1)}` : null,
     shop.deliveredCount > 0

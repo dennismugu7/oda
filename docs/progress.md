@@ -36,6 +36,12 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-12 · Optional delivery CP2: buyer web (decision #110; branch `optional-delivery-cp2`, draft PR, not merged)
+
+- **Done:** checkout for a shop with no area and pickup off (the "The seller will contact you to arrange delivery" card, optional note ≤ 300, no address, delivery "Not included", "Pay when you get your order"); order page (hero, "Delivery · arranged with {shop}" / "Not included", "Your note: …", "Message {shop} to arrange delivery" with its own WhatsApp text, "Ready to collect" for Buyer collects, pay line); pay page line "Delivery isn't included: arrange it with {shop}."; shop home and product page "Delivery arranged with the seller after you order"; cart "Arranged with the seller"; free delivery shown only with an eligible area; privacy text (updated 12 October 2026). Shops with areas or pickup: unchanged.
+- **Tests:** `e2e/arranged.spec.ts` at 360 px (no options: shop, cart, checkout, order page, receipt; pay now's pay page; a shop with areas unchanged), with screenshots; existing checkout e2e unchanged and passing.
+- **Next:** review stop B (owner); then, per Q8, the server + web part to `main` (split from the app stack), then CP3 (app).
+
 ## 2026-10-12 · Optional delivery CP1: shared, server, migration (decision #110; branch `optional-delivery-cp1`, draft PR, not merged)
 
 - **Plan approved** (`docs/optional-delivery-plan.md`, PR #112) with the owner's answers Q1–Q9 → **decision #110** (reverses #61 c).
