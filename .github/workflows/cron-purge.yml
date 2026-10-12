@@ -2,7 +2,7 @@ name: cron-purge
 
 # Daily purge (decisions #72 c, #74 c, #75): accounts deleted 30+ days ago (files, data, auth
 # user), soft-deleted products after 30 days (keeping thumbnails past orders show), failed file
-# deletes, unreferenced files over 24 h old, sign-up attempts over 7 days. The work runs on the
+# deletes, unreferenced files over 8 days old, sign-up attempts over 7 days. The work runs on the
 # server (/api/cron/purge); this only calls it with the Bearer secret.
 # Manual runs default to a DRY RUN: it reports what it would remove and removes nothing. Every
 # run writes an ops_events audit row with the GitHub user who ran it.

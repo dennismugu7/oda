@@ -1,7 +1,7 @@
 // Unsaved form text that survives Android closing oda in the background (decision #100).
 // The draft is written when the app goes to the background and removed when the form is left
 // normally (unmount: Back, Cancel, or after a save), so only a form the system killed comes
-// back. Drafts expire after 12 hours (src/restore/store.ts) and are removed on sign-out.
+// back. Drafts expire after 7 days (src/restore/store.ts, decision #111) and are removed on sign-out.
 // Never used on password, code, sign-in, delete-account or M-Pesa details forms.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -14,6 +14,11 @@ export interface DraftOptions<T> {
   worthSaving: boolean;
   /** Puts a saved draft back into the form. */
   restore: (saved: T) => void;
+  /**
+   * Checks a saved draft before it's put back (e.g. drops photos the server no longer has).
+   * Never rejects: on a failure it returns the draft as it was.
+   */
+  prepare?: (saved: T) => Promise<T>;
   /** Wait until the form has its data, so the draft lands on top of it (default true). */
   ready?: boolean;
 }
@@ -32,9 +37,9 @@ export interface Draft {
 export function useDraft<T>(formKey: string | null, options: DraftOptions<T>): Draft {
   const { value, worthSaving, restore, ready = true } = options;
   const [restored, setRestored] = useState(false);
-  const latest = useRef({ value, worthSaving, restore });
+  const latest = useRef({ value, worthSaving, restore, prepare: options.prepare });
   useEffect(() => {
-    latest.current = { value, worthSaving, restore };
+    latest.current = { value, worthSaving, restore, prepare: options.prepare };
   });
 
   // The key the form has now: a draft read for another key is dropped. Not a cleanup flag:
@@ -46,14 +51,21 @@ export function useDraft<T>(formKey: string | null, options: DraftOptions<T>): D
 
   useEffect(() => {
     if (!formKey || !ready) return;
-    restoreStore.loadDraft<T>(formKey).then(
-      (saved) => {
-        if (saved == null || currentKey.current !== formKey) return;
-        latest.current.restore(saved);
-        setRestored(true);
-      },
-      () => {},
-    );
+    restoreStore
+      .loadDraft<T>(formKey)
+      .then(async (saved) => {
+        if (saved == null) return null;
+        const prepare = latest.current.prepare;
+        return prepare ? prepare(saved).catch(() => saved) : saved;
+      })
+      .then(
+        (saved) => {
+          if (saved == null || currentKey.current !== formKey) return;
+          latest.current.restore(saved);
+          setRestored(true);
+        },
+        () => {},
+      );
   }, [formKey, ready]);
 
   useEffect(() => {

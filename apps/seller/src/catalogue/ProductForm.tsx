@@ -23,6 +23,7 @@ import {
   toggleColour,
   type ProductDraft,
 } from '@/catalogue/form';
+import { keepStoredPhotos } from '@/catalogue/draftPhotos';
 import { PhotoStrip, type Slot } from '@/catalogue/PhotoStrip';
 import { openBuyerView, shopPageUrl } from '@/catalogue/preview';
 import { announceDeleted } from '@/catalogue/undo';
@@ -204,6 +205,11 @@ function Editor({
     worthSaving: product
       ? dirty
       : JSON.stringify(draft) !== JSON.stringify(emptyDraft()) || uploaded.length > 0,
+    // A photo the server no longer has is dropped quietly (decision #111 c).
+    prepare: async (saved) => ({
+      ...saved,
+      photos: await keepStoredPhotos(saved.photos, catalogueApi.checkPhotos),
+    }),
     restore: (saved) => {
       setDraft(saved.draft);
       setSlots(

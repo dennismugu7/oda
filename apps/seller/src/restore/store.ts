@@ -10,8 +10,11 @@ export interface KeyValue {
   remove: (key: string) => Promise<void>;
 }
 
-/** Drafts are kept 12 hours (uploaded but unsaved photos are purged on the server after 24 h). */
-export const DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
+/**
+ * Drafts are kept 7 days (decision #111); uploaded but unsaved photos are purged on the server
+ * after 8 days, and a restored draft drops any photo already gone (src/catalogue/draftPhotos.ts).
+ */
+export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /** The last screen is reopened within 1 hour of leaving the app. */
 export const ROUTE_TTL_MS = 60 * 60 * 1000;
 

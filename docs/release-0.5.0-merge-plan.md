@@ -1,6 +1,6 @@
-# Release 0.5.0: merge plan for the whole stack (#109 → #116)
+# Release 0.5.0: merge plan for the whole stack (#109 → #117)
 
-**Status:** plan for the owner's review (review stop D, 2026-10-12). Nothing merged yet.
+**Status:** review stop D passed (2026-10-12); after it, #117 was added and the Google configuration corrected. Nothing merged yet.
 **Owner decisions it follows:**
 - Release 0.5.0 goes out as release APKs. `main` takes the whole stack in order once everything is done; there is no split (decision #110 Q8, superseded in `progress.md`).
 - Every PR merges only after all its checks have passed (owner Step 83/84).
@@ -20,15 +20,12 @@ Each PR's base is the one before it. This repo merges with merge commits and doe
 | #114 | `optional-delivery-cp2` | Buyer web: checkout, order page, pay page, shop / product / cart, privacy text | #110 |
 | #115 | `optional-delivery-cp3` | Seller app: arranged orders, Mark as sent, New order, Delivery "optional", the checklist tap; `/api/delivery` `arrangeDelivery` | #110 |
 | #116 | `optional-delivery-cp4` | Demo seed (10th sample, arranged); staging regression for the stack; docs (this plan) | #110 |
+| #117 | `drafts-7-days` | App drafts kept 7 days; the purge's unreferenced files wait 8 days; a restored draft drops photos the server no longer has (`POST /api/uploads/check`); privacy "up to 7 days" | #111 |
 
 ## Before the first merge (owner)
 
-1. **The 0.5.0 release APK** for testers is the trigger for merging #109: once `main` is 0.5.0, 0.4.0 installs stop getting JS updates (#107 plan rule). The APK must carry the JS of the whole stack. Either:
-   - build it from `main` after #116, or
-   - build earlier and send the rest by EAS Update to runtime 0.5.0.
-
-   Each native build and each EAS Update needs your go. Claude starts neither.
-2. **Google sign-in configuration (#107):** on staging, the server's `GOOGLE_WEB_CLIENT_ID` (Vercel `oda`) and the app's `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (EAS environment for the APK). Without them the Google button stays hidden and the endpoint answers "off". Check by name only.
+1. **The 0.5.0 release APK (owner's decision, 2026-10-12):** it is built **once, from `main`, after #116 and #117 are merged**, so it carries the JS of the whole stack. Once `main` is 0.5.0 (#109), 0.4.0 installs stop getting JS updates (#107 plan rule); that's expected until the APK is out. The build needs your go; Claude doesn't start it, and no EAS Update is sent.
+2. **Google sign-in configuration (#107): already set.** `GOOGLE_WEB_CLIENT_ID` is on Vercel `oda` and `oda-production`; `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` is on EAS (`preview` and `production` environments). Nothing to do; Claude can confirm by name only.
 3. Nothing else has to be set before merging. The Resend key below is needed only for staging-regression.
 
 ## Merge order, and what to check on staging after each
@@ -49,10 +46,12 @@ For each PR, in order:
 | #114 | A staging shop with no area and pickup off (e.g. a fresh test shop): checkout | "The seller will contact you to arrange delivery", optional note, "Not included", an order goes through. Demo Duka's checkout unchanged. |
 | #115 | `/api/delivery` (through the app) | It returns `arrangeDelivery`; nothing changes on the web. |
 | #116 | Run **Actions → demo-seed-staging** | 10 sample links in the job summary, including "Arranged with the buyer (pay on delivery, ready to collect)". |
+| #117 | `/privacy` | "up to 7 days". The next cron-purge (or a manual dry run) lists only unreferenced files older than 8 days. |
+| then | **Build the 0.5.0 APK from `main`** (your go) | The APK for the regression's manual phone steps and for testers. |
 
 ## The staging regression
 
-Run it after #116 is merged and deployed, and after demo-seed-staging: step 2.24b needs the new demo sample.
+Run it after #117 is merged and deployed, and after demo-seed-staging: step 2.24b needs the new demo sample.
 
 1. You create the Resend key and the GitHub secret (next section). Claude confirms the secret **by name**.
 2. Run **Actions → staging-regression** from `main`.
@@ -94,7 +93,8 @@ The run sends about 5 emails to `@resend.dev` test addresses (two sign-ups and a
   - "Arrange with buyer" in the manual-order quote;
   - the `new_order` push adds "· Arrange delivery", and buyer emails mention arranged delivery.
 - **Old apps:** the 0.4.0 Play install gets arranged orders as a delivery "Arranged with buyer". It shows "Delivery · Free" in its money row, which only the 0.5.0 app fixes.
-- **Google sign-in** stays hidden on production until `GOOGLE_WEB_CLIENT_ID` is set on oda-production and in the production app build (#107). That's a separate step.
+- **Google sign-in** works on production as soon as release-production deploys: `GOOGLE_WEB_CLIENT_ID` is already set on oda-production, and a production app build gets `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` from EAS. The 0.4.0 Play app has no Google button; it comes with a 0.5.0 build.
+- **Unused uploads and drafts (#111):** the purge keeps unreferenced photos 8 days instead of 24 h; the privacy page says unsaved form text stays on the phone for up to 7 days.
 - **Rollback:** releasing the previous commit is safe. The migration only adds a value, and the older code treats any non-pickup order as a delivery, so arranged orders show as "Delivery" with no area.
 
 After release-production, the production app's JS (0.5.0) goes out by **eas-update-production** or with the Play build, each on your go.
