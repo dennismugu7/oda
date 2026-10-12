@@ -20,7 +20,7 @@ export function moreRowValues(more: MoreData) {
       ? `${more.deliveryAreas} ${more.deliveryAreas === 1 ? 'area' : 'areas'}`
       : more.pickupEnabled
         ? 'Pickup'
-        : 'Add an area';
+        : 'Arranged with buyers';
   return {
     insights: `${formatKsh(more.salesThisWeek)} this week`,
     customers: String(more.customers),

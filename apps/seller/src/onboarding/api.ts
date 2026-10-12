@@ -2,6 +2,7 @@
 // answers with the full onboarding state, which the screens render from.
 import type {
   BusinessType,
+  CHECKLIST_ITEMS,
   Channel,
   FinishYourShop,
   OnboardingPayment,
@@ -96,7 +97,7 @@ export const onboardingApi = {
     }),
   payment: (body: OnboardingPayment) =>
     apiJson<OnboardingState>('/api/onboarding/payment', { body }),
-  tick: (item: 'shared_link' | 'tested_whatsapp') =>
+  tick: (item: (typeof CHECKLIST_ITEMS)[number]) =>
     apiJson<OnboardingState>('/api/onboarding/checklist', { body: { item } }),
   complete: () => apiJson<OnboardingState>('/api/onboarding/complete', { body: {} }),
 };

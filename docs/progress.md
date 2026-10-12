@@ -36,6 +36,14 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-12 · Optional delivery CP3: seller app (decision #110; branch `optional-delivery-cp3`, draft PR, not merged)
+
+- **Review stop B passed** (CP2, PR #114).
+- **Q8 superseded (owner, 2026-10-12):** decision #110's Q8 answer (ship the server + web part to `main` after CP2, split from the app stack) no longer applies. The owner moved to 0.5.0 release APKs, so `main` takes the whole stack in order (#109 → #110 → #111 → #112 → #113 → #114, then CP3 and CP4) once everything is done. No split branch.
+- **Done (JS only, no native change):** the app sends `X-Oda-App-Features: arranged` on every API call; order detail for arranged orders ("ARRANGED WITH BUYER", "Arrange delivery with {buyer}", the buyer's note, "Not included", "Message {buyer} about delivery" with a WhatsApp prefill, "Ready to collect"); Mark as sent offers By rider / By parcel / Buyer collects ("Mark ready to collect"); New order has "Arrange with buyer" with an optional note and the fee "Not included" unless the seller sets one; the Delivery screen says "Delivery is optional" instead of the warning, with "I'll arrange delivery with buyers" (ticks `arrange_delivery`; `/api/delivery` returns `arrangeDelivery`), no "Stop taking orders?" sheet and no "Not taking orders yet" when deleting the last area; More → Delivery shows "Arranged with buyers"; Help "Delivery is optional" and Buyer collects (app and `docs/help-guides.md` word for word).
+- **Tests:** `apiFeatures.test.ts` (the header), delivery (optional card, the tap, already tapped, pickup off without a sheet), order detail (arranged card and WhatsApp prefill; Mark as sent options and Buyer collects), New order (Arrange with buyer, note, Not included, the request), `newOrder.test.ts`, More row; server `delivery.test.ts` (`arrangeDelivery`).
+- **Next:** review stop C (owner), then CP4 (demo seed, regression script, docs).
+
 ## 2026-10-12 · Optional delivery CP2: buyer web (decision #110; branch `optional-delivery-cp2`, draft PR, not merged)
 
 - **Done:** checkout for a shop with no area and pickup off (the "The seller will contact you to arrange delivery" card, optional note ≤ 300, no address, delivery "Not included", "Pay when you get your order"); order page (hero, "Delivery · arranged with {shop}" / "Not included", "Your note: …", "Message {shop} to arrange delivery" with its own WhatsApp text, "Ready to collect" for Buyer collects, pay line); pay page line "Delivery isn't included: arrange it with {shop}."; shop home and product page "Delivery arranged with the seller after you order"; cart "Arranged with the seller"; free delivery shown only with an eligible area; privacy text (updated 12 October 2026). Shops with areas or pickup: unchanged.

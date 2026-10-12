@@ -38,12 +38,16 @@ export function newOrderProblem(d: {
   name: string;
   phone: string;
   lines: readonly DraftLine[];
-  fulfilment: { kind: 'pickup' } | { kind: 'delivery'; areaId: string; addressText: string } | null;
+  fulfilment:
+    | { kind: 'pickup' }
+    | { kind: 'arranged'; note: string | null }
+    | { kind: 'delivery'; areaId: string; addressText: string }
+    | null;
 }): string | null {
   if (d.name.trim().length < 2) return 'Enter the buyer’s name.';
   if (!d.phone.trim()) return 'Enter the buyer’s phone number.';
   if (d.lines.length === 0) return 'Add at least one product.';
-  if (!d.fulfilment) return 'Choose pickup or a delivery area.';
+  if (!d.fulfilment) return 'Choose pickup, a delivery area or Arrange with buyer.';
   if (d.fulfilment.kind === 'delivery' && d.fulfilment.addressText.trim().length < 3) {
     return 'Enter the delivery address.';
   }

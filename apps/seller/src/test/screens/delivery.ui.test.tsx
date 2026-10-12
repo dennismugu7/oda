@@ -15,6 +15,11 @@ type Answer<T> = Promise<{ data: T | null; error: ApiError | null }>;
 const mockGet = jest.fn<() => Answer<Delivery>>();
 const mockSettings = jest.fn<(body: DeliverySettings) => Answer<Delivery>>();
 const mockCreateArea = jest.fn<(body: AreaFields) => Answer<Delivery>>();
+const mockTick = jest.fn<(item: string) => Answer<unknown>>();
+
+jest.mock('@/onboarding/api', () => ({
+  onboardingApi: { tick: (item: string) => mockTick(item) },
+}));
 
 jest.mock('@/delivery/api', () => {
   let cached: unknown = null;
@@ -58,16 +63,20 @@ beforeEach(() => {
 });
 
 describe('Delivery', () => {
-  it('shows only the loading state, then warns that buyers can’t order without an option', async () => {
+  it('shows only the loading state, then says delivery is optional (decision #110)', async () => {
     let answer: (value: { data: Delivery; error: null }) => void = () => {};
     mockGet.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     const user = userEvent.setup();
     await render(<DeliveryScreen />);
     expect(screen.queryByText('DELIVERY AREAS')).toBeNull();
     answer({ data: EMPTY, error: null });
+    expect(await screen.findByRole('header', { name: 'Delivery is optional' })).toBeTruthy();
     expect(
-      await screen.findByText('Buyers can’t order yet. Add a delivery area or turn on pickup.'),
+      screen.getByText(
+        'Without delivery areas or pickup, buyers can still order. You arrange delivery with them, usually on WhatsApp.',
+      ),
     ).toBeTruthy();
+    expect(screen.queryByText(/can’t order/)).toBeNull();
     expect(
       screen.getByText(
         'No delivery areas yet. Add the places you deliver to and what each one costs.',
@@ -77,7 +86,27 @@ describe('Delivery', () => {
     expect(router.push).toHaveBeenCalledWith('/delivery/area');
   });
 
-  it('lists the areas without the warning', async () => {
+  it('"I’ll arrange delivery with buyers" ticks the checklist item (decision #110 e)', async () => {
+    mockGet.mockResolvedValue({ data: EMPTY, error: null });
+    mockTick.mockResolvedValue({ data: { step: null, done: true, checklist: null }, error: null });
+    const user = userEvent.setup();
+    await render(<DeliveryScreen />);
+    await user.press(
+      await screen.findByRole('button', { name: 'I’ll arrange delivery with buyers' }),
+    );
+    expect(mockTick).toHaveBeenCalledWith('arrange_delivery');
+    expect(await screen.findByText('You’ll arrange delivery with buyers')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'I’ll arrange delivery with buyers' })).toBeNull();
+  });
+
+  it('already tapped: no button, just the tick', async () => {
+    mockGet.mockResolvedValue({ data: { ...EMPTY, arrangeDelivery: true }, error: null });
+    await render(<DeliveryScreen />);
+    expect(await screen.findByText('You’ll arrange delivery with buyers')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'I’ll arrange delivery with buyers' })).toBeNull();
+  });
+
+  it('lists the areas without the "optional" card', async () => {
     mockGet.mockResolvedValue({
       data: { ...EMPTY, areas: [WESTLANDS], hasDeliveryOption: true },
       error: null,
@@ -87,7 +116,7 @@ describe('Delivery', () => {
     const row = await screen.findByRole('button', {
       name: 'Westlands, By rider, KSh 200, Same day',
     });
-    expect(screen.queryByText(/Buyers can’t order yet/)).toBeNull();
+    expect(screen.queryByRole('header', { name: 'Delivery is optional' })).toBeNull();
     await user.press(row);
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/delivery/area',
@@ -123,11 +152,13 @@ describe('Delivery', () => {
       pickupLocation: 'Yaya Centre',
       pickupHours: 'Mon–Sat 9am–6pm',
     });
-    await waitFor(() => expect(screen.queryByText(/Buyers can’t order yet/)).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByRole('header', { name: 'Delivery is optional' })).toBeNull(),
+    );
     expect(screen.queryByLabelText('Where buyers pick up')).toBeNull();
   });
 
-  it('turning off the only option asks first, in oda’s sheet (decision #109 a)', async () => {
+  it('turning off the only option needs no warning: buyers still order (decision #110)', async () => {
     mockGet.mockResolvedValue({
       data: {
         ...EMPTY,
@@ -138,17 +169,11 @@ describe('Delivery', () => {
       error: null,
     });
     await render(<DeliveryScreen />);
+    mockSettings.mockResolvedValue({ data: EMPTY, error: null });
     await fireEvent(await screen.findByLabelText('Buyers can pick up'), 'valueChange', false);
-    expect(screen.getByRole('header', { name: 'Stop taking orders?' })).toBeTruthy();
-    expect(screen.getByText(/buyers can’t order/)).toBeTruthy();
-    expect(mockSettings).not.toHaveBeenCalled();
-    // Cancel keeps pickup on; Continue turns it off.
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('header', { name: 'Stop taking orders?' })).toBeNull();
-    expect(mockSettings).not.toHaveBeenCalled();
-    await fireEvent(screen.getByLabelText('Buyers can pick up'), 'valueChange', false);
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(mockSettings).toHaveBeenCalledWith({ pickupEnabled: false }));
+    expect(await screen.findByRole('header', { name: 'Delivery is optional' })).toBeTruthy();
   });
 
   it('offline with nothing saved: says so and offers Try again', async () => {
