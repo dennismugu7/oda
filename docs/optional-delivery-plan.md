@@ -1,6 +1,6 @@
 # Optional delivery: plan (reverses decision #61 c)
 
-**Status:** plan only, waiting for the owner's answers (review stop 0). No code in this step.
+**Status:** **approved** 2026-10-12 with the owner's answers (decision #110): Q1 no "Arrange with seller" when the seller lists areas or pickup (no toggle); Q2 `arranged`; Q3 delivery cost outside the total; Q4 the note in `address_text`; Q5 done = an area, pickup or the "I'll arrange delivery with buyers" tap; Q6 By rider / By parcel / Buyer collects; Q7 keep "Pay on delivery", line "Pay when you get your order"; Q8 server + web to `main` after CP2, only once the old-app check passes; Q9 yes (production has only the owner's test shops). Added: an **old-app check** before anything reaches `main` (done in CP1: decision #110 f), and Kenya's flag shown whole at 20 × 15 (#110 h). **CP1 done** (branch `optional-delivery-cp1`); CP2b is dropped (Q1).
 **Branch:** `optional-delivery-plan`, from `app-fixes-1` (PR #111, which holds the shared ordering rule this plan changes).
 
 **Owner decision (2026-10-12):** delivery and pickup become **optional**. A seller is never forced to publish delivery areas or a pickup location. A shop **takes orders when it is not paused and has a way to get paid**. When the seller has no delivery option, buyer and seller arrange how the order reaches the buyer between them (usually on WhatsApp).
