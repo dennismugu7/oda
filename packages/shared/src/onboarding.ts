@@ -160,7 +160,11 @@ export function finishYourShop(facts: ChecklistFacts): FinishYourShop {
   const listed = FINISH_ITEMS.filter(
     (id) => id !== 'product_photo' || (facts.productsWithoutPhoto ?? 0) > 0,
   );
-  const items = listed.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
+  // Delivery first while it's missing: without it buyers can't order at all (decision #109).
+  const ordered = done.delivery
+    ? listed
+    : ['delivery' as const, ...listed.filter((id) => id !== 'delivery')];
+  const items = ordered.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
   const count = items.filter((i) => i.done).length;
   return { items, done: count, total: items.length, complete: count === items.length };
 }

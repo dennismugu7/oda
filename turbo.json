@@ -54,7 +54,11 @@
     "@oda/web#test": {
       "dependsOn": ["transit"],
       "env": ["DATABASE_URL"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/seller/assets/brands/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/seller/assets/brands/**",
+        "$TURBO_ROOT$/apps/seller/assets/flags/**"
+      ]
     },
     "@oda/seller#test": {
       "dependsOn": ["transit"],

@@ -16,6 +16,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiLabel } from '@/config';
 import { colors, fonts, radii, spacing, text } from '@/theme';
+import { DeletedNotice } from '@/welcome/DeletedNotice';
 import { ANIMS, END_MS, opacityAt, sample } from '@/welcome/timeline';
 
 const EXTRA_BOLD = fonts.display;
@@ -218,6 +219,7 @@ export default function Welcome() {
         </Pressable>
         {__DEV__ ? <Text style={styles.devLabel}>API: {apiLabel()}</Text> : null}
       </View>
+      <DeletedNotice />
     </SafeAreaView>
   );
 }

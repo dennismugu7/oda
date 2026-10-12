@@ -15,6 +15,15 @@ describe('brand assets', () => {
     expect(web.equals(seller)).toBe(true);
   });
 
+  it("Kenya's flag is flag-icons' file, unchanged, in both apps (decision #109 b)", () => {
+    const web = read('../public/flags/ke.svg');
+    const seller = read('../../seller/assets/flags/ke.svg');
+    expect(web.equals(seller)).toBe(true);
+    expect(createHash('sha256').update(web).digest('hex')).toBe(
+      '699163d87382eb969d8a26d4ce1a99a00264e8b7b95276abf585476506f46e82',
+    );
+  });
+
   it("TikTok's icon is the file from TikTok's logo pack, unchanged (decision #108)", () => {
     const web = read('../public/brands/tiktok-icon-black-circle.png');
     const seller = read('../../seller/assets/brands/tiktok-icon-black-circle.png');

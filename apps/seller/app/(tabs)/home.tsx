@@ -33,6 +33,7 @@ import { useMe } from '@/auth/useMe';
 import { SHOP_BASE_URL } from '@/config';
 import { homeApi, homeCache, type HomeData } from '@/home/api';
 import { FinishCard } from '@/home/FinishCard';
+import { NotTakingOrdersBanner } from '@/home/NotTakingOrdersBanner';
 import { errorMessage } from '@/onboarding/labels';
 import { ordersApi, ordersCache, type OrderList, type OrderRow } from '@/orders/api';
 import { Button, FormMessage } from '@/ui/auth';
@@ -164,6 +165,7 @@ export default function HomeTab() {
         </View>
 
         <View style={styles.body}>
+          {home?.ordering ? <NotTakingOrdersBanner blockers={home.ordering.blockers} /> : null}
           {shop?.suspended ? <SuspendedBanner /> : null}
           {offline ? (
             <OfflineBar saved={!!home} />

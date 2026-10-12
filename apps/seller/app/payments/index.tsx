@@ -3,7 +3,7 @@
 // "When buyers pay" (at least one on) and "oda never touches your money".
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ApiError } from '@/api';
 import { errorMessage } from '@/onboarding/labels';
 import { paymentsCache, settingsApi, type PaymentAccount, type Payments } from '@/settings/api';
@@ -15,8 +15,10 @@ import { Card, rowStyles, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { useConfirm } from '@/ui/confirmSheet';
 
 export default function PaymentsScreen() {
+  const confirm = useConfirm();
   const { data, error, offline, reload, keep } = useLoaded(settingsApi.payments, paymentsCache);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -32,18 +34,13 @@ export default function PaymentsScreen() {
   }
 
   function remove(account: PaymentAccount) {
-    Alert.alert(
-      `Remove ${ACCOUNT_TITLES[account.type]} ${displayNumber(account)}?`,
-      'Past orders keep the payment details they showed.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => run(() => settingsApi.removeAccount(account.id)),
-        },
-      ],
-    );
+    confirm.ask({
+      title: `Remove ${ACCOUNT_TITLES[account.type]} ${displayNumber(account)}?`,
+      message: 'Past orders keep the payment details they showed.',
+      confirmLabel: 'Remove',
+      destructive: true,
+      onConfirm: () => run(() => settingsApi.removeAccount(account.id)),
+    });
   }
 
   const edit = (account?: PaymentAccount) =>
@@ -182,6 +179,7 @@ export default function PaymentsScreen() {
           </InfoNote>
         </>
       ) : null}
+      {confirm.sheet}
     </SettingsLayout>
   );
 }

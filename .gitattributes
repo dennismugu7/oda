@@ -2,3 +2,8 @@
 *.png binary
 *.jpg binary
 *.ttf binary
+# Third-party files kept byte for byte (sha256 recorded in their README; decision #109 b).
+apps/seller/assets/flags/*.svg -text
+apps/web/public/flags/*.svg -text
+apps/seller/assets/flags/LICENSE-flag-icons -text
+apps/web/public/flags/LICENSE-flag-icons -text

@@ -4,8 +4,9 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 import { fetchMe } from '@/api';
+import { meCache } from '@/auth/useMe';
 import { SHOP_BASE_URL } from '@/config';
 import { errorMessage } from '@/onboarding/labels';
 import { settingsApi, type Details } from '@/settings/api';
@@ -17,6 +18,7 @@ import { memoryCache, useLoaded } from '@/settings/useLoaded';
 import { FormMessage } from '@/ui/auth';
 import { Card, Row, rowStyles, Section, ToggleRow } from '@/ui/rows';
 import { Sheet } from '@/ui/sheet';
+import { useConfirm } from '@/ui/confirmSheet';
 
 interface SettingsData {
   details: Details;
@@ -45,6 +47,7 @@ async function loadSettings() {
 }
 
 export default function SettingsScreen() {
+  const confirm = useConfirm();
   const { data, error, offline, reload, keep } = useLoaded(loadSettings, cache);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -67,33 +70,31 @@ export default function SettingsScreen() {
 
   function togglePause(on: boolean) {
     if (!on) return setPaused(false);
-    Alert.alert(
-      'Pause your shop?',
-      "Buyers can still see your shop and products, but they can't order until you turn this off.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Pause shop', onPress: () => setPaused(true) },
-      ],
-    );
+    confirm.ask({
+      title: 'Pause your shop?',
+      message:
+        "Buyers can still see your shop and products, but they can't order until you turn this off.",
+      confirmLabel: 'Pause shop',
+      onConfirm: () => setPaused(true),
+    });
   }
 
   function logOut() {
-    const again =
-      data?.hasPassword === false
-        ? "You'll need to sign in again with Google."
-        : "You'll need your email and password to sign in again.";
-    Alert.alert('Log out?', again, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await signOutOnThisPhone();
-          router.replace('/welcome');
-        },
+    // The full address for every account (owner, decision #109 a); it wraps, never truncated.
+    const email = data?.details.email ?? meCache.get()?.email;
+    confirm.ask({
+      title: 'Log out?',
+      message: email
+        ? `Are you sure you want to log out of ${email}?`
+        : 'Are you sure you want to log out?',
+      confirmLabel: 'Log out',
+      destructive: true,
+      onConfirm: async () => {
+        setSigningOut(true);
+        await signOutOnThisPhone();
+        router.replace('/welcome');
       },
-    ]);
+    });
   }
 
   const open = (path: string) => {
@@ -238,6 +239,7 @@ export default function SettingsScreen() {
           </Card>
         </>
       ) : null}
+      {confirm.sheet}
     </SettingsLayout>
   );
 }

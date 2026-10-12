@@ -15,7 +15,7 @@ import {
   type SQL,
 } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
-import { productBadges, type OrderSource, type StoreQuery } from '@oda/shared';
+import { orderingFacts, productBadges, type OrderSource, type StoreQuery } from '@oda/shared';
 import { publicUrl } from '../uploads';
 import { checkId, one } from './util';
 
@@ -96,10 +96,15 @@ export function publicRepo(db: Db) {
             .where(and(eq(t.deliveryAreas.shopId, row.id), isNull(t.deliveryAreas.deletedAt)))
             .limit(1),
         ]);
+        const facts = orderingFacts({
+          ...row,
+          hasActivePaymentAccount: !!active,
+          hasDeliveryArea: !!area,
+        });
         const shop = {
           ...row,
-          payNowAvailable: row.acceptsPayBefore && !!active,
-          hasDeliveryOption: row.pickupEnabled || !!area,
+          payNowAvailable: facts.payNowAvailable,
+          hasDeliveryOption: facts.hasDeliveryOption,
           logoUrl: publicUrl(row.logoPath),
         } as PublicShop;
         return { kind: 'shop', shop };

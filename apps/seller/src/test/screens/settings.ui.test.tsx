@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 import type { ApiError } from '@/api';
 import type { Details } from '@/settings/api';
 import { signOutOnThisPhone } from '@/settings/signOut';
@@ -130,7 +129,6 @@ describe('Settings · Change your password', () => {
 
 describe('Settings · Delete account', () => {
   it('Delete stays off until DELETE is typed, then deletes, signs out and leaves', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     mockDeleteAccount.mockResolvedValue({ data: {}, error: null });
     const user = userEvent.setup();
     await render(<DeleteAccount />);
@@ -144,13 +142,14 @@ describe('Settings · Delete account', () => {
     expect(remove).toBeEnabled();
     await user.press(remove);
     expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/welcome'));
-    expect(signOutOnThisPhone).toHaveBeenCalledTimes(1);
-    expect(alert).toHaveBeenCalledWith(
-      'Your account is deleted',
-      'Your shop is closed and you’re signed out. Your data is removed after 30 days.',
+    // Welcome says it's done, in oda's notice sheet (decision #109 a).
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith({
+        pathname: '/welcome',
+        params: { deleted: '1' },
+      }),
     );
-    alert.mockRestore();
+    expect(signOutOnThisPhone).toHaveBeenCalledTimes(1);
   });
 
   it('a failed delete says so and keeps the seller signed in', async () => {

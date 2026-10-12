@@ -13,7 +13,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -34,6 +33,7 @@ import { ScreenHeader } from '@/ui/screenHeader';
 import { Sheet } from '@/ui/sheet';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon, type IconName } from '@/ui/icon';
+import { useConfirm } from '@/ui/confirmSheet';
 
 const METHOD_ICON: Record<DeliveryArea['method'], IconName> = {
   rider: 'bike',
@@ -44,6 +44,7 @@ const NO_ORDERS_WARNING =
   'Without a delivery area or pickup, your shop shows "Not taking orders yet" and buyers can’t order.';
 
 export default function DeliveryScreen() {
+  const confirm = useConfirm();
   const insets = useSafeAreaInsets();
   const [delivery, setDelivery] = useState<Delivery | null>(deliveryCache.get());
   const [error, setError] = useState<string | null>(null);
@@ -105,10 +106,13 @@ export default function DeliveryScreen() {
 
   /** Asks first when the change leaves the shop without any way to get orders to buyers. */
   function confirmLosingLastOption(onYes: () => void) {
-    Alert.alert('Stop taking orders?', NO_ORDERS_WARNING, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Continue', style: 'destructive', onPress: onYes },
-    ]);
+    confirm.ask({
+      title: 'Stop taking orders?',
+      message: NO_ORDERS_WARNING,
+      confirmLabel: 'Continue',
+      destructive: true,
+      onConfirm: onYes,
+    });
   }
 
   function editPickup() {
@@ -180,10 +184,13 @@ export default function DeliveryScreen() {
       confirmLosingLastOption(remove);
       return;
     }
-    Alert.alert(`Delete ${area.name}?`, 'Past orders keep the area’s name.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: remove },
-    ]);
+    confirm.ask({
+      title: `Delete ${area.name}?`,
+      message: 'Past orders keep the area’s name.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      onConfirm: remove,
+    });
   }
 
   function moveArea(area: DeliveryArea, by: -1 | 1) {
@@ -420,6 +427,7 @@ export default function DeliveryScreen() {
             : []
         }
       />
+      {confirm.sheet}
     </View>
   );
 }

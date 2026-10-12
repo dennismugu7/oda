@@ -1,11 +1,13 @@
 // The seller app's calls for Home (/api/home) and the notifications list (M6 CP3).
-import type { OrderSource, PushType } from '@oda/shared';
+import type { OrderingBlocker, OrderSource, PushType } from '@oda/shared';
 import { apiJson } from '@/api';
 
 export interface HomeData {
   firstName: string | null;
   hasOrders: boolean;
   unreadNotifications: number;
+  /** What stops buyers ordering; empty when the shop takes orders (decision #109). */
+  ordering?: { blockers: OrderingBlocker[] };
   sales: { thisWeek: number; lastWeek: number; days: number[]; todayIndex: number };
   sources: { ordersThisWeek: number; top: { source: OrderSource; count: number } | null };
 }

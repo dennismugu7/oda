@@ -36,6 +36,14 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-11 · App fixes 1 (decision #109; branch `app-fixes-1`, draft PR, not merged)
+
+- **Done, one commit each:** (1) `ConfirmSheet` replaces all 11 `Alert.alert` calls (nine confirmations; the Shop tab status menu → choice `Sheet`; "Your account is deleted" → notice on Welcome); Log out names the full account email. (2) Kenya's flag (flag-icons 7.2.3, MIT, byte for byte) before +254 in onboarding, Your details and the web checkout. (3) Shared ordering rule (`packages/shared/src/ordering.ts`); `/api/home` returns `ordering.blockers`; Home banner with a button per missing item; delivery first in "Finish your shop".
+- **faraja-styles (production):** not taking orders because it has no delivery area and pickup is off; not paused, Pay now works.
+- **Tests:** `confirmSheet.ui.test.tsx`, `confirm-sheets.ui.test.tsx` (status sheet, deleted notice), updated delivery / settings / google-seller tests; `kenyaFlag.test.ts`, web `brandAssets.test.ts` (both flag copies + hash), flag UI tests, checkout e2e (flag loaded, 20 × 14); `ordering.test.ts`, the checklist order test, `sellerHome.test.ts` (blockers from the database), `home-ordering.ui.test.tsx` (paused, no payment, no delivery, several, all fine).
+- **Deviations:** the 4:3 flag fills the 20 × 14 box (slice: a sliver of the top and bottom stripes is cut by the box, the file is unchanged). The Home banner needs the server change deployed (staging after merge; production after release-production).
+- **Next:** owner review; merges with `google-signin-app` and `google-signin-tiktok-logo`.
+
 ## 2026-10-11 · TikTok's official logo (decision #108; branch `google-signin-tiktok-logo`, draft PR, not merged)
 
 - **Done:** TikTok's developer logo pack (6.6 MB) downloaded from the design-guidelines page; `TikTok_Icon_Black_Circle.png` (owner's choice: the pack has no full-colour icon alone for light backgrounds, nor an SVG of it) copied unmodified to `apps/seller/assets/brands/` and `apps/web/public/brands/` with README notes (URL, date, file, sha256). It replaces the music note on step 2, the step 6 share buttons, Share your shop and Shop profile (`BrandIcon brand="tiktok"`; `Row`/`IconTile` take a `mark`). `MusicNotes` removed from the icon set.

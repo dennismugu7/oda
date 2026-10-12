@@ -3,7 +3,7 @@
 // purge job removes the data, photos and account after 30 days (decision #72 c).
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { errorMessage } from '@/onboarding/labels';
 import { settingsApi } from '@/settings/api';
 import { signOutOnThisPhone } from '@/settings/signOut';
@@ -39,11 +39,8 @@ export default function DeleteAccount() {
       return;
     }
     await signOutOnThisPhone();
-    router.replace('/welcome');
-    Alert.alert(
-      'Your account is deleted',
-      'Your shop is closed and you’re signed out. Your data is removed after 30 days.',
-    );
+    // Welcome shows "Your account is deleted" as a notice sheet (decision #109 a).
+    router.replace({ pathname: '/welcome', params: { deleted: '1' } });
   }
 
   return (

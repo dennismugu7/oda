@@ -4,6 +4,8 @@ import { schema, type Db } from '@oda/db';
 import {
   isSale,
   ORDER_STATUSES,
+  orderingBlockers,
+  orderingFacts,
   TAGGED_SOURCES,
   type NotificationsReadBody,
   type OrderSource,
@@ -96,7 +98,7 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
       const ordersThisWeek = sources.reduce((sum, s) => sum + s.n, 0);
       const top = sources.find((s) => TAGGED_SOURCES.includes(s.source as OrderSource));
 
-      const [[anyOrder], [unread], [profile]] = await Promise.all([
+      const [[anyOrder], [unread], [profile], [shop], [active], [area]] = await Promise.all([
         db.select({ id: t.orders.id }).from(t.orders).where(eq(t.orders.shopId, shopId)).limit(1),
         db
           .select({ n: count() })
@@ -106,12 +108,39 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
           .select({ firstName: t.profiles.firstName })
           .from(t.profiles)
           .where(eq(t.profiles.id, ctx.userId)),
+        // Can buyers order? The buyer web's rule (decision #109): the Home banner lists what's missing.
+        db
+          .select({
+            isPaused: t.shops.isPaused,
+            acceptsPayBefore: t.shops.acceptsPayBefore,
+            acceptsPayOnDelivery: t.shops.acceptsPayOnDelivery,
+            pickupEnabled: t.shops.pickupEnabled,
+          })
+          .from(t.shops)
+          .where(eq(t.shops.id, shopId)),
+        db
+          .select({ id: t.paymentAccounts.id })
+          .from(t.paymentAccounts)
+          .where(and(eq(t.paymentAccounts.shopId, shopId), eq(t.paymentAccounts.isActive, true)))
+          .limit(1),
+        db
+          .select({ id: t.deliveryAreas.id })
+          .from(t.deliveryAreas)
+          .where(and(eq(t.deliveryAreas.shopId, shopId), isNull(t.deliveryAreas.deletedAt)))
+          .limit(1),
       ]);
+      const blockers = shop
+        ? orderingBlockers(
+            orderingFacts({ ...shop, hasActivePaymentAccount: !!active, hasDeliveryArea: !!area }),
+          )
+        : [];
 
       return {
         firstName: profile?.firstName ?? null,
         hasOrders: !!anyOrder,
         unreadNotifications: unread?.n ?? 0,
+        /** What stops buyers ordering (empty when the shop takes orders). */
+        ordering: { blockers },
         sales: {
           thisWeek: bars.reduce((a, b) => a + b, 0),
           lastWeek: last?.total ?? 0,

@@ -539,7 +539,18 @@ export function CheckoutForm({
             errors.phone ? 'border-danger' : 'border-border'
           }`}
         >
-          <span className="border-r border-border px-4 text-body text-text-secondary">+254</span>
+          <span className="flex items-center gap-2 border-r border-border px-4 text-body text-text-secondary">
+            {/* Kenya's flag, flag-icons "ke" unmodified (public/flags/README.md, decision #109 b). */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- a 1 KB SVG, nothing to optimise */}
+            <img
+              src="/flags/ke.svg"
+              alt=""
+              width={20}
+              height={15}
+              className="h-[15px] w-5 shrink-0 rounded-[3px] object-contain"
+            />
+            +254
+          </span>
           <input
             id="checkout-phone"
             type="tel"

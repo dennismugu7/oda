@@ -21,7 +21,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import {
-  Alert,
   Image,
   Linking,
   Pressable,
@@ -42,6 +41,7 @@ import { BrandIcon, StatusRing, type Brand } from '@/ui/brandIcons';
 import { StepStatus } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
+import { useConfirm } from '@/ui/confirmSheet';
 
 // Official brand marks for WhatsApp, Instagram, Facebook and TikTok (decisions #55, #108).
 const BRANDS: Partial<Record<ShareTarget, Brand>> = {
@@ -75,6 +75,7 @@ export default function ShopLive() {
 }
 
 function Step({ state }: { state: OnboardingState }) {
+  const confirm = useConfirm();
   const shop = state.shop!;
   const checklist = state.checklist!;
   const product = state.product;
@@ -141,17 +142,17 @@ function Step({ state }: { state: OnboardingState }) {
       apply();
       return;
     }
-    Alert.alert('Replace your text?', 'Your changes to the post will be lost.', [
-      { text: 'Keep my text', style: 'cancel' },
-      {
-        text: 'Replace',
-        style: 'destructive',
-        onPress: () => {
-          setEdited(null);
-          apply();
-        },
+    confirm.ask({
+      title: 'Replace your text?',
+      message: 'Your changes to the post will be lost.',
+      confirmLabel: 'Replace',
+      destructive: true,
+      cancelLabel: 'Keep my text',
+      onConfirm: () => {
+        setEdited(null);
+        apply();
       },
-    ]);
+    });
   }
 
   async function done() {
@@ -424,6 +425,7 @@ function Step({ state }: { state: OnboardingState }) {
           <Button title="Go to my shop" loading={busy} onPress={done} />
         </View>
       </ScrollView>
+      {confirm.sheet}
     </SafeAreaView>
   );
 }

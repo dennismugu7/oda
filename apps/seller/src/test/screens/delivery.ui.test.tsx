@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 import type { ApiError } from '@/api';
 import {
   deliveryCache,
@@ -128,8 +127,7 @@ describe('Delivery', () => {
     expect(screen.queryByLabelText('Where buyers pick up')).toBeNull();
   });
 
-  it('turning off the only option asks first', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  it('turning off the only option asks first, in oda’s sheet (decision #109 a)', async () => {
     mockGet.mockResolvedValue({
       data: {
         ...EMPTY,
@@ -141,13 +139,16 @@ describe('Delivery', () => {
     });
     await render(<DeliveryScreen />);
     await fireEvent(await screen.findByLabelText('Buyers can pick up'), 'valueChange', false);
-    expect(alert).toHaveBeenCalledWith(
-      'Stop taking orders?',
-      expect.stringContaining('buyers can’t order'),
-      expect.any(Array),
-    );
+    expect(screen.getByRole('header', { name: 'Stop taking orders?' })).toBeTruthy();
+    expect(screen.getByText(/buyers can’t order/)).toBeTruthy();
     expect(mockSettings).not.toHaveBeenCalled();
-    alert.mockRestore();
+    // Cancel keeps pickup on; Continue turns it off.
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('header', { name: 'Stop taking orders?' })).toBeNull();
+    expect(mockSettings).not.toHaveBeenCalled();
+    await fireEvent(screen.getByLabelText('Buyers can pick up'), 'valueChange', false);
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(mockSettings).toHaveBeenCalledWith({ pickupEnabled: false }));
   });
 
   it('offline with nothing saved: says so and offers Try again', async () => {
