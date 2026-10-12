@@ -1,7 +1,9 @@
 // Delivery (design 20b-delivery; moved to M6 by decision #61): delivery areas buyers pick at
-// checkout, pickup, and free delivery over an amount. A shop needs an area or pickup to take
-// orders, so the screen says so while it has neither. Tap an area to edit it; hold it to
-// move it or delete it. Pickup and free delivery are edited in place.
+// checkout, pickup, and free delivery over an amount. All optional (decision #110): with
+// neither an area nor pickup, buyers still order and the seller arranges delivery with them;
+// the screen says so and offers "I'll arrange delivery with buyers" (the checklist item). Tap
+// an area to edit it; hold it to move it or delete it. Pickup and free delivery are edited in
+// place.
 import {
   DELIVERY_METHOD_LABELS,
   formatKsh,
@@ -26,7 +28,9 @@ import type { ApiError } from '@/api';
 import { deliveryApi, deliveryCache, type Delivery, type DeliveryArea } from '@/delivery/api';
 import { parseShillings } from '@/delivery/form';
 import { move } from '@/catalogue/form';
+import { onboardingApi } from '@/onboarding/api';
 import { errorMessage } from '@/onboarding/labels';
+import { setOnboardingState } from '@/onboarding/useOnboarding';
 import { Button, Field, FormMessage, InfoNote } from '@/ui/auth';
 import { OfflineBar } from '@/ui/offline';
 import { ScreenHeader } from '@/ui/screenHeader';
@@ -39,9 +43,6 @@ const METHOD_ICON: Record<DeliveryArea['method'], IconName> = {
   rider: 'bike',
   parcel: 'package-variant-closed',
 };
-
-const NO_ORDERS_WARNING =
-  'Without a delivery area or pickup, your shop shows "Not taking orders yet" and buyers can’t order.';
 
 export default function DeliveryScreen() {
   const confirm = useConfirm();
@@ -104,15 +105,19 @@ export default function DeliveryScreen() {
     return false;
   }
 
-  /** Asks first when the change leaves the shop without any way to get orders to buyers. */
-  function confirmLosingLastOption(onYes: () => void) {
-    confirm.ask({
-      title: 'Stop taking orders?',
-      message: NO_ORDERS_WARNING,
-      confirmLabel: 'Continue',
-      destructive: true,
-      onConfirm: onYes,
-    });
+  /** "I'll arrange delivery with buyers": ticks the optional delivery checklist item. */
+  async function arrangeWithBuyers() {
+    if (!delivery) return;
+    setBusy(true);
+    setError(null);
+    const { data, error: failed } = await onboardingApi.tick('arrange_delivery');
+    setBusy(false);
+    if (!data) {
+      setError(errorMessage(failed));
+      return;
+    }
+    setOnboardingState(data);
+    keep({ ...delivery, arrangeDelivery: true });
   }
 
   function editPickup() {
@@ -138,12 +143,9 @@ export default function DeliveryScreen() {
       run(() => deliveryApi.settings({ pickupEnabled: true }));
       return;
     }
-    const off = () => {
-      setEditing(null);
-      run(() => deliveryApi.settings({ pickupEnabled: false }));
-    };
-    if (delivery.areas.length === 0) confirmLosingLastOption(off);
-    else off();
+    // Turning the last option off needs no warning: buyers still order (decision #110).
+    setEditing(null);
+    run(() => deliveryApi.settings({ pickupEnabled: false }));
   }
 
   async function savePickup() {
@@ -180,10 +182,6 @@ export default function DeliveryScreen() {
   function removeArea(area: DeliveryArea) {
     if (!delivery) return;
     const remove = () => run(() => deliveryApi.deleteArea(area.id));
-    if (delivery.areas.length === 1 && !delivery.pickupEnabled) {
-      confirmLosingLastOption(remove);
-      return;
-    }
     confirm.ask({
       title: `Delete ${area.name}?`,
       message: 'Past orders keep the area’s name.',
@@ -241,11 +239,31 @@ export default function DeliveryScreen() {
       >
         {offline ? <OfflineBar /> : null}
         {!delivery.hasDeliveryOption ? (
-          <View style={styles.warning} accessibilityRole="alert">
-            <Icon name="alert-triangle" size={18} color={colors.warningTextStrong} />
-            <Text style={styles.warningText}>
-              Buyers can’t order yet. Add a delivery area or turn on pickup.
+          <View style={styles.optional} accessibilityRole="summary">
+            <View style={styles.optionalHead}>
+              <Icon name="info" size={18} color={colors.navy} />
+              <Text accessibilityRole="header" style={styles.optionalTitle}>
+                Delivery is optional
+              </Text>
+            </View>
+            <Text style={styles.optionalText}>
+              Without delivery areas or pickup, buyers can still order. You arrange delivery with
+              them, usually on WhatsApp.
             </Text>
+            {delivery.arrangeDelivery ? (
+              <View style={styles.optionalDone}>
+                <Icon name="check" size={18} color={colors.green} />
+                <Text style={styles.optionalDoneText}>You’ll arrange delivery with buyers</Text>
+              </View>
+            ) : (
+              <Button
+                title="I’ll arrange delivery with buyers"
+                variant="secondary"
+                onPress={arrangeWithBuyers}
+                loading={busy}
+                disabled={offline}
+              />
+            )}
           </View>
         ) : null}
         {error && !offline ? <FormMessage>{error}</FormMessage> : null}
@@ -378,7 +396,9 @@ export default function DeliveryScreen() {
         </View>
 
         <InfoNote icon="info">
-          Buyers choose a delivery area or pickup at checkout. The fee is added to their total.
+          {delivery.hasDeliveryOption
+            ? 'Buyers choose a delivery area or pickup at checkout. The fee is added to their total.'
+            : 'Add an area or pickup any time: buyers then choose one at checkout, and the fee is added to their total.'}
         </InfoNote>
       </ScrollView>
 
@@ -575,15 +595,17 @@ const styles = StyleSheet.create({
   editor: { gap: spacing.sm, paddingTop: spacing.sm },
   editorButtons: { flexDirection: 'row', gap: spacing.sm },
   prefix: { ...text('bodyStrong'), color: colors.textSecondary },
-  warning: {
-    flexDirection: 'row',
+  optional: {
     gap: spacing.sm,
-    alignItems: 'flex-start',
-    backgroundColor: colors.warningTint,
+    backgroundColor: colors.surface,
     borderRadius: radii.lg,
     padding: spacing.md,
   },
-  warningText: { ...text('bodyStrong'), color: colors.warningTextStrong, flex: 1 },
+  optionalHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  optionalTitle: { ...text('bodyStrong'), color: colors.navy },
+  optionalText: { ...text('body'), color: colors.textSecondary },
+  optionalDone: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  optionalDoneText: { ...text('bodyStrong'), color: colors.green },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
 });

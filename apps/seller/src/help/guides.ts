@@ -85,12 +85,12 @@ export const GUIDES: Guide[] = [
         body: 'Set an amount, for example KSh 5,000, and turn on **Free delivery over the amount** in the areas it applies to. Orders over that amount get free delivery in those areas.',
       },
       {
-        heading: 'You need one way to deliver',
-        body: 'Without a delivery area or pickup, your shop shows "Not taking orders yet".',
+        heading: 'Delivery is optional',
+        body: 'Without delivery areas or pickup, buyers can still order and you arrange delivery with them on WhatsApp. Their order shows *Arranged with buyer*. Tap **I’ll arrange delivery with buyers** on the Delivery screen to tick it off your checklist.',
       },
       {
         heading: 'Sending an order',
-        body: 'When it’s on its way, open the order and tap **Mark as sent** (**Mark ready for pickup** for pickup orders). When the buyer has it, tap **Mark as delivered**. The buyer gets an email each time, if they gave an email at checkout.',
+        body: 'When it’s on its way, open the order and tap **Mark as sent** (**Mark ready for pickup** for pickup orders). For an order arranged with the buyer, choose **By rider**, **By parcel** or **Buyer collects**. When the buyer has it, tap **Mark as delivered**. The buyer gets an email each time, if they gave an email at checkout.',
       },
     ],
   },

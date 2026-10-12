@@ -38,9 +38,9 @@ search.
 
 **Free delivery.** Set an amount, for example KSh 5,000, and turn on **Free delivery over the amount** in the areas it applies to. Orders over that amount get free delivery in those areas.
 
-**You need one way to deliver.** Without a delivery area or pickup, your shop shows "Not taking orders yet".
+**Delivery is optional.** Without delivery areas or pickup, buyers can still order and you arrange delivery with them on WhatsApp. Their order shows *Arranged with buyer*. Tap **I’ll arrange delivery with buyers** on the Delivery screen to tick it off your checklist.
 
-**Sending an order.** When it’s on its way, open the order and tap **Mark as sent** (**Mark ready for pickup** for pickup orders). When the buyer has it, tap **Mark as delivered**. The buyer gets an email each time, if they gave an email at checkout.
+**Sending an order.** When it’s on its way, open the order and tap **Mark as sent** (**Mark ready for pickup** for pickup orders). For an order arranged with the buyer, choose **By rider**, **By parcel** or **Buyer collects**. When the buyer has it, tap **Mark as delivered**. The buyer gets an email each time, if they gave an email at checkout.
 
 ---
 

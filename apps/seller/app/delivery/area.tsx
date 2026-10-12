@@ -111,12 +111,10 @@ export default function AreaScreen() {
 
   function remove() {
     if (!area || !delivery) return;
-    const last = delivery.areas.length === 1 && !delivery.pickupEnabled;
+    // Even the last area: buyers still order without one (decision #110).
     confirm.ask({
       title: `Delete ${area.name}?`,
-      message: last
-        ? 'This is your only delivery option: your shop will show "Not taking orders yet" until you add another or turn on pickup.'
-        : 'Past orders keep the area’s name.',
+      message: 'Past orders keep the area’s name.',
       confirmLabel: 'Delete',
       destructive: true,
       onConfirm: async () => {

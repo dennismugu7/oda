@@ -185,6 +185,23 @@ const SENT_OPTIONS: {
   },
 ];
 
+/** Arranged orders (decision #110 d): the same methods, "Buyer collects" for pickup. */
+const ARRANGED_SENT_OPTIONS: typeof SENT_OPTIONS = [
+  { method: 'rider', title: 'By rider', line: 'Boda boda or delivery rider', icon: 'bike' },
+  {
+    method: 'parcel',
+    title: 'By parcel',
+    line: 'Bus parcel or courier',
+    icon: 'package-variant-closed',
+  },
+  {
+    method: 'pickup',
+    title: 'Buyer collects',
+    line: 'Where you agreed with the buyer',
+    icon: 'storefront-outline',
+  },
+];
+
 function MarkSent({ order, busy, error, onClose, onSubmit }: SheetProps) {
   const [method, setMethod] = useState<SentMethod>(
     order.fulfilment === 'pickup' ? 'pickup' : 'rider',
@@ -192,18 +209,25 @@ function MarkSent({ order, busy, error, onClose, onSubmit }: SheetProps) {
   const [phone, setPhone] = useState('');
   const [wa, setWa] = useWhatsApp(order);
   const name = firstName(order.buyer.name);
+  const arranged = order.fulfilment === 'arranged';
+  const options = arranged ? ARRANGED_SENT_OPTIONS : SENT_OPTIONS;
   const where =
-    order.fulfilment === 'pickup' ? 'for pickup' : `to ${order.deliveryAreaName ?? 'the buyer'}`;
+    order.fulfilment === 'pickup'
+      ? 'for pickup'
+      : arranged
+        ? `to ${name}`
+        : `to ${order.deliveryAreaName ?? 'the buyer'}`;
+  const ready = arranged ? 'Ready to collect' : 'Ready for pickup';
   const count = order.items.reduce((n, i) => n + i.qty, 0);
   return (
     <ActionSheet
       visible
-      title={method === 'pickup' ? 'Ready for pickup' : 'Mark as sent'}
+      title={method === 'pickup' ? ready : 'Mark as sent'}
       subtitle={`Order #${order.number} · ${count} ${count === 1 ? 'item' : 'items'} ${where}`}
       onClose={onClose}
     >
       <Text style={styles.label}>How is it going?</Text>
-      {SENT_OPTIONS.map((o) => {
+      {options.map((o) => {
         const on = o.method === method;
         return (
           <Pressable
@@ -241,7 +265,9 @@ function MarkSent({ order, busy, error, onClose, onSubmit }: SheetProps) {
         name={name}
         line={
           method === 'pickup'
-            ? `${name} gets your pickup place and the order link.`
+            ? arranged
+              ? `${name} gets a message that it’s ready to collect, and the order link.`
+              : `${name} gets your pickup place and the order link.`
             : method === 'rider'
               ? `${name} gets the rider’s number and the order link.`
               : `${name} gets a message with the order link.`
@@ -251,7 +277,13 @@ function MarkSent({ order, busy, error, onClose, onSubmit }: SheetProps) {
       />
       {error ? <FormMessage>{error}</FormMessage> : null}
       <Button
-        title={method === 'pickup' ? 'Mark ready for pickup' : 'Mark as sent'}
+        title={
+          method === 'pickup'
+            ? arranged
+              ? 'Mark ready to collect'
+              : 'Mark ready for pickup'
+            : 'Mark as sent'
+        }
         loading={busy}
         onPress={() =>
           onSubmit(

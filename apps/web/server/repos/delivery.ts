@@ -45,6 +45,8 @@ export function deliveryRepo(db: Db, ctx: SellerCtx) {
         areaCount: areas.length,
         pickupEnabled: shop.pickupEnabled,
       }),
+      /** "I'll arrange delivery with buyers" was tapped (decision #110 e). */
+      arrangeDelivery: !!(shop.checklist as Record<string, string> | null)?.arrange_delivery,
     };
   }
 

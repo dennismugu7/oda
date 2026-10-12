@@ -1,6 +1,7 @@
 // New order (design 17-new-order; spec §5.4): an order the seller takes from a DM, a call or in
 // person. Buyer name and WhatsApp number, products from the catalogue (size / colour / qty),
-// pickup or a delivery area with an editable fee, and Already paid / Not paid yet / Pay on
+// pickup, a delivery area or "Arrange with buyer" (decision #110) with an editable fee, and
+// Already paid / Not paid yet / Pay on
 // delivery. Prices and the total come from the server's quote; after creating, the order link
 // is shown to copy or send on WhatsApp (for "Not paid yet" it's where the buyer pays).
 import {
@@ -50,7 +51,8 @@ import { Chip } from '@/ui/onboarding';
 import { colors, fonts, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
 
-type Choice = { kind: 'pickup' } | { kind: 'delivery'; areaId: string } | null;
+type Choice =
+  { kind: 'pickup' } | { kind: 'arranged' } | { kind: 'delivery'; areaId: string } | null;
 
 /** A manual order's draft (decision #100), with its idempotency key so a retry can't double it. */
 interface SavedOrderDraft {
@@ -157,7 +159,7 @@ export default function NewOrder() {
     if (!quote || !choice || lines.length === 0) return null;
     return (
       quote.options.find((o) =>
-        choice.kind === 'pickup' ? o.kind === 'pickup' : o.areaId === choice.areaId,
+        choice.kind === 'delivery' ? o.areaId === choice.areaId : o.kind === choice.kind,
       ) ?? null
     );
   }, [quote, choice, lines.length]);
@@ -168,7 +170,9 @@ export default function NewOrder() {
         ? null
         : choice.kind === 'pickup'
           ? { kind: 'pickup' as const }
-          : { kind: 'delivery' as const, areaId: choice.areaId, addressText: address };
+          : choice.kind === 'arranged'
+            ? { kind: 'arranged' as const, note: address.trim() || null }
+            : { kind: 'delivery' as const, areaId: choice.areaId, addressText: address };
     const problem = newOrderProblem({ name, phone, lines, fulfilment });
     if (problem) {
       setError(problem);
@@ -383,6 +387,11 @@ export default function NewOrder() {
                   onPress={() => setChoice({ kind: 'delivery', areaId: a.id })}
                 />
               ))}
+              <Chip
+                label="Arrange with buyer"
+                selected={choice?.kind === 'arranged'}
+                onPress={() => setChoice({ kind: 'arranged' })}
+              />
             </View>
           )}
           {choice?.kind === 'delivery' ? (
@@ -393,6 +402,16 @@ export default function NewOrder() {
               placeholder="Estate, building, landmark"
               maxLength={200}
               error={fieldErrors['fulfilment.addressText']}
+            />
+          ) : choice?.kind === 'arranged' ? (
+            <Field
+              label="Note"
+              labelHint="Optional"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Where and when you agreed"
+              maxLength={300}
+              error={fieldErrors['fulfilment.note']}
             />
           ) : null}
           {choice ? (
@@ -406,9 +425,11 @@ export default function NewOrder() {
                 <Text style={styles.feeLabel}>Delivery fee</Text>
                 <Text style={styles.feeValue}>
                   {option
-                    ? option.deliveryFee === 0
-                      ? 'Free'
-                      : formatKsh(option.deliveryFee)
+                    ? option.deliveryFee > 0
+                      ? formatKsh(option.deliveryFee)
+                      : option.kind === 'arranged'
+                        ? 'Not included'
+                        : 'Free'
                     : '—'}
                 </Text>
                 <Icon name="edit-2" size={18} color={colors.textSecondary} />

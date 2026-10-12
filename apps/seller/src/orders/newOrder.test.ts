@@ -46,7 +46,11 @@ describe('New order lines', () => {
     expect(newOrderProblem(ok)).toBeNull();
     expect(newOrderProblem({ ...ok, name: ' ' })).toBe('Enter the buyer’s name.');
     expect(newOrderProblem({ ...ok, lines: [] })).toBe('Add at least one product.');
-    expect(newOrderProblem({ ...ok, fulfilment: null })).toBe('Choose pickup or a delivery area.');
+    expect(newOrderProblem({ ...ok, fulfilment: null })).toBe(
+      'Choose pickup, a delivery area or Arrange with buyer.',
+    );
+    // Arranged with the buyer (decision #110): no address needed, the note is optional.
+    expect(newOrderProblem({ ...ok, fulfilment: { kind: 'arranged', note: null } })).toBeNull();
     expect(
       newOrderProblem({ ...ok, fulfilment: { kind: 'delivery', areaId: 'a', addressText: '' } }),
     ).toBe('Enter the delivery address.');

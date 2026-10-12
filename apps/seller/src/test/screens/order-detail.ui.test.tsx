@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ActionResult, OrderDetail } from '@/orders/api';
 import type { ApiError } from '@/api';
@@ -343,5 +344,68 @@ describe('Order detail · actions', () => {
     await user.press(screen.getAllByRole('button', { name: 'Mark refund sent' }).at(-1)!);
     expect(mockAct).toHaveBeenCalledWith(id, { type: 'markRefundSent' });
     expect(await screen.findByText('Refund sent')).toBeTruthy();
+  });
+});
+
+describe('Order detail · arranged with the buyer (decision #110)', () => {
+  const arranged = (overrides: Partial<OrderDetail> = {}) =>
+    podOrder({
+      fulfilment: 'arranged',
+      deliveryAreaName: null,
+      addressText: 'Near Yaya Centre, after 5pm',
+      deliveryFee: 0,
+      total: 2500,
+      ...overrides,
+    });
+
+  it('shows the arranged card, the note, "Not included" and a WhatsApp prefill', async () => {
+    const id = `ord_${nextId}`;
+    mockGet.mockResolvedValue({ data: arranged({ id }), error: null });
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const user = userEvent.setup();
+    await render(<OrderDetailScreen />);
+    expect(await screen.findByText('ARRANGED WITH BUYER')).toBeTruthy();
+    expect(screen.getByText('Arrange delivery with Wanjiku')).toBeTruthy();
+    expect(screen.getByText('Wanjiku’s note: Near Yaya Centre, after 5pm')).toBeTruthy();
+    expect(screen.getByText('Not included')).toBeTruthy();
+    expect(screen.queryByText('Free')).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Message Wanjiku about delivery' }));
+    expect(open).toHaveBeenCalledWith(
+      `https://wa.me/254712345678?text=${encodeURIComponent('Hi Wanjiku, about delivery for your order #1042: ')}`,
+    );
+  });
+
+  it('Mark as sent: By rider / By parcel / Buyer collects; Buyer collects is "Ready to collect"', async () => {
+    const id = `ord_${nextId}`;
+    const confirmed = arranged({ id, status: 'confirmed', actions: ['markSent', 'sellerCancel'] });
+    mockGet.mockResolvedValue({ data: confirmed, error: null });
+    mockAct.mockResolvedValue({
+      data: {
+        order: {
+          ...confirmed,
+          status: 'sent',
+          sentMethod: 'pickup',
+          actions: ['markDelivered', 'sellerCancel'],
+        },
+        whatsapp: null,
+      },
+      error: null,
+    });
+    const user = userEvent.setup();
+    await render(<OrderDetailScreen />);
+    await user.press(await screen.findByRole('button', { name: 'Mark as sent' }));
+    expect(await screen.findByText('Order #1042 · 1 item to Wanjiku')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /By rider/ })).toBeSelected();
+    expect(screen.getByRole('radio', { name: /By parcel/ })).toBeTruthy();
+    await user.press(screen.getByRole('radio', { name: /Buyer collects/ }));
+    expect(screen.getByText('Where you agreed with the buyer')).toBeTruthy();
+    expect(screen.queryByText(/pickup place/)).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Mark ready to collect' }));
+    expect(mockAct).toHaveBeenCalledWith(id, {
+      type: 'markSent',
+      sentMethod: 'pickup',
+      riderPhone: null,
+    });
+    expect(await screen.findAllByText('Ready to collect')).not.toHaveLength(0);
   });
 });

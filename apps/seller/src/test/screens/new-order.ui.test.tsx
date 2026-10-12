@@ -3,11 +3,14 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import type { ApiError } from '@/api';
 import type { ProductList, ProductSummary } from '@/catalogue/api';
 import type { Delivery } from '@/delivery/api';
+import type { ManualQuote } from '@/orders/api';
 import NewOrder from '../../../app/orders/new';
 
 type Answer<T> = Promise<{ data: T | null; error: ApiError | null }>;
 const mockProducts = jest.fn<() => Answer<ProductList>>();
 const mockDelivery = jest.fn<() => Answer<Delivery>>();
+const mockQuote = jest.fn<(body: unknown) => Answer<ManualQuote>>();
+const mockCreate = jest.fn<(body: unknown) => Answer<unknown>>();
 
 jest.mock('@/catalogue/api', () => ({
   catalogueApi: { products: () => mockProducts() },
@@ -16,7 +19,10 @@ jest.mock('@/delivery/api', () => ({
   deliveryApi: { get: () => mockDelivery() },
 }));
 jest.mock('@/orders/api', () => ({
-  ordersApi: { quoteManual: jest.fn(), createManual: jest.fn() },
+  ordersApi: {
+    quoteManual: (body: unknown) => mockQuote(body),
+    createManual: (body: unknown) => mockCreate(body),
+  },
   ordersCache: { setDetail: jest.fn() },
 }));
 
@@ -58,9 +64,41 @@ const PRODUCTS: ProductList = {
   counts: { all: 1, available: 1, sold_out: 0, hidden: 0 },
 };
 
+const QUOTE: ManualQuote = {
+  subtotal: 2500,
+  options: [
+    {
+      kind: 'delivery',
+      areaId: 'a1',
+      name: 'Westlands',
+      deliveryFee: 200,
+      total: 2700,
+      freeDeliveryApplied: false,
+    },
+    {
+      kind: 'pickup',
+      areaId: null,
+      name: 'Pickup',
+      deliveryFee: 0,
+      total: 2500,
+      freeDeliveryApplied: false,
+    },
+    {
+      kind: 'arranged',
+      areaId: null,
+      name: 'Arrange with buyer',
+      deliveryFee: 0,
+      total: 2500,
+      freeDeliveryApplied: false,
+    },
+  ],
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockDelivery.mockResolvedValue({ data: DELIVERY, error: null });
+  mockQuote.mockResolvedValue({ data: QUOTE, error: null });
+  mockCreate.mockResolvedValue({ data: null, error: { status: 0, code: 'OFFLINE' } });
 });
 
 describe('New order', () => {
@@ -100,5 +138,26 @@ describe('New order', () => {
     await user.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Westlands · KSh 200')).toBeTruthy();
     expect(mockDelivery).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('New order · Arrange with buyer (decision #110)', () => {
+  it('offers it next to pickup and the areas; a note, no address, delivery not included', async () => {
+    mockProducts.mockResolvedValue({ data: PRODUCTS, error: null });
+    const user = userEvent.setup();
+    await render(<NewOrder />);
+    await user.press(screen.getByRole('button', { name: /Add product/ }));
+    await user.press(await screen.findByRole('button', { name: 'Ankara dress, KSh 2,500' }));
+    await user.press(await screen.findByText('Arrange with buyer'));
+    expect(screen.queryByLabelText('Delivery address')).toBeNull();
+    await user.type(screen.getByLabelText('Note'), 'Sarit, Saturday morning');
+    expect(await screen.findByText('Not included')).toBeTruthy();
+    await user.type(screen.getByLabelText('Buyer’s name'), 'Akinyi Otieno');
+    await user.type(screen.getByLabelText('Buyer’s WhatsApp number'), '0722 000 111');
+    await user.press(screen.getByRole('button', { name: 'Create order · KSh 2,500' }));
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    expect(mockCreate.mock.calls[0]![0]).toMatchObject({
+      fulfilment: { kind: 'arranged', note: 'Sarit, Saturday morning' },
+    });
   });
 });

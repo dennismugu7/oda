@@ -19,8 +19,10 @@ export interface Delivery {
   pickupLocation: string | null;
   pickupHours: string | null;
   freeDeliveryThreshold: number | null;
-  /** An area or pickup: the shop can take orders. */
+  /** An area or pickup. Optional (decision #110): without one the seller arranges delivery. */
   hasDeliveryOption: boolean;
+  /** The seller tapped "I'll arrange delivery with buyers" (absent from older servers). */
+  arrangeDelivery?: boolean;
 }
 
 export interface AreaFields {

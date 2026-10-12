@@ -45,7 +45,7 @@ describe('More row values (20-more)', () => {
       insights: 'KSh 0 this week',
       reviews: 'From buyers',
       payments: 'Add M-Pesa',
-      delivery: 'Add an area',
+      delivery: 'Arranged with buyers',
     });
     expect(
       moreRowValues({ ...more, activeAccount: null, acceptsPayOnDelivery: true }).payments,

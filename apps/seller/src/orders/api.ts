@@ -1,6 +1,7 @@
 // The seller app's calls to /api/orders (M6 CP2). Every action goes to one endpoint and
 // answers with the fresh order plus the WhatsApp prefill when the action has one.
 import type {
+  Fulfilment,
   CancelReason,
   ManualOrderInput,
   OrderSource,
@@ -54,7 +55,7 @@ export interface OrderDetail {
   cancelledAt: string | null;
   refundedAt: string | null;
   buyer: { name: string; phone: string; whatsapp: boolean; hasEmail: boolean };
-  fulfilment: 'delivery' | 'pickup';
+  fulfilment: Fulfilment;
   deliveryAreaName: string | null;
   addressText: string | null;
   sentMethod: SentMethod | null;
@@ -114,7 +115,7 @@ export const ordersApi = {
 export interface ManualQuote {
   subtotal: number;
   options: {
-    kind: 'delivery' | 'pickup';
+    kind: Fulfilment;
     areaId: string | null;
     name: string;
     deliveryFee: number;

@@ -13,7 +13,7 @@ import {
   reorderAreas,
   updateArea,
 } from './deliveryRoutes';
-import { getOnboarding } from './onboardingRoutes';
+import { getOnboarding, postChecklist } from './onboardingRoutes';
 import { publicRepo } from './repos/public';
 import type { Handler } from './routeHandler';
 
@@ -55,7 +55,11 @@ describe('delivery areas', () => {
       pickupEnabled: false,
       freeDeliveryThreshold: null,
       hasDeliveryOption: false,
+      arrangeDelivery: false,
     });
+    // "I'll arrange delivery with buyers" (decision #110 e) shows in the view.
+    expect((await s.call(postChecklist, { body: { item: 'arrange_delivery' } })).status).toBe(200);
+    expect((await s.call(getDelivery)).json.arrangeDelivery).toBe(true);
 
     const kili = await addArea(s);
     const rest = await addArea(s, { name: 'Rest of Nairobi', fee: 300 });

@@ -15,6 +15,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     headers: {
       accept: 'application/json',
       'expo-origin': 'oda://',
+      // This app shows arranged orders as they are (decision #110 f); without it the server
+      // sends them as a delivery, for older apps.
+      'x-oda-app-features': 'arranged',
       ...(cookie ? { cookie } : {}),
       ...(init.headers as Record<string, string> | undefined),
     },

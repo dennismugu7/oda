@@ -210,6 +210,8 @@ export default function OrderDetailScreen() {
   const primary = primaryAction(order.actions);
   const can = (a: string) => order.actions.includes(a as never);
   const cancelled = order.status === 'cancelled';
+  /** Buyer and seller arrange delivery: the shop listed no option (decision #110). */
+  const arranged = order.fulfilment === 'arranged';
 
   function onPrimary() {
     if (primary === 'accept') return quickAccept();
@@ -322,7 +324,11 @@ export default function OrderDetailScreen() {
               {order.fulfilment === 'pickup' ? 'Pickup' : 'Delivery'}
             </Text>
             <Text style={styles.moneyValue}>
-              {order.deliveryFee === 0 ? 'Free' : formatKsh(order.deliveryFee)}
+              {order.deliveryFee > 0
+                ? formatKsh(order.deliveryFee)
+                : arranged
+                  ? 'Not included'
+                  : 'Free'}
             </Text>
           </View>
           <View style={styles.moneyRow}>
@@ -340,23 +346,54 @@ export default function OrderDetailScreen() {
 
         <View style={styles.card}>
           <Text style={styles.overline}>
-            {order.fulfilment === 'pickup' ? 'PICKUP' : 'DELIVERY'}
+            {order.fulfilment === 'pickup'
+              ? 'PICKUP'
+              : arranged
+                ? 'ARRANGED WITH BUYER'
+                : 'DELIVERY'}
           </Text>
           <Text style={styles.deliveryTitle}>
             {order.fulfilment === 'pickup'
               ? `Pickup${order.shop.pickupLocation ? ` at ${order.shop.pickupLocation}` : ''}`
-              : (order.deliveryAreaName ?? 'Delivery')}
+              : arranged
+                ? `Arrange delivery with ${name}`
+                : (order.deliveryAreaName ?? 'Delivery')}
           </Text>
-          {order.addressText ? <Text style={styles.deliveryLine}>{order.addressText}</Text> : null}
+          {order.addressText ? (
+            <Text style={styles.deliveryLine}>
+              {arranged ? `${name}’s note: ${order.addressText}` : order.addressText}
+            </Text>
+          ) : null}
+          {arranged && !order.sentMethod && !cancelled ? (
+            <Text style={styles.deliveryLine}>
+              Agree with {name} how it reaches them, and any delivery cost (not in the total).
+            </Text>
+          ) : null}
           {order.sentMethod ? (
             <Text style={styles.deliveryLine}>
               {order.sentMethod === 'pickup'
-                ? 'Ready for pickup'
+                ? arranged
+                  ? 'Ready to collect'
+                  : 'Ready for pickup'
                 : order.sentMethod === 'parcel'
                   ? 'Sent by parcel service'
                   : `Sent by rider${order.riderPhone ? ` · ${formatKePhone(order.riderPhone)}` : ''}`}
               {order.sentAt ? ` · ${shortDate(new Date(order.sentAt))}` : ''}
             </Text>
+          ) : null}
+          {arranged && order.buyer.whatsapp && !cancelled ? (
+            <Button
+              title={`Message ${name} about delivery`}
+              variant="secondary"
+              onPress={() =>
+                Linking.openURL(
+                  waLink(
+                    order.buyer.phone,
+                    `Hi ${name}, about delivery for your order #${order.number}: `,
+                  ),
+                )
+              }
+            />
           ) : null}
           <Text style={styles.deliveryHint}>
             {order.buyer.hasEmail
@@ -551,7 +588,13 @@ function StatusCard({ order, onResolve }: { order: OrderDetail; onResolve: () =>
       return (
         <Card
           tone="success"
-          title={order.sentMethod === 'pickup' ? 'Ready for pickup' : 'On its way'}
+          title={
+            order.sentMethod === 'pickup'
+              ? order.fulfilment === 'arranged'
+                ? 'Ready to collect'
+                : 'Ready for pickup'
+              : 'On its way'
+          }
         >
           <Text style={styles.cardTextSuccess}>
             {order.paymentMethod === 'pay_on_delivery' && order.paymentStatus === 'unpaid'
