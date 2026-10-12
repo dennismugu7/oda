@@ -4,7 +4,9 @@
 // server prices it (POST /api/shops/:slug/quote) and prices it again when the order is placed
 // (POST /api/shops/:slug/orders). A price that changed since the buyer added it blocks the
 // order until they accept the new one. One idempotency key per attempt: a retry after a lost
-// connection returns the same order, a double tap places one.
+// connection returns the same order, a double tap places one. A shop with no delivery area and
+// pickup off has no delivery choice: the seller arranges delivery with the buyer, who may leave
+// a note (decision #110 b).
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,7 +36,7 @@ interface Quote {
   lines: QuoteLine[];
   subtotal: number;
   options: {
-    kind: 'delivery' | 'pickup';
+    kind: 'delivery' | 'pickup' | 'arranged';
     areaId: string | null;
     deliveryFee: number;
     total: number;
@@ -44,7 +46,7 @@ interface Quote {
 
 type Payment = 'pay_now' | 'pay_on_delivery';
 type Errors = Partial<
-  Record<'name' | 'phone' | 'email' | 'choice' | 'address' | 'payment', string>
+  Record<'name' | 'phone' | 'email' | 'choice' | 'address' | 'note' | 'payment', string>
 >;
 
 /** Works on plain-http pages too (crypto.randomUUID needs a secure context). */
@@ -86,12 +88,16 @@ const FIELD_OF: Record<string, keyof Errors> = {
   'buyer.email': 'email',
   'fulfilment.areaId': 'choice',
   'fulfilment.addressText': 'address',
+  'fulfilment.note': 'note',
   addressText: 'address',
   payment: 'payment',
 };
 
 /** The fields in page order, for focusing the first one with a problem. */
-const FIELDS: (keyof Errors)[] = ['name', 'phone', 'email', 'choice', 'address', 'payment'];
+const FIELDS: (keyof Errors)[] = ['name', 'phone', 'email', 'choice', 'address', 'note', 'payment'];
+
+/** The note field's limit (the server's ADDRESS_MAX). */
+const NOTE_MAX = 300;
 
 /** Focuses a field; for a choice, the first radio (or the chosen one). */
 function focusField(k: keyof Errors) {
@@ -129,11 +135,14 @@ export function CheckoutForm({
   const [whatsapp, setWhatsapp] = useState(true);
   const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState('');
+  // No delivery option listed: buyer and seller arrange it (decision #110 b).
+  const arranged = areas.length === 0 && !pickup;
   const onlyChoice = areas.length + (pickup ? 1 : 0) === 1;
   const [choice, setChoice] = useState<string | null>(
-    onlyChoice ? (areas[0]?.id ?? 'pickup') : null,
+    arranged ? 'arranged' : onlyChoice ? (areas[0]?.id ?? 'pickup') : null,
   );
   const [address, setAddress] = useState('');
+  const [note, setNote] = useState('');
   const [payment, setPayment] = useState<Payment | null>(
     payNow && !payOnDelivery ? 'pay_now' : !payNow && payOnDelivery ? 'pay_on_delivery' : null,
   );
@@ -243,9 +252,11 @@ export function CheckoutForm({
     });
   }, [quote, lines]);
 
-  // Nothing chosen means no option (a pickup option's areaId is null too).
+  // Nothing chosen means no option (pickup and arranged options have no areaId either).
   const option = choice
-    ? quote?.options.find((o) => (choice === 'pickup' ? o.kind === 'pickup' : o.areaId === choice))
+    ? quote?.options.find((o) =>
+        choice === 'pickup' || choice === 'arranged' ? o.kind === choice : o.areaId === choice,
+      )
     : undefined;
   const subtotal = quote?.subtotal ?? lines.reduce((n, l) => n + l.qty * l.price, 0);
   const count = cartCount(lines);
@@ -269,8 +280,11 @@ export function CheckoutForm({
     }
     if (!choice)
       e.choice = pickup && areas.length ? 'Choose delivery or pickup.' : 'Choose where to deliver.';
-    if (choice && choice !== 'pickup' && address.trim().length < 3) {
+    if (choice && choice !== 'pickup' && choice !== 'arranged' && address.trim().length < 3) {
       e.address = 'Enter the delivery address.';
+    }
+    if (choice === 'arranged' && note.trim().length > NOTE_MAX) {
+      e.note = `The note can be at most ${NOTE_MAX} characters.`;
     }
     if (!payment) e.payment = 'Choose how you’ll pay.';
     return e;
@@ -310,7 +324,9 @@ export function CheckoutForm({
           fulfilment:
             choice === 'pickup'
               ? { kind: 'pickup' }
-              : { kind: 'delivery', areaId: choice, addressText: address },
+              : choice === 'arranged'
+                ? { kind: 'arranged', note: note.trim() || null }
+                : { kind: 'delivery', areaId: choice, addressText: address },
           payment,
           lines: lines.map((l) => ({
             productId: l.productId,
@@ -633,7 +649,17 @@ export function CheckoutForm({
           </span>
           Delivery
         </h2>
-        <div className="mt-3 space-y-2">
+        {arranged ? (
+          <div className="mt-3 rounded-lg bg-background p-4">
+            <p className="text-body-strong text-navy">
+              The seller will contact you to arrange delivery
+            </p>
+            <p className="mt-1 text-small text-text-secondary">
+              Delivery isn’t included in your total: {shopName} will tell you the cost, if any.
+            </p>
+          </div>
+        ) : null}
+        <div className={arranged ? 'hidden' : 'mt-3 space-y-2'}>
           {areas.map((a) => {
             const o = quote?.options.find((x) => x.areaId === a.id);
             return (
@@ -671,7 +697,28 @@ export function CheckoutForm({
           ) : null}
         </div>
         {fieldError('choice')}
-        {choice && choice !== 'pickup' ? (
+        {arranged ? (
+          <>
+            <label className="mt-4 block text-small text-text-secondary" htmlFor="checkout-note">
+              Note for the seller (optional)
+            </label>
+            <textarea
+              id="checkout-note"
+              rows={2}
+              maxLength={NOTE_MAX}
+              placeholder="Where you are, when suits you…"
+              value={note}
+              onChange={(e) => {
+                setNote(e.target.value);
+                fix('note');
+              }}
+              className={`${inputClass(errors.note)} h-auto py-3`}
+              {...described('note')}
+            />
+            {fieldError('note')}
+          </>
+        ) : null}
+        {choice && choice !== 'pickup' && choice !== 'arranged' ? (
           <>
             <label className="mt-4 block text-small text-text-secondary" htmlFor="checkout-address">
               Area, street or building
@@ -730,7 +777,13 @@ export function CheckoutForm({
                 fix('payment');
               }}
               title="Pay on delivery"
-              subtitle={choice === 'pickup' ? 'Pay when you collect it.' : 'Pay when it arrives.'}
+              subtitle={
+                choice === 'pickup'
+                  ? 'Pay when you collect it.'
+                  : choice === 'arranged'
+                    ? 'Pay when you get your order.'
+                    : 'Pay when it arrives.'
+              }
             />
           ) : null}
         </div>
@@ -759,13 +812,15 @@ export function CheckoutForm({
         <div className="flex justify-between">
           <dt className="text-text-secondary">{choice === 'pickup' ? 'Pickup' : 'Delivery'}</dt>
           <dd className={option ? 'text-body-strong text-navy' : 'text-text-secondary'}>
-            {option
-              ? option.deliveryFee === 0
-                ? option.freeDeliveryApplied
-                  ? 'Free delivery'
-                  : 'Free'
-                : formatKsh(option.deliveryFee)
-              : 'Choose an option'}
+            {option?.kind === 'arranged'
+              ? 'Not included'
+              : option
+                ? option.deliveryFee === 0
+                  ? option.freeDeliveryApplied
+                    ? 'Free delivery'
+                    : 'Free'
+                  : formatKsh(option.deliveryFee)
+                : 'Choose an option'}
           </dd>
         </div>
       </dl>

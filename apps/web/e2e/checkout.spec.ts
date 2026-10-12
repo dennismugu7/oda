@@ -21,7 +21,10 @@ test('pay on delivery: cart → checkout → order placed', async ({ page, reque
   // Kenya's flag before +254 (decision #109 b): the real file, loaded, the whole flag at 20 × 15.
   const flag = page.locator('img[src="/flags/ke.svg"]');
   await expect(flag).toBeVisible();
-  expect(await flag.evaluate((img: HTMLImageElement) => img.naturalWidth > 0)).toBe(true);
+  // Waits for the file to load: visible can come before the image is decoded.
+  await expect
+    .poll(() => flag.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
   expect(await flag.boundingBox()).toMatchObject({ width: 20, height: 15 });
 
   // Nothing chosen yet: the button asks for everything, without placing anything.

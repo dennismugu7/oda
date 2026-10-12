@@ -27,6 +27,7 @@ export function CartView({
   slug,
   shopName,
   freeDeliveryThreshold,
+  arranged = false,
   canOrder,
   blockedReason,
   suggestions,
@@ -35,6 +36,8 @@ export function CartView({
   slug: string;
   shopName: string;
   freeDeliveryThreshold: number | null;
+  /** The shop lists no delivery option: the seller arranges it (decision #110). */
+  arranged?: boolean;
   canOrder: boolean;
   blockedReason: string;
   suggestions: Suggestion[];
@@ -349,7 +352,9 @@ export function CartView({
         </div>
         <div className="flex justify-between">
           <dt className="text-text-secondary">Delivery</dt>
-          <dd className="text-text-secondary">Calculated at checkout</dd>
+          <dd className="text-text-secondary">
+            {arranged ? 'Arranged with the seller' : 'Calculated at checkout'}
+          </dd>
         </div>
       </dl>
 

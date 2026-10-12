@@ -11,6 +11,7 @@ interface OutboxEmail {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   sentAt: string;
 }
 
