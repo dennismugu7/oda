@@ -36,6 +36,23 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-12 · Drafts 7 days, unsaved photos 8 days (decision #111; branch `drafts-7-days`, draft PR #117 on #116, not merged)
+
+- **Review stop D passed** (CP4, PR #116). Merge plan corrected: `GOOGLE_WEB_CLIENT_ID` is already set on Vercel `oda` and `oda-production`, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` on EAS (preview and production). The 0.5.0 APK is built once, from `main`, after #116 and #117 are merged (owner).
+- **Done:**
+  - App drafts are kept 7 days (`DRAFT_TTL_MS`); the last screen is still 1 h.
+  - The purge's unreferenced-files step waits 8 days (`UNREFERENCED_AFTER_HOURS`, and the `cron-purge.yml` comment).
+  - `POST /api/uploads/check` and `keepStoredPhotos()`: a restored product draft drops a photo the server no longer has and shows the rest from the server. `useDraft` takes an optional `prepare`.
+  - Privacy: "up to 7 days" (the date is already 12 October 2026). The help guides don't mention drafts, so they're unchanged. The `docs/play-data-safety.md` note is updated.
+- **Tests:**
+  - purge boundary: 7 d and 7 d 23 h 59 kept, 8 d 0 h 01 removed; the other aged files are now 9 days old;
+  - `uploads.test.ts`: missing keys and URLs; other shops', logo and screenshot keys refused; 1–10 keys; signed-out 401;
+  - the route guard list;
+  - `draftPhotos.test.ts`;
+  - `restore.ui.test.tsx`: a gone photo is dropped and the other is shown from the server's URL;
+  - `store.test.ts`: 7 days.
+- **Next:** the owner's review; then the stack merges in order (#109 → #117), per `docs/release-0.5.0-merge-plan.md`.
+
 ## 2026-10-12 · Optional delivery CP4: demo seed, staging regression, merge plan (decision #110; branch `optional-delivery-cp4`, draft PR, not merged)
 
 - **Review stop C passed** (CP3, PR #115).

@@ -93,6 +93,7 @@ const ROUTES: Record<string, Guard | Partial<Record<Method, Guard>>> = {
   'signup/verify': 'public',
   support: 'seller',
   uploads: 'seller',
+  'uploads/check': 'seller',
 };
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;

@@ -75,6 +75,13 @@ export interface Category {
   thumbUrls: string[];
 }
 
+export interface PhotoCheck {
+  /** Keys whose files no longer exist (purged after 8 days unsaved, or replaced). */
+  missing: string[];
+  /** Public URLs of the keys that still exist. */
+  urls: Record<string, string>;
+}
+
 const photoBody = (photos: PhotoInput[]) =>
   photos.map(({ objectKey, thumbKey, width, height }) => ({ objectKey, thumbKey, width, height }));
 
@@ -99,6 +106,8 @@ export const catalogueApi = {
     }),
   remove: (id: string) => apiJson<object>(`/api/products/${id}`, { method: 'DELETE' }),
   restore: (id: string) => apiJson<Product>(`/api/products/${id}/restore`, { body: {} }),
+  /** Which uploaded photo files are gone, for a restored draft (decision #111 c). */
+  checkPhotos: (keys: string[]) => apiJson<PhotoCheck>('/api/uploads/check', { body: { keys } }),
 
   categories: () => apiJson<Category[]>('/api/categories'),
   createCategory: (name: string) => apiJson<Category>('/api/categories', { body: { name } }),

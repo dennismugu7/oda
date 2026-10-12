@@ -68,9 +68,10 @@ describe('drafts', () => {
     for (const [k, v] of map) if (k.startsWith(`${key}.`)) expect(utf8(v)).toBeLessThan(2000);
   });
 
-  it('expires after 12 hours', async () => {
+  it('expires after 7 days (decision #111)', async () => {
     const { map, store, advance } = setup();
     await store.saveDraft('feedback', { message: 'Hi' });
+    expect(DRAFT_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
     advance(DRAFT_TTL_MS);
     expect(await store.hasDraft('feedback')).toBe(true);
     advance(1);

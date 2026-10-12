@@ -5,7 +5,7 @@ import { act, render, screen, userEvent, waitFor } from '@testing-library/react-
 import type { ReviewTab } from '@oda/shared';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { ApiError } from '@/api';
-import type { Category, Product } from '@/catalogue/api';
+import type { Category, PhotoCheck, Product } from '@/catalogue/api';
 import { ProductForm } from '@/catalogue/ProductForm';
 import { emptyDraft } from '@/catalogue/form';
 import { restoreStore } from '@/restore/native';
@@ -16,6 +16,7 @@ import ReviewsScreen from '../../../app/reviews';
 type Answer<T> = Promise<{ data: T | null; error: ApiError | null }>;
 const mockCategories = jest.fn<() => Answer<Category[]>>();
 const mockProduct = jest.fn<(id: string) => Answer<Product>>();
+const mockCheckPhotos = jest.fn<(keys: string[]) => Answer<PhotoCheck>>();
 const mockList = jest.fn<(tab: ReviewTab, cursor?: string | null) => Answer<ReviewList>>();
 const mockGetReview = jest.fn<(id: string) => Answer<SellerReview>>();
 
@@ -23,6 +24,7 @@ jest.mock('@/catalogue/api', () => ({
   catalogueApi: {
     categories: () => mockCategories(),
     product: (id: string) => mockProduct(id),
+    checkPhotos: (keys: string[]) => mockCheckPhotos(keys),
   },
 }));
 jest.mock('@/auth/useMe', () => ({ useMe: () => null }));
@@ -137,7 +139,26 @@ beforeEach(() => {
   });
   mockCategories.mockResolvedValue({ data: [], error: null });
   mockProduct.mockResolvedValue({ data: DRESS, error: null });
+  // Every photo still on the server, unless a test says otherwise.
+  mockCheckPhotos.mockImplementation(async (keys) => ({
+    data: { missing: [], urls: Object.fromEntries(keys.map((k) => [k, `https://cdn.test/${k}`])) },
+    error: null,
+  }));
 });
+
+type Node = { type: string; props: Record<string, unknown>; children: (Node | string)[] | null };
+/** Every image on screen, by its source URI. */
+function imageUris(): string[] {
+  const walk = (n: Node | Node[] | null): Node[] =>
+    !n
+      ? []
+      : Array.isArray(n)
+        ? n.flatMap(walk)
+        : [n, ...walk((n.children ?? []).filter((c): c is Node => typeof c !== 'string'))];
+  return walk(screen.toJSON() as Node | Node[] | null)
+    .filter((n) => n.type === 'Image')
+    .map((n) => (n.props.source as { uri: string }).uri);
+}
 
 async function goToBackground() {
   await act(async () => {
@@ -172,6 +193,46 @@ describe('Product form drafts', () => {
     expect(screen.getByLabelText('Name')).toHaveDisplayValue('Ankara dress');
     expect(screen.getByLabelText('Price')).toHaveDisplayValue('2,500');
     await waitFor(async () => expect(await restoreStore.loadDraft('product.p1')).toBeNull());
+  });
+
+  it('drops a photo the server no longer has, and shows the rest from the server (decision #111)', async () => {
+    const draftPhoto = (n: number) => ({
+      preview: `file:///cache/${n}-thumb.jpg`,
+      photo: {
+        objectKey: `products/p1/${n}.jpg`,
+        thumbKey: `products/p1/${n}-t.jpg`,
+        width: 1,
+        height: 1,
+      },
+    });
+    await restoreStore.saveDraft('product.new', {
+      draft: { ...emptyDraft(), name: 'Kitenge shirt' },
+      photos: [draftPhoto(1), draftPhoto(2)],
+    });
+    mockCheckPhotos.mockResolvedValue({
+      data: {
+        missing: ['products/p1/1.jpg', 'products/p1/1-t.jpg'],
+        urls: {
+          'products/p1/2.jpg': 'https://cdn.test/products/p1/2.jpg',
+          'products/p1/2-t.jpg': 'https://cdn.test/products/p1/2-t.jpg',
+        },
+      },
+      error: null,
+    });
+    await render(<ProductForm />);
+    expect(await screen.findByText('Unsaved changes restored')).toBeTruthy();
+    expect(screen.getByLabelText('Name')).toHaveDisplayValue('Kitenge shirt');
+    expect(mockCheckPhotos).toHaveBeenCalledWith([
+      'products/p1/1.jpg',
+      'products/p1/1-t.jpg',
+      'products/p1/2.jpg',
+      'products/p1/2-t.jpg',
+    ]);
+    // One tile, the cover, showing the server's thumbnail; no tile for the gone photo.
+    expect(
+      screen.getAllByLabelText(/Photo. Tap for options.|Cover photo. Tap for options./),
+    ).toHaveLength(1);
+    expect(imageUris()).toEqual(['https://cdn.test/products/p1/2-t.jpg']);
   });
 
   it('never puts one product’s draft on another', async () => {

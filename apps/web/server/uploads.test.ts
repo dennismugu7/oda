@@ -4,6 +4,7 @@ import { schema } from '@oda/db';
 import { truncateAll } from '@oda/db/testing';
 import { GET as devGet, PUT as devPut } from '@/app/api/dev-uploads/[...key]/route';
 import { POST as uploadRoute } from '@/app/api/uploads/route';
+import { POST as checkRoute } from '@/app/api/uploads/check/route';
 import { signUpVerified } from '@/test/auth';
 import { jpeg, png, tiff, webp } from '@/test/imageFixtures';
 import { storedPhoto } from '@/test/storage';
@@ -150,6 +151,44 @@ describe('POST /api/uploads', () => {
       code: 'uploads_off',
       message: "Photo uploads aren't switched on yet. Try again later.",
     });
+  });
+});
+
+describe('POST /api/uploads/check (restored drafts, decision #111 c)', () => {
+  it('names the seller’s product photo files that are gone, and the URLs of the rest', async () => {
+    const s = await seller();
+    const kept = await storedPhoto(s.shopId, 1);
+    const gone = `products/${s.shopId}/purged.jpg`;
+    const res = await s.call(checkRoute, { keys: [kept.objectKey, kept.thumbKey, gone] });
+    expect(res.status).toBe(200);
+    expect(res.json.missing).toEqual([gone]);
+    expect(Object.keys(res.json.urls).sort()).toEqual([kept.objectKey, kept.thumbKey].sort());
+    expect(res.json.urls[kept.thumbKey]).toBe(getStorage().publicUrl(kept.thumbKey));
+  });
+
+  it('refuses another shop’s keys, logos and screenshots', async () => {
+    const a = await seller();
+    const b = await seller();
+    const theirs = await storedPhoto(b.shopId, 1);
+    expect((await a.call(checkRoute, { keys: [theirs.objectKey] })).status).toBe(403);
+    for (const key of [`logos/${a.shopId}/l.jpg`, `feedback/${a.shopId}/f.jpg`]) {
+      expect((await a.call(checkRoute, { keys: [key] })).status).toBe(403);
+    }
+  });
+
+  it('needs a seller and 1–10 keys', async () => {
+    const s = await seller();
+    expect((await s.call(checkRoute, { keys: [] })).status).toBe(422);
+    const many = Array.from({ length: 11 }, (_, i) => `products/${s.shopId}/${i}.jpg`);
+    expect((await s.call(checkRoute, { keys: many })).status).toBe(422);
+    const anon = await checkRoute(
+      new Request('http://localhost:3000/api/uploads/check', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ keys: ['products/x/y.jpg'] }),
+      }),
+    );
+    expect(anon.status).toBe(401);
   });
 });
 

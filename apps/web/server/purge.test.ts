@@ -28,7 +28,7 @@ afterAll(async () => {
   await truncateAll(db());
 });
 
-/** Makes a stored local file look `days` old (the unreferenced sweep waits 24 h). */
+/** Makes a stored local file look `days` old (the unreferenced sweep waits 8 days). */
 async function age(key: string, days: number) {
   const { env } = storageDriver();
   const file = path.join(path.resolve(env.STORAGE_DIR), ...key.split('/'));
@@ -36,10 +36,10 @@ async function age(key: string, days: number) {
   await utimes(file, when, when);
 }
 
-/** An old file (2 days) under `key`. */
+/** An old file (9 days) under `key`. */
 async function oldFile(key: string) {
   await storeJpeg(key);
-  await age(key, 2);
+  await age(key, 9);
   return key;
 }
 
@@ -260,21 +260,21 @@ describe('soft-deleted products', () => {
     });
     expect(await exists([full, thumb])).toEqual([false, true]);
     // The kept thumbnail is referenced, so the unreferenced sweep leaves it too.
-    await age(thumb, 3);
+    await age(thumb, 9);
     await purge(db(), { dryRun: false });
     expect(await localObjectExists(thumb)).toBe(true);
   });
 });
 
 describe('unreferenced files and old sign-ups', () => {
-  it('removes files no row points at once they are over 24 h old, and sign-ups over 7 days', async () => {
+  it('removes files no row points at once they are over 8 days old, and sign-ups over 7 days', async () => {
     const s = await fullShop();
     const oldOrphan = await storeJpeg(`products/${s.shopId}/abandoned.jpg`);
     const newOrphan = await storeJpeg(`products/${s.shopId}/uploading.jpg`);
     const oldReview = await storeJpeg(`reviews/${s.order.id}/never-sent.jpg`);
-    await age(oldOrphan, 2);
-    await age(oldReview, 2);
-    for (const key of s.files) await age(key, 2);
+    await age(oldOrphan, 9);
+    await age(oldReview, 9);
+    for (const key of s.files) await age(key, 9);
     await db()
       .insert(t.signupAttempts)
       .values([
@@ -455,7 +455,7 @@ describe('unreferenced sweep: safety (owner Step 84)', () => {
       .set({ coverPathSnapshot: cover })
       .where(eq(t.orderItems.orderId, s.order.id));
     // 7. Files of a shop deleted 10 days ago (rows still there until the 30-day purge).
-    for (const key of deleted.files) await age(key, 2);
+    for (const key of deleted.files) await age(key, 9);
     // The control: an old file nothing points at.
     const orphan = await oldFile(`products/${sid}/orphan.jpg`);
 
@@ -469,14 +469,17 @@ describe('unreferenced sweep: safety (owner Step 84)', () => {
     expect(await localObjectExists(orphan)).toBe(false);
   });
 
-  it('a file is only swept once it is more than 24 hours old', async () => {
+  it('a file is only swept once it is more than 8 days old (decision #111 b)', async () => {
     const s = await newSeller();
-    const almost = await storeJpeg(`products/${s.shopId}/23h59.jpg`);
-    const over = await storeJpeg(`products/${s.shopId}/24h01.jpg`);
-    await age(almost, (24 * 60 - 1) / (24 * 60));
-    await age(over, (24 * 60 + 1) / (24 * 60));
+    // A product draft on the phone lives 7 days: the photos it uploaded must outlive it.
+    const draft = await storeJpeg(`products/${s.shopId}/7d.jpg`);
+    const almost = await storeJpeg(`products/${s.shopId}/7d23h59.jpg`);
+    const over = await storeJpeg(`products/${s.shopId}/8d00h01.jpg`);
+    await age(draft, 7);
+    await age(almost, 8 - 1 / (24 * 60));
+    await age(over, 8 + 1 / (24 * 60));
     await purge(db(), { dryRun: false });
-    expect(await exists([almost, over])).toEqual([true, false]);
+    expect(await exists([draft, almost, over])).toEqual([true, true, false]);
   });
 
   it('never sweeps the private feedback store (its files go only with their shop)', async () => {

@@ -113,7 +113,7 @@ export default function Privacy() {
           after two days. Your cart, favourites and the link you came from stay on your device
           (local storage) and never reach us until you order. The seller app keeps you signed in
           with a token stored securely on your phone. If Android closes the app, unsaved form text
-          stays encrypted on your phone for up to 12 hours.
+          stays encrypted on your phone for up to 7 days.
         </p>
       </section>
 

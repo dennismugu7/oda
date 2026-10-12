@@ -16,8 +16,9 @@ import { queueDeletions } from './uploads';
 //   2. soft-deleted products after 30 days: the row and its photos, except any photo a past
 //      order still shows as its thumbnail;
 //   3. leftover storage_deletions (failed deletes): retried;
-//   4. unreferenced files under products/, logos/, reviews/ older than 24 h (abandoned
-//      uploads, review photos never submitted);
+//   4. unreferenced files under products/, logos/, reviews/ older than 8 days (abandoned
+//      uploads, review photos never submitted; a product draft on the phone lives 7 days and
+//      keeps its uploaded photos, decision #111 b);
 //   5. sign-up attempts older than 7 days;
 //   6. other records past their use (decision #98): rate-limit counters older than 2 days
 //      (the longest window is a day; their keys hold IP addresses, emails and phones), delete-
@@ -33,7 +34,7 @@ export const PURGE_AFTER_DAYS = 30;
 export const SIGNUP_ATTEMPTS_DAYS = 7;
 export const RATE_LIMIT_DAYS = 2;
 export const DELETION_REQUEST_DAYS = 30;
-export const UNREFERENCED_AFTER_HOURS = 24;
+export const UNREFERENCED_AFTER_HOURS = 8 * 24;
 export const BATCH = { accounts: 20, products: 200, retries: 200, unreferenced: 500 };
 /** Prefixes checked for unreferenced files (step 4). */
 export const SWEPT_PREFIXES = ['products/', 'logos/', 'reviews/'] as const;
@@ -420,7 +421,7 @@ export async function purge(db: Db, opts: PurgeOptions): Promise<PurgeReport> {
     }
   }
 
-  // 4. Unreferenced files older than 24 h (strictly: younger files are never even checked, so
+  // 4. Unreferenced files older than 8 days (strictly: younger files are never even checked, so
   // an upload still in progress is never touched).
   const oldEnough = now.getTime() - UNREFERENCED_AFTER_HOURS * 3_600_000;
   const orphans: string[] = [];

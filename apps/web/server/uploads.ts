@@ -2,6 +2,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { inArray } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
+import { PRODUCT_PHOTOS_MAX } from '@oda/shared';
 import { z } from 'zod';
 import type { SellerCtx } from './authz';
 import { getDb } from './db';
@@ -119,6 +120,34 @@ export async function createUpload(ctx: SellerCtx, input: UploadRequest, db: Db 
     }
     const upload = await getStorage().presignPut(key, input.contentType, input.size);
     return { key, publicUrl: getStorage().publicUrl(key), ...upload };
+  });
+}
+
+/** Product photo keys a restored draft still points at (decision #111): at most 5 photos × 2. */
+export const uploadsCheck = z.strictObject({
+  keys: z
+    .array(z.string().min(1).max(300), { error: 'Send the photo keys to check.' })
+    .min(1, { error: 'Send the photo keys to check.' })
+    .max(PRODUCT_PHOTOS_MAX * 2, { error: 'Too many photos to check.' }),
+});
+
+/**
+ * POST /api/uploads/check: which of the seller's own product photo files are gone (decision
+ * #111 c). A draft kept on the phone for up to 7 days may point at a photo the purge removed
+ * (or that was replaced); the app drops those quietly and shows the rest from `urls`.
+ */
+export async function checkUploads(ctx: SellerCtx, keys: string[]) {
+  for (const key of keys) assertOwnsKey(ctx, key, ['products']);
+  const unique = [...new Set(keys)];
+  return storageStep(async () => {
+    const store = getStorage();
+    const found = await Promise.all(unique.map(async (key) => (await store.read(key)) !== null));
+    return {
+      missing: unique.filter((_, i) => !found[i]),
+      urls: Object.fromEntries(
+        unique.filter((_, i) => found[i]).map((key) => [key, store.publicUrl(key)]),
+      ),
+    };
   });
 }
 
