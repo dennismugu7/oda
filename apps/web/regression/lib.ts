@@ -163,7 +163,8 @@ export function realPng(width: number, height: number, rgb: [number, number, num
   ]);
 }
 
-const APP = { 'expo-origin': 'oda://' };
+// As the seller app sends them; this app knows arranged orders (decision #110 f).
+const APP = { 'expo-origin': 'oda://', 'x-oda-app-features': 'arranged' };
 
 export class Seller {
   token = '';

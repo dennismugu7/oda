@@ -5,6 +5,12 @@
 > numbers, and the app's screens are covered by the jest-expo UI tests. The owner no longer
 > runs the sittings by hand. This file stays as the reference list of steps. A hands-on check
 > on a real Android device is still required before launch (M11).
+>
+> **Updated for the 0.5.0 stack (2026-10-12, PRs #109–#116):** Google sign-in (#107), TikTok's
+> mark (#108), oda's confirmation sheets, Kenya's flag and the Home banner (#109), optional
+> delivery (#110). New and changed steps: 1.13, 1.14–1.14d, 1.15a, 1.15c, 2.24b, 3.14b, 3.16b,
+> 3.17, 3.24a–3.24b (old 1.15b is now 1.14a). Google sign-in and the app's own screens can't be
+> automated: see **Manual on the phone** at the end (also printed in every run's summary).
 
 The phone part of M10's full regression (`docs/m10-plan.md` → CP6): every seller-app and buyer-web
 flow from M2 to M10, on **staging** (https://oda-eta.vercel.app) with the Redmi on build 0.3.1 and
@@ -57,15 +63,20 @@ never your main shop:
 | 1.10 | Step 4: tap **Add product** with nothing filled in. | "Add a photo of your product. Buyers want to see it." |
 | 1.11 | Add a photo (**Take a photo** or **Choose from gallery**), name `Test dress`, price `1500`, size **M**, then **Add product**. | "Uploading photos…", then Step 5. |
 | 1.12 | Step 5: **Buy Goods Till**, Till number `000000`, name `REG TEST ONLY`, then **Continue**. | "Your shop is live" with your link, a **Copy** button and the "Finish setting up" card. |
-| 1.13 | Tap **Copy**, then **Go to my shop**. | "Copied". Home opens: "Good …", your shop name, "No orders yet", and a "Finish your shop" card. |
+| 1.13 | Tap **Copy**, then **Go to my shop**. | "Copied". Home opens: "Good …", your shop name, "No orders yet", and a "Finish your shop" card. No "Your shop isn't taking orders yet" banner (a Till is set; delivery is optional, #110). |
 
 ### 1C · Delivery and catalogue (M3, M6)
 
 | # | Do this | Expected |
 |---|---------|----------|
-| 1.14 | More → **Delivery**. | The warning "Buyers can't order yet. Add a delivery area or turn on pickup." |
-| 1.15 | Add delivery area: `Kilimani`, fee `200`, **By rider**, time `Same day`, then **Add area**. Turn on **Buyers can pick up**, with place `Yaya Centre` and hours `Mon–Sat 9–6`. | The warning is gone; the area and pickup are listed. |
-| 1.15b | More → **Payments**: turn on **On delivery**. | Both "Before delivery" and "On delivery" are on (with only a Till, buyers could pay now only). |
+| 1.14 | More → **Delivery**. Chrome: open the shop. | App: "Delivery is optional" (no warning). Chrome: no "Not taking orders yet"; "Delivery arranged with the seller after you order". |
+| 1.14a | More → **Payments**: turn on **On delivery**. | Both "Before delivery" and "On delivery" are on (with only a Till, buyers could pay now only). |
+| 1.14b | Chrome: Test dress (M) → cart → **Checkout**: name `Buyer Arranged`, phone `712 000 009`, note `Near Yaya Centre, after 5pm`, **Pay on delivery** → **Place order · KSh 1,500**. App: open the order → **Accept order** → **Mark as sent** → **Buyer collects** → **Mark ready to collect**; then **Mark as delivered** with the money collected. | Checkout: "The seller will contact you to arrange delivery", no address, Kenya's whole flag before +254, "Pay when you get your order.", delivery "Not included". Order page: "Delivery · arranged with Reg Test Shop", "Your note: …", "Message Reg Test Shop to arrange delivery"; then "Ready to collect", then "Delivered". App: "ARRANGED WITH BUYER". An older app gets it as a delivery "Arranged with buyer" (#110 f). |
+| 1.14c | Delivery → **I'll arrange delivery with buyers**. | "✓ You'll arrange delivery with buyers"; Home's "Add delivery options" is ticked. |
+| 1.14d | (Automated only) Staging serves `/flags/ke.svg` and `/brands/tiktok-icon-black-circle.png`. | Byte for byte the published files (sha256 `699163d8…`, `a21b43e3…`). |
+| 1.15 | Add delivery area: `Kilimani`, fee `200`, **By rider**, time `Same day`, then **Add area**. Turn on **Buyers can pick up**, with place `Yaya Centre` and hours `Mon–Sat 9–6`. | The "Delivery is optional" card is gone; the area and pickup are listed. |
+| 1.15a | Chrome: checkout again. | Only Kilimani and Pickup; no "arrange with the seller" (#110 Q1). |
+| 1.15c | Add an area `Temp area`, hold it → **Delete area**. | oda's sheet "Delete Temp area?" (not an Android alert); **Delete** removes it. |
 | 1.16 | Shop tab → **Categories**: add `Dresses`, then `Tops`. On **Tops**, open its actions and choose **Move up**. | Tops is now above Dresses. Notice: "Empty categories stay hidden from buyers until you add a product." |
 | 1.17 | Centre **Add product** button: add 2 photos, name `Test top`, price `900`, was price `1200`, category **Tops**, **+ Size** S and M, **+ Colour** one colour, then **Add product**. | It appears on the Shop tab with its photo. |
 | 1.18 | Try was price `800` (lower than the price) on any product, then save. | "The was-price must be higher than the price." Fix it or **Leave** → **Leave**. |
@@ -152,6 +163,7 @@ never your main shop:
 | 2.22 | The **Cancelled by the seller** link. | "Order cancelled", "Out of stock", and **no** "Private seller note". |
 | 2.23 | The **Expired** link. | "Order expired", "Not paid within 48 hours". |
 | 2.24 | The **Ready for pickup** link, then the **Sent with a rider** link. | "Ready for pickup" (pickup point and hours); "Sent out". |
+| 2.24b | The **Arranged with the buyer** link (new demo sample, #110). | "Ready to collect", "Delivery · arranged with Demo Duka", "Your note: Near the matatu stage, after 5pm". |
 | 2.25 | Chrome: a new pay-now order on Shop A; don't pay. Tell Claude its order number. Claude runs **staging-backdate-order**, then **cron-expire-orders**. Reload the page. | "Order expired". The app shows it as Cancelled. |
 
 ### 2E · Offline (M10)
@@ -199,9 +211,11 @@ never your main shop:
 |---|---------|----------|
 | 3.13 | Settings → **Your details**: first name `Reg`, last name `Tester` → **Save changes**. | Saved; Home says "Good …, Reg". |
 | 3.14 | Settings → **Change your password**: wrong current password, then the right one, new password ×2 → **Update password**. | The wrong one gives an error; the right one saves. |
+| 3.14b | Settings → **Log out**, then sign in again. | oda's sheet "Are you sure you want to log out of <your full email>?" (#109 a); Log out ends the session; signing in works. |
 | 3.15 | More → **Shop profile** → **Change link** → `reg-test-new-<today's date>` → **Use this link** → **Save changes**. Chrome: open the **old** link. | It redirects to the new link. |
 | 3.16 | More → **Payments** → **Add another M-Pesa account** → **Paybill** `247247`, account **The order number**, name `REG TEST ONLY` → **Save account**; on it **Show this one at checkout**. Turn **On delivery** off. | Chrome: a new pay-now order shows Pay Bill `247247` with the order number as the account. Checkout offers no "Pay on delivery". Turn **On delivery** back on. |
-| 3.17 | Settings → **Pause my shop** → **Pause shop**. Chrome: reload the shop. | "Reg Test Shop is taking a break. Back soon." **Add to cart** is replaced. Turn the pause off: ordering is back. |
+| 3.16b | On the old Till: **Remove**. | oda's sheet asks first; the Till is gone, the Paybill stays. |
+| 3.17 | Settings → **Pause my shop** → **Pause shop**. Chrome: reload the shop. | oda's sheet asks first. Home: "Your shop isn't taking orders yet" with **Turn off Pause shop** (#109 c). Chrome: "Reg Test Shop is taking a break. Back soon." **Add to cart** is replaced. Turn the pause off: ordering is back and the banner goes. |
 | 3.18 | Settings → **Share feedback** → **Something's broken**, text `regression test`, **Screenshot** → **Add** → **Send feedback**. | "Thank you!". (Claude runs **cron-digest** afterwards: the feedback reaches support@mugu-labs.com.) |
 | 3.19 | Chrome (any order page) → **Report a problem to oda** → `regression test report` → **Send to oda**. | "Thanks. oda will look into it…". |
 
@@ -219,8 +233,27 @@ never your main shop:
 | 3.22 | Chrome: `https://oda-eta.vercel.app/delete-account` → your `+oda-a` email → **Email me the confirm link**. | "Check your email". The email "Confirm deleting your oda account" arrives. |
 | 3.23 | Tap **Review and confirm** → **Delete my account**. | "Your account is deleted". The shop link: "This page isn't here". Shop A's delivered order page: "This shop has closed…" with only "Report a problem". Reopen the app: Shop A is gone (it signs you out or shows an error with a way out, never a crash). |
 | 3.24 | App: **Create new shop** with `yourname+oda-b@gmail.com`, code, steps 1–2 **Skip**, step 3 `Reg Test B`, step 4 one product, step 5 **Skip for now** → **Go to my shop**. | Home of Reg Test B. |
+| 3.24a | Chrome: Reg Test B's shop. | It takes orders (pay on delivery, no delivery options): no banner in the app, no "Not taking orders yet". |
+| 3.24b | (Automated only) The run turns off B's last way to get paid in the database (the app never allows it). | Home: the banner with **Add a way to get paid**; Chrome: "Not taking orders yet". |
 | 3.25 | Settings → **Delete account** → type `DELETE` → **Delete my account**. | "Your account is deleted"; the welcome screen. Its shop link in Chrome: "This page isn't here". |
 | 3.26 | Claude runs **staging-backdate-deletion** for Shop A, then **cron-purge** (dry run, then real). | Claude reports: Shop A's data, photos and sign-in removed; Shop B (deleted today) untouched. |
 | 3.27 | App: **Sign in** with your **main** account. | Your main shop is back as before. |
 
 **Send back:** pass/fail per step. Then Claude records the results and asks for 🛑 review stop C.
+
+---
+
+## Manual on the phone (not automated)
+
+The release APK with the 0.5.0 stack, on staging. Kept in `apps/web/regression/manualSteps.ts` and printed at the end of every **staging-regression** summary.
+
+| # | Do this | Expected |
+|---|---------|----------|
+| M.1 | **Continue with Google** with a Google account oda hasn't seen (#107). Then sign out and **Continue with Google** again. | Onboarding step 1; the second time, back in the same shop. |
+| M.2 | **Continue with Google** with the email of an existing password account. | It signs in to that account; Log out names that account's full email. |
+| M.3 | Settings → **Log out** (#109 a). Cancel, tap outside, then Log out. | oda's sheet "Are you sure you want to log out of <full email>?"; Cancel and a tap outside keep you in. |
+| M.4 | Delete a delivery area, remove a payment account, pause the shop, leave the product form with changes (#109 a). | Each asks in oda's sheet (no Android alert); Android back cancels. |
+| M.5 | Onboarding "Name your shop"; Settings → **Your details** (#109 b, #110 h). | Kenya's whole flag before +254. |
+| M.6 | Onboarding step 2; **Share your shop**; Settings → **Shop profile** (#108). | TikTok's official icon. |
+| M.7 | Pause the shop, then resume (#109 c). | Home: "Your shop isn't taking orders yet" with **Turn off Pause shop**; it goes after resuming. |
+| M.8 | An arranged order; **Mark as sent**; **New order**; More → **Delivery** (#110). | "ARRANGED WITH BUYER"; By rider / By parcel / Buyer collects; "Arrange with buyer"; "Delivery is optional". |

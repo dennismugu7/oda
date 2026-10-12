@@ -43,3 +43,21 @@ export async function demoTokens(): Promise<Record<string, string>> {
   }
   return out;
 }
+
+/**
+ * The Home banner's "no way to get paid" (decisions #109 c, #110 a). The API never lets a
+ * seller get there (pay before needs an account; at least one way must stay on), so the run
+ * sets it on its own shop: pay on delivery off and no active account. Only this run's shops.
+ */
+export async function removeWayToPay(slug: string) {
+  if (!slug.startsWith(`reg-${env.runId}-`)) throw new Error('Only this run’s shops.');
+  await withDb(async (db) => {
+    await db.execute(sql`
+      update payment_accounts set is_active = false
+      where shop_id = (select id from shops where slug = ${slug})`);
+    const rows = await db.execute(sql`
+      update shops set accepts_pay_before = true, accepts_pay_on_delivery = false
+      where slug = ${slug} returning 1`);
+    expect(rows.rows.length, 'shop without a way to pay').toBe(1);
+  });
+}
