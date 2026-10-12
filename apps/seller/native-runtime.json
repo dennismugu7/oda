@@ -1,7 +1,8 @@
 {
-  "version": "0.4.0",
-  "appConfigSha256": "eff1efb7e77b2dc8b98ae3765d9dd2021e4e0faed86b31ac78adc2647c452944",
+  "version": "0.5.0",
+  "appConfigSha256": "2cf6ab05a8563c5a7d7b77db886fcf72b398ffb00b5a7d20b5317d84cd635da9",
   "nativeModules": {
+    "@react-native-google-signin/google-signin": "16.1.5",
     "@sentry/react-native": "7.11.0",
     "expo": "57.0.27",
     "expo-clipboard": "57.0.2",

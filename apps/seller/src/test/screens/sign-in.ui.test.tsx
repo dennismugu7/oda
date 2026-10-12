@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import SignIn from '../../../app/sign-in';
 
 const mockSignInEmail = jest.fn<(body: { email: string; password: string }) => Promise<unknown>>();
+const mockFinish = jest.fn(async () => null);
 
 jest.mock('@/auth/client', () => ({
   authClient: { signIn: { email: (body: never) => mockSignInEmail(body) } },
@@ -13,6 +14,9 @@ jest.mock('@/auth/client', () => ({
     return { data: result.data ?? null, error: result.error ?? null };
   },
 }));
+
+// After the password is right: decide and preload the next screen (decision #107).
+jest.mock('@/auth/finishSignIn', () => ({ finishSignIn: () => mockFinish() }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -51,7 +55,11 @@ describe('Sign in', () => {
     await user.type(screen.getByLabelText('Email'), 'amani@example.test');
     await user.type(screen.getByLabelText('Password'), 'wrong-password');
     await user.press(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('Incorrect email or password. Try again.')).toBeTruthy();
+    expect(
+      await screen.findByText(
+        'Incorrect email or password. If you signed up with Google, use Continue with Google.',
+      ),
+    ).toBeTruthy();
     expect(mockSignInEmail).toHaveBeenCalledWith({
       email: 'amani@example.test',
       password: 'wrong-password',
@@ -66,6 +74,8 @@ describe('Sign in', () => {
     await user.type(screen.getByLabelText('Email'), 'amani@example.test');
     await user.type(screen.getByLabelText('Password'), 'a-good-password');
     await user.press(screen.getByRole('button', { name: 'Continue' }));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(mockFinish).toHaveBeenCalledTimes(1));
+    // Never through the start gate (its wordmark would flash in between).
+    expect(router.replace).not.toHaveBeenCalledWith('/');
   });
 });

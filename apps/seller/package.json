@@ -21,6 +21,7 @@
     "@expo/vector-icons": "^15.1.1",
     "@oda/shared": "workspace:*",
     "@oda/ui-tokens": "workspace:*",
+    "@react-native-google-signin/google-signin": "16.1.5",
     "@sentry/react-native": "~7.11.0",
     "better-auth": "1.7.6",
     "expo": "~57.0.27",

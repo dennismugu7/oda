@@ -94,7 +94,7 @@ search.
 **Summary:** Your details, password, pausing your shop, deleting your account, and how to reach us.
 **Keywords:** account, password, email, phone, pause, break, holiday, delete, close shop, support, help, contact
 
-**Your details and password.** In **More → Settings** you can change your name, your recovery phone and your password. Your email can’t be changed yet.
+**Your details and password.** In **More → Settings** you can change your name, your recovery phone and your password. Your email can’t be changed yet. If you sign in with Google, **Set a password** emails you a link to add one.
 
 **Taking a break.** Turn on **Pause my shop**. Buyers can still look around but can’t order until you turn it off.
 

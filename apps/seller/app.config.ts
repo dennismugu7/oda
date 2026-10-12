@@ -22,8 +22,9 @@ const config: ExpoConfig = {
   // 0.3.0: push (expo-notifications + Firebase) and Sentry, inactive until M10 (decision #70).
   // 0.3.1: Expo SDK 57 patch releases (decisions #80, #81 f).
   // 0.4.0: production build (M11 CP3): brand colour #C44323, separate preview app id.
+  // 0.5.0: Google sign-in (@react-native-google-signin/google-signin, decision #107).
   // Bump on every native change (decision #48).
-  version: '0.4.0',
+  version: '0.5.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   platforms: ['android'],
@@ -45,6 +46,11 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-web-browser',
     'expo-sharing',
+    // Google sign-in (decision #107). Without options the plugin uses the Firebase file above
+    // (google-services.json, already applied for push); Android needs nothing else.
+    '@react-native-google-signin/google-signin',
+    // Local release builds can sign with a private test key (ODA_LOCAL_SIGNING; no-op when unset).
+    './plugins/withLocalSigning',
     [
       'expo-notifications',
       {

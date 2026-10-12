@@ -5,6 +5,8 @@ import { routeForStep, type OnboardingRoute } from '../onboarding/steps';
 export interface Me {
   email: string;
   emailVerified: boolean;
+  /** False for a Google-only seller until they set a password (decision #107). */
+  hasPassword?: boolean;
   onboarding: { step: number | null; done: boolean };
   shop: {
     id: string;

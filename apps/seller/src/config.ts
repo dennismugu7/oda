@@ -17,3 +17,9 @@ export function apiLabel(url: string = API_URL): string {
     return url;
   }
 }
+
+/**
+ * The Google Web client ID that Google's ID tokens are issued for (decision #107; EAS
+ * environments, plain text: not a secret). Unset: no Google button anywhere.
+ */
+export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || null;

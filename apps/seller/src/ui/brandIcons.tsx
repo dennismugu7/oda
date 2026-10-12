@@ -4,7 +4,7 @@ import { Image } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { SvgCss } from 'react-native-svg/css';
 import { WHATSAPP_GREEN } from './brand';
-import { INSTAGRAM_GLYPH_BLACK_SVG, WHATSAPP_GLYPH_GREEN_SVG } from './brandSvgs';
+import { GOOGLE_G_SVG, INSTAGRAM_GLYPH_BLACK_SVG, WHATSAPP_GLYPH_GREEN_SVG } from './brandSvgs';
 
 export type Brand = 'whatsapp' | 'instagram' | 'facebook';
 
@@ -30,6 +30,11 @@ export function BrandIcon({ brand, size = 26 }: { brand: Brand; size?: number })
       height={side}
     />
   );
+}
+
+/** Google's "G" for the Sign in with Google buttons (decision #107): unmodified, 18–20 dp. */
+export function GoogleMark({ size = 20 }: { size?: number }) {
+  return <SvgCss xml={GOOGLE_G_SVG} width={size} height={size} />;
 }
 
 /** WhatsApp's Status ring, drawn by oda in WhatsApp green (not a logo). */

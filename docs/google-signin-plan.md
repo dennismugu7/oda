@@ -254,6 +254,32 @@ deleted account refused; reset on a Google-only account creates a `credential` r
 `hasPassword`; `/callback/google` and `/link-social` still 404; route answers 404 without
 `GOOGLE_WEB_CLIENT_ID`. Authorization tests: the new `hasPassword` read is the caller's own only.
 
+### 2.4 As built in CP2 (differences from §2.2, owner to confirm at review stop B)
+
+- **Where the code is:** `src/auth/google.ts` (every native call), `googleFlow.ts` (pure: tap →
+  checks → sheet → server → finish, with the time limits), `useGoogleSignIn.ts` (the screen state),
+  `afterSignIn.ts` (pure: next screen + preloading, 5 s) and `finishSignIn.ts` (its real calls,
+  caches and `router.replace`), `ui/auth.tsx` (`Button` variant `google`, `OrDivider`,
+  `SigningInOverlay`, `AuthScreen` `locked` / `overlay`, `Link` `disabled`), `ui/brandIcons.tsx`
+  `GoogleMark` (`assets/brands/google-g.svg`).
+- **/api/me fails after signing in:** the seller stays on the sign-in screen with one message
+  (offline / "Couldn't reach oda" / "You're signed in, but we couldn't open your shop. Try
+  again."); nothing navigates. §2.2 said the start gate would take over, but that would show its
+  wordmark, which the owner ruled out. Trying again signs in again (a new session).
+- **No `dismissAll`:** it would animate back through Welcome (a visible flash). `router.replace`
+  alone leaves the stack as email sign-in always has (Welcome under the tabs).
+- **Email sign-in** uses the same `finishSignIn` (no more `replace('/')` through the gate), and
+  its call is held to 15 s too (`capCall`), so it also ends within 20 s.
+- **The only wait without a limit is Google's own sheet**, which waits for the seller (adding a
+  new Google account there can take minutes). Before it, the network and Play services checks
+  get 3 s each; after it, 15 s + 5 s.
+- **Google sign-out** runs in `signOutOnThisPhone` (Log out, delete account), not in
+  `signOutLocal`, which stays free of native code for the Vitest logic tests.
+- **Set a password** uses `settingsApi`'s `sendPasswordLink` (the reset link). Settings reads
+  `hasPassword` from `/api/me`; without an answer it assumes a password.
+- **The G mark** is Google's published standard "G" path data (`assets/brands/README.md`); compare
+  it with Google's "Sign in with Google" pack before the public launch.
+
 ---
 
 ## 3. Owner steps (exact clicks; one at a time; values never in chat)

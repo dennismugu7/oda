@@ -2,6 +2,8 @@
 // this phone stops getting pushes, the stored session goes, and every in-memory copy of the
 // seller's data is emptied so another account on this phone never sees it.
 import { signOutLocal } from '@/auth/client';
+import { googleSignOut } from '@/auth/google';
+import { meCache } from '@/auth/useMe';
 import { deliveryCache } from '@/delivery/api';
 import { homeCache, notificationsCache } from '@/home/api';
 import { clearOnboardingState } from '@/onboarding/useOnboarding';
@@ -20,7 +22,10 @@ export async function signOutOnThisPhone(): Promise<void> {
   resetPushRegistration();
   // Works offline too: the stored session is removed either way.
   await signOutLocal();
+  // The next Google sign-in asks which account again (shared phones; decision #107).
+  await googleSignOut();
   clearOnboardingState();
+  meCache.set(null);
   ordersCache.clear();
   deliveryCache.set(null);
   homeCache.set(null);
