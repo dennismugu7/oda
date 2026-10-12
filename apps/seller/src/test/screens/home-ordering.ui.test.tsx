@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { OrderingBlocker } from '@oda/shared';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { ApiError } from '@/api';
@@ -37,7 +36,7 @@ const ME: Me = {
   shop: { id: 's1', name: 'Amani Styles', slug: 'amani-styles' },
 };
 
-function home(blockers: OrderingBlocker[]): HomeData {
+function home(blockers: string[]): HomeData {
   return {
     firstName: 'Amani',
     hasOrders: false,
@@ -56,21 +55,19 @@ beforeEach(() => {
   mockFetchMe.mockResolvedValue({ kind: 'ok', me: ME });
 });
 
-async function showHome(blockers: OrderingBlocker[]) {
+async function showHome(blockers: string[]) {
   mockHome.mockResolvedValue({ data: home(blockers), error: null });
   await render(<HomeTab />);
   await screen.findByRole('header', { name: /^Good (morning|afternoon|evening), Amani$/ });
 }
 
 describe('Home: not taking orders', () => {
-  it('no delivery option: one button straight to Delivery', async () => {
+  it('delivery is optional (#110 a): an older server’s "delivery" shows nothing', async () => {
     await showHome(['delivery']);
-    expect(screen.getByText(TITLE)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Add a way to get paid' })).toBeNull();
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Add a delivery area or turn on pickup' }),
-    );
-    expect(router.push).toHaveBeenCalledWith('/delivery');
+    expect(screen.queryByText(TITLE)).toBeNull();
+    await showHome(['delivery', 'payment']);
+    expect(screen.queryByText(/delivery area/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add a way to get paid' })).toBeTruthy();
   });
 
   it('no way to get paid: one button straight to Payments', async () => {
@@ -87,18 +84,12 @@ describe('Home: not taking orders', () => {
     expect(router.push).toHaveBeenCalledWith('/settings');
   });
 
-  it('several missing: every item, delivery first', async () => {
-    await showHome(['delivery', 'payment', 'paused']);
+  it('both missing: both items, payment first', async () => {
+    await showHome(['payment', 'paused']);
     const shown = screen
-      .getAllByText(
-        /^(Add a delivery area or turn on pickup|Add a way to get paid|Turn off Pause shop)$/,
-      )
+      .getAllByText(/^(Add a way to get paid|Turn off Pause shop)$/)
       .map((n) => n.props.children);
-    expect(shown).toEqual([
-      'Add a delivery area or turn on pickup',
-      'Add a way to get paid',
-      'Turn off Pause shop',
-    ]);
+    expect(shown).toEqual(['Add a way to get paid', 'Turn off Pause shop']);
   });
 
   it('all fine: no banner', async () => {

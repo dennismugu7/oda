@@ -86,6 +86,7 @@ describe('shopCreate / shopUpdate', () => {
   });
   it('accepts only known checklist items', () => {
     expect(shopUpdate.safeParse({ checklist: { shared_link: true } }).success).toBe(true);
+    expect(shopUpdate.safeParse({ checklist: { arrange_delivery: true } }).success).toBe(true);
     expect(shopUpdate.safeParse({ checklist: { first_product: true } }).success).toBe(false);
   });
 });

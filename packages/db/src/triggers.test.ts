@@ -413,6 +413,26 @@ describe('constraints', () => {
       ).constraint,
     ).toBe('orders_money');
   });
+
+  it('an arranged order (migration 0010, decision #110) has no delivery area', async () => {
+    const { shopId } = await createShopFixture(db);
+    const order = await insertOrderFixture(db, shopId, [], {
+      fulfilment: 'arranged',
+      addressText: 'Near Yaya Centre',
+    });
+    expect(order).toMatchObject({ fulfilment: 'arranged', deliveryAreaId: null });
+    const [area] = await db
+      .insert(schema.deliveryAreas)
+      .values({ shopId, name: 'CBD', fee: 200, method: 'rider' })
+      .returning();
+    expect(
+      (
+        await pgError(
+          insertOrderFixture(db, shopId, [], { fulfilment: 'arranged', deliveryAreaId: area!.id }),
+        )
+      ).constraint,
+    ).toBe('orders_pickup_has_no_area');
+  });
 });
 
 describe('rate_limit_hit', () => {

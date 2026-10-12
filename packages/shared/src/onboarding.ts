@@ -136,7 +136,7 @@ export interface ChecklistFacts {
   /** Live products without a photo (saved while uploads were paused); 0 when not given. */
   productsWithoutPhoto?: number;
   /** shops.checklist: items without their own data, ticked with a timestamp. */
-  ticks: Partial<Record<'shared_link' | 'tested_whatsapp', string>>;
+  ticks: Partial<Record<'shared_link' | 'tested_whatsapp' | 'arrange_delivery', string>>;
 }
 
 export interface FinishYourShop {
@@ -153,18 +153,15 @@ export function finishYourShop(facts: ChecklistFacts): FinishYourShop {
     logo: facts.hasLogo,
     more_products: facts.productCount >= 5,
     reach: facts.hasSocialHandle,
-    delivery: facts.deliveryAreaCount >= 1 || facts.pickupEnabled,
+    // Optional (decision #110 e): an area, pickup, or "I'll arrange delivery with buyers".
+    delivery: facts.deliveryAreaCount >= 1 || facts.pickupEnabled || !!facts.ticks.arrange_delivery,
     tested_whatsapp: !!facts.ticks.tested_whatsapp,
     product_photo: false,
   };
   const listed = FINISH_ITEMS.filter(
     (id) => id !== 'product_photo' || (facts.productsWithoutPhoto ?? 0) > 0,
   );
-  // Delivery first while it's missing: without it buyers can't order at all (decision #109).
-  const ordered = done.delivery
-    ? listed
-    : ['delivery' as const, ...listed.filter((id) => id !== 'delivery')];
-  const items = ordered.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
+  const items = listed.map((id) => ({ id, label: FINISH_LABELS[id], done: done[id] }));
   const count = items.filter((i) => i.done).length;
   return { items, done: count, total: items.length, complete: count === items.length };
 }

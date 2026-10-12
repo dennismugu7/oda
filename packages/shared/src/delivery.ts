@@ -17,7 +17,10 @@ export const deliveryAreaOrderInput = z.strictObject({
     }),
 });
 
-/** A shop can take orders only with a delivery option: an area or pickup (decision #61 c). */
+/**
+ * At least one delivery area, or pickup on. Optional since decision #110: without one, buyers
+ * still order and arrange delivery with the seller (it no longer decides taking orders).
+ */
 export function hasDeliveryOption(facts: { areaCount: number; pickupEnabled: boolean }): boolean {
   return facts.areaCount > 0 || facts.pickupEnabled;
 }

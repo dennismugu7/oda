@@ -2,6 +2,7 @@ import 'server-only';
 import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
 import {
+  type CHECKLIST_ITEMS,
   finishYourShop,
   SIZE_PRESETS,
   suggestSlugs,
@@ -336,8 +337,8 @@ export function onboardingShopRepo(db: Db, ctx: SellerCtx) {
       await reachStep(db, ctx.shopId, 6);
     },
 
-    /** Step 6 and Home: tick "Share your link" or "Test your WhatsApp link". */
-    async tick(item: 'shared_link' | 'tested_whatsapp') {
+    /** Step 6, Home and Delivery: tick a checklist item without its own data (#110 e). */
+    async tick(item: (typeof CHECKLIST_ITEMS)[number]) {
       await seller.updateShop({ checklist: { [item]: true } });
     },
 

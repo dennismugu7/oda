@@ -45,7 +45,7 @@ Conventions: `id uuid pk default gen_random_uuid()`, `created_at`/`updated_at ti
 - `id`, `shop_id`, `number int` (unique per shop), `public_token text unique`, `idempotency_key text` (unique per shop: `(shop_id, idempotency_key)`, decisions #84 a, #93)
 - `status` (see order-lifecycle.md), `payment_method` (enum: pay_before, pay_on_delivery), `payment_status` (enum: unpaid, claimed, paid, refund_due, refunded)
 - Buyer snapshot: `buyer_name`, `buyer_phone`, `buyer_whatsapp bool`, `buyer_email null`
-- Fulfilment: `fulfilment` (enum: delivery, pickup), `delivery_area_id null`, `delivery_area_name`, `address_text`, `sent_method` (rider, parcel, pickup), `rider_phone`
+- Fulfilment: `fulfilment` (enum: delivery, pickup, **arranged**: the shop lists no delivery option and buyer and seller arrange it, decision #110), `delivery_area_id null` (null unless delivery), `delivery_area_name`, `address_text` (delivery: the address; **arranged: the buyer's optional note for the seller**; pickup: null), `sent_method` (rider, parcel, pickup; on an arranged order `pickup` means "Buyer collects"), `rider_phone`
 - Money: `subtotal`, `delivery_fee`, `total`
 - Payment: `payment_account_snapshot jsonb` (type/number/name at order time), `mpesa_code null`, `paid_at`
 - `source` (enum: wa, status, tt, ig, fb, qr, other, direct, manual)

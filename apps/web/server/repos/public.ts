@@ -15,7 +15,13 @@ import {
   type SQL,
 } from 'drizzle-orm';
 import { schema, type Db } from '@oda/db';
-import { orderingFacts, productBadges, type OrderSource, type StoreQuery } from '@oda/shared';
+import {
+  hasDeliveryOption,
+  orderingFacts,
+  productBadges,
+  type OrderSource,
+  type StoreQuery,
+} from '@oda/shared';
 import { publicUrl } from '../uploads';
 import { checkId, one } from './util';
 
@@ -62,7 +68,10 @@ declare const visible: unique symbol;
 export type PublicShop = Awaited<ReturnType<typeof selectShop>>[number] & {
   /** Pay-now needs pay-before on and an active payment account (spec §5.2 step 5). */
   payNowAvailable: boolean;
-  /** At least one delivery area, or pickup on: needed to take orders (decision #61 c). */
+  /**
+   * At least one delivery area, or pickup on. Optional (decision #110): without one, checkout
+   * offers only "arranged with the seller".
+   */
   hasDeliveryOption: boolean;
   logoUrl: string | null;
   readonly [visible]: true;
@@ -96,15 +105,14 @@ export function publicRepo(db: Db) {
             .where(and(eq(t.deliveryAreas.shopId, row.id), isNull(t.deliveryAreas.deletedAt)))
             .limit(1),
         ]);
-        const facts = orderingFacts({
-          ...row,
-          hasActivePaymentAccount: !!active,
-          hasDeliveryArea: !!area,
-        });
+        const facts = orderingFacts({ ...row, hasActivePaymentAccount: !!active });
         const shop = {
           ...row,
           payNowAvailable: facts.payNowAvailable,
-          hasDeliveryOption: facts.hasDeliveryOption,
+          hasDeliveryOption: hasDeliveryOption({
+            areaCount: area ? 1 : 0,
+            pickupEnabled: row.pickupEnabled,
+          }),
           logoUrl: publicUrl(row.logoPath),
         } as PublicShop;
         return { kind: 'shop', shop };

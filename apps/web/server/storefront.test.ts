@@ -173,15 +173,18 @@ describe('catalog (shop home and search)', () => {
     expect(shop).not.toHaveProperty('mpesaChecked');
   });
 
-  it('takes orders only with a way to pay and a way to deliver (decision #61 c)', async () => {
+  it('takes orders with a way to pay; delivery options are optional (decision #110 a)', async () => {
     const s = await newSeller();
+    // A new shop: pay before is on but there's no account yet, so no way to pay.
+    expect(takingOrders((await shopRepo(s.slug)).shop)).toBe(false);
     await db()
       .update(schema.shops)
       .set({ acceptsPayOnDelivery: true })
       .where(eq(schema.shops.id, s.shopId));
     let shop = (await shopRepo(s.slug)).shop;
+    // No area and no pickup: still takes orders (buyer and seller arrange delivery).
     expect(shop.hasDeliveryOption).toBe(false);
-    expect(takingOrders(shop)).toBe(false);
+    expect(takingOrders(shop)).toBe(true);
     await db()
       .update(schema.shops)
       .set({ pickupEnabled: true })

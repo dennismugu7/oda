@@ -36,6 +36,16 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-12 · Optional delivery CP1: shared, server, migration (decision #110; branch `optional-delivery-cp1`, draft PR, not merged)
+
+- **Plan approved** (`docs/optional-delivery-plan.md`, PR #112) with the owner's answers Q1–Q9 → **decision #110** (reverses #61 c).
+- **Done:** taking orders = not paused + a way to get paid (`ordering.ts`; `/api/home` blockers are only `payment` / `paused`; the Home banner skips a blocker it doesn't know). Migration **0010** adds `fulfilment = 'arranged'` (add-only). Checkout schema `{ kind: 'arranged', note }` (note ≤ 300, links stripped, kept in `address_text`); buyers may arrange only when the shop has no area and pickup is off (else 422 "Choose delivery or pickup."); the quote offers only `arranged` then; manual orders always may ("Arrange with buyer", fee override kept). `pricing.ts`: arranged → fee 0. Stepper / timeline "Ready to collect" for Buyer collects; WhatsApp and sent email never name the shop's pickup place for arranged; receipt "Delivery (arranged with {shop}): Not included"; pay on delivery "when you get your order"; push "· Arrange delivery". "Finish your shop": delivery back in its place, done also with the `arrange_delivery` tick. Spec §5.2/§5.3, `data-model.md`, `order-lifecycle.md` updated.
+- **Old-app check (0.4.0, `main`):** no response validation; only `fulfilment === 'pickup'` is tested, so `arranged` can't crash it, but it would show "Delivery" with no area. Seller order endpoints now send arranged orders as `delivery` + area "Arranged with buyer" unless the app sends `X-Oda-App-Features: arranged` (CP3 adds the header).
+- **Kenya flag:** whole flag at 20 × 15 (`meet`), amended into the flag commit on `app-fixes-1` (#110 h).
+- **Tests:** shared (ordering, pricing, checkout schema, stepper, timeline, WhatsApp, checklist, write schema), db (arranged enum + area check), server (arranged checkout and quote, refused with areas/pickup, old/new app shapes, Buyer collects texts, New order option, Home blockers, checklist tick, storefront rule).
+- **Not yet (CP2/CP3):** the web checkout still shows only areas/pickup, so a shop with no option can't complete checkout in the browser until CP2; nothing reaches `main` before CP2 (Q8).
+- **Next:** review stop A (owner), then CP2 (buyer web).
+
 ## 2026-10-11 · App fixes 1 (decision #109; branch `app-fixes-1`, draft PR, not merged)
 
 - **Done, one commit each:** (1) `ConfirmSheet` replaces all 11 `Alert.alert` calls (nine confirmations; the Shop tab status menu → choice `Sheet`; "Your account is deleted" → notice on Welcome); Log out names the full account email. (2) Kenya's flag (flag-icons 7.2.3, MIT, byte for byte) before +254 in onboarding, Your details and the web checkout. (3) Shared ordering rule (`packages/shared/src/ordering.ts`); `/api/home` returns `ordering.blockers`; Home banner with a button per missing item; delivery first in "Finish your shop".

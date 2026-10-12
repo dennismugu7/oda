@@ -190,19 +190,19 @@ describe('Finish your shop (7 items)', () => {
     ticks: {},
   };
 
-  it('lists the 7 items in order with spec wording; delivery first while missing (#109)', () => {
+  it('lists the 7 items in order with spec wording; delivery in its place (#110 e)', () => {
     const result = finishYourShop(none);
     expect(result.items.map((i) => i.label)).toEqual([
-      'Add delivery options',
       'Shop, first product and payment set',
       'Share your link',
       'Add your shop logo',
       'Add 4 more products',
       'Add more ways buyers reach you',
+      'Add delivery options',
       'Test your WhatsApp link',
     ]);
     expect(result).toMatchObject({ done: 0, total: 7, complete: false });
-    // Once delivery is set it goes back to its place.
+    // Delivery is optional, so it no longer jumps first while missing (#109 c undone).
     expect(finishYourShop({ ...none, pickupEnabled: true }).items.map((i) => i.id)).toEqual([
       'basics',
       'shared_link',
@@ -251,11 +251,12 @@ describe('Finish your shop (7 items)', () => {
     expect(noPhoto).toMatchObject({ done: 7, total: 8, complete: false });
   });
 
-  it('"Add delivery options" is done with a delivery area or pickup on (decision #61)', () => {
+  it('"Add delivery options" is done with an area, pickup, or “I’ll arrange” (#110 e)', () => {
     const delivery = (facts: Partial<ChecklistFacts>) =>
       finishYourShop({ ...none, ...facts }).items.find((i) => i.id === 'delivery')!.done;
     expect(delivery({})).toBe(false);
     expect(delivery({ deliveryAreaCount: 1 })).toBe(true);
     expect(delivery({ pickupEnabled: true })).toBe(true);
+    expect(delivery({ ticks: { arrange_delivery: '2026-10-12T09:00:00Z' } })).toBe(true);
   });
 });

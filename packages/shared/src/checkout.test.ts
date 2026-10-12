@@ -47,6 +47,26 @@ describe('checkoutInput', () => {
     expect(result.error?.issues[0]?.message).toBe('Your name can be at most 60 characters.');
   });
 
+  it('arranged delivery: an optional note, links stripped, at most 300 characters (#110 b)', () => {
+    const arranged = (fulfilment: object) => checkoutInput.safeParse({ ...valid, fulfilment });
+    expect(arranged({ kind: 'arranged' }).data?.fulfilment).toEqual({
+      kind: 'arranged',
+      note: null,
+    });
+    expect(arranged({ kind: 'arranged', note: '   ' }).data?.fulfilment).toEqual({
+      kind: 'arranged',
+      note: null,
+    });
+    expect(
+      arranged({ kind: 'arranged', note: ' Near Yaya https://spam.example now ' }).data?.fulfilment,
+    ).toEqual({ kind: 'arranged', note: 'Near Yaya now' });
+    expect(arranged({ kind: 'arranged', note: 'x'.repeat(300) }).success).toBe(true);
+    const long = arranged({ kind: 'arranged', note: 'x'.repeat(301) });
+    expect(long.error?.issues[0]?.message).toBe('The note can be at most 300 characters.');
+    // No address or area belongs to an arranged order.
+    expect(arranged({ kind: 'arranged', areaId: valid.fulfilment.areaId }).success).toBe(false);
+  });
+
   it('refuses fields the client must not send (prices, totals per line, status)', () => {
     expect(
       checkoutInput.safeParse({ ...valid, lines: [{ ...valid.lines[0], unitPrice: 1 }] }).success,
@@ -163,6 +183,26 @@ describe('buyerTimeline', () => {
     sentAt: null,
     deliveredAt: null,
   };
+
+  it('arranged orders: the seller will contact the buyer; "Ready to collect" (#110 d)', () => {
+    const waiting = buyerTimeline({ ...base, fulfilment: 'arranged' }, 'Demo Duka');
+    expect(waiting[2]).toMatchObject({
+      label: 'Sent out',
+      note: 'Demo Duka will contact you to arrange delivery',
+    });
+    const collect = buyerTimeline(
+      {
+        ...base,
+        fulfilment: 'arranged',
+        status: 'sent',
+        sentMethod: 'pickup',
+        confirmedAt: t0,
+        sentAt: t0,
+      },
+      'Demo Duka',
+    );
+    expect(collect[2]).toMatchObject({ label: 'Ready to collect', state: 'done' });
+  });
 
   it('pay on delivery waiting for the seller', () => {
     const steps = buyerTimeline(base, 'Demo Duka');

@@ -65,7 +65,8 @@ export type DetailsUpdate = z.infer<typeof detailsUpdate>;
 
 // Shop ----------------------------------------------------------------------------------
 
-export const CHECKLIST_ITEMS = ['shared_link', 'tested_whatsapp'] as const;
+/** "I'll arrange delivery with buyers" ticks the optional delivery item (decision #110 e). */
+export const CHECKLIST_ITEMS = ['shared_link', 'tested_whatsapp', 'arrange_delivery'] as const;
 
 const shopFields = {
   name: requiredText(2, 40, 'Shop name'),
