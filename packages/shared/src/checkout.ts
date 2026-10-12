@@ -7,6 +7,7 @@ import {
   type OrderState,
   type OrderStatus,
   type PaymentMethod,
+  type SentMethod,
 } from './orderMachine';
 import { MAX_QTY } from './pricing';
 import { kePhone } from './schemas/fields';
@@ -74,6 +75,22 @@ export const checkoutFulfilment = z.discriminatedUnion(
   'kind',
   [
     z.strictObject({ kind: z.literal('pickup') }),
+    // No delivery option listed: buyer and seller arrange it (decision #110 b). The optional
+    // note ("where you are, when suits you") is kept in address_text.
+    z.strictObject({
+      kind: z.literal('arranged'),
+      note: z
+        .string()
+        .max(ADDRESS_MAX * 4, { error: `The note can be at most ${ADDRESS_MAX} characters.` })
+        .transform(stripLinks)
+        .pipe(
+          z.string().max(ADDRESS_MAX, {
+            error: `The note can be at most ${ADDRESS_MAX} characters.`,
+          }),
+        )
+        .nullish()
+        .transform((v) => v || null),
+    }),
     z.strictObject({
       kind: z.literal('delivery'),
       areaId: z.uuid({ error: 'Choose where to deliver.' }),
@@ -223,6 +240,8 @@ export interface TimelineOrder {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   fulfilment: Fulfilment;
+  /** For "Ready to collect" on arranged orders (decision #110 d); absent means not sent. */
+  sentMethod?: SentMethod | null;
   placedAt: Date | null;
   claimedAt: Date | null;
   confirmedAt: Date | null;
@@ -277,7 +296,9 @@ export function buyerTimeline(
     } else if (s.step === 3 && state !== 'done') {
       note = pickup
         ? `${shopName} will tell you when it’s ready`
-        : `${shopName} will WhatsApp you to arrange delivery`;
+        : order.fulfilment === 'arranged'
+          ? `${shopName} will contact you to arrange delivery`
+          : `${shopName} will WhatsApp you to arrange delivery`;
     }
     return { key: keys[i]!, label, note, state, at: state === 'done' ? (at[i] ?? null) : null };
   });

@@ -5,6 +5,7 @@ import {
   BUSINESS_TYPES,
   CANCEL_REASONS,
   DELIVERY_METHODS,
+  FULFILMENTS,
   ORDER_SOURCES,
   ORDER_STATUSES,
   PAYMENT_ACCOUNT_TYPES,
@@ -23,7 +24,7 @@ export const sentMethod = pgEnum('sent_method', SENT_METHODS);
 export const cancelReason = pgEnum('cancel_reason', CANCEL_REASONS);
 export const eventActor = pgEnum('event_actor', ACTORS);
 export const cancelledBy = pgEnum('cancelled_by', ['buyer', 'seller', 'system']);
-export const fulfilment = pgEnum('fulfilment', ['delivery', 'pickup']);
+export const fulfilment = pgEnum('fulfilment', FULFILMENTS);
 export const claimOutcome = pgEnum('claim_outcome', ['pending', 'confirmed', 'not_found']);
 
 // Seller-editable enums share their values with the write whitelists in @oda/shared.

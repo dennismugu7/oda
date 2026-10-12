@@ -8,8 +8,14 @@ export interface PriceLine {
   qty: number;
 }
 
+/**
+ * Pickup and arranged orders have no fee: an arranged order's delivery cost, if any, is settled
+ * between buyer and seller outside the order total (decision #110 c).
+ */
 export type PriceDelivery =
-  { kind: 'pickup' } | { kind: 'area'; fee: number; freeDeliveryEligible: boolean };
+  | { kind: 'pickup' }
+  | { kind: 'arranged' }
+  | { kind: 'area'; fee: number; freeDeliveryEligible: boolean };
 
 export interface PriceInput {
   lines: PriceLine[];

@@ -1,6 +1,7 @@
 import 'server-only';
 import { z } from 'zod';
 import {
+  CHECKLIST_ITEMS,
   onboardingAnswer,
   onboardingLogo,
   onboardingPayment,
@@ -103,10 +104,13 @@ export const postPayment = handle(async (request) => {
 });
 
 const tickInput = z.strictObject({
-  item: z.enum(['shared_link', 'tested_whatsapp'], { error: 'Unknown checklist item.' }),
+  item: z.enum(CHECKLIST_ITEMS, { error: 'Unknown checklist item.' }),
 });
 
-/** POST /api/onboarding/checklist: "Share your link" / "Test your WhatsApp link". */
+/**
+ * POST /api/onboarding/checklist: "Share your link" / "Test your WhatsApp link" / "I'll arrange
+ * delivery with buyers" (decision #110 e).
+ */
 export const postChecklist = handle(async (request) => {
   const db = getDb();
   const ctx = await requireSeller(request, db);

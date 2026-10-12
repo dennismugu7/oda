@@ -75,7 +75,11 @@ export interface NewOrder {
   /** Buyer orders: the link's ?s= tag (default `direct`). Manual orders are always `manual`. */
   source?: Exclude<OrderSource, 'manual'>;
   buyer: { name: string; phone: string; whatsapp?: boolean; email?: string | null };
-  fulfilment: { kind: 'pickup' } | { kind: 'delivery'; areaId: string; addressText: string };
+  fulfilment:
+    | { kind: 'pickup' }
+    | { kind: 'delivery'; areaId: string; addressText: string }
+    /** Buyer and seller arrange delivery; the note is kept in address_text (decision #110). */
+    | { kind: 'arranged'; note?: string | null };
   lines: NewOrderLine[];
   /** Manual orders only (order-lifecycle.md → Money). */
   deliveryFeeOverride?: number;
@@ -162,6 +166,15 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
         if (!shop.pickupEnabled && !manual) {
           throw new ValidationError("This shop doesn't offer pickup.");
         }
+      } else if (input.fulfilment.kind === 'arranged') {
+        // Buyers arrange delivery only with a shop that lists no option (decision #110 b);
+        // a seller may arrange any manual order.
+        if (!manual && (shop.pickupEnabled || (await hasArea(tx, shop.id)))) {
+          throw new ValidationError('Choose delivery or pickup.', {
+            'fulfilment.areaId': 'Choose delivery or pickup.',
+          });
+        }
+        delivery = { kind: 'arranged' };
       } else {
         [area] = await tx
           .select()
@@ -227,7 +240,11 @@ export async function insertOrder(db: Db, input: NewOrder): Promise<InsertOrderR
           deliveryAreaId: area?.id ?? null,
           deliveryAreaName: area?.name ?? null,
           addressText:
-            input.fulfilment.kind === 'delivery' ? input.fulfilment.addressText.trim() : null,
+            input.fulfilment.kind === 'delivery'
+              ? input.fulfilment.addressText.trim()
+              : input.fulfilment.kind === 'arranged'
+                ? input.fulfilment.note?.trim() || null
+                : null,
           subtotal: price.subtotal,
           deliveryFee: price.deliveryFee,
           total: price.total,
@@ -303,9 +320,12 @@ export interface OrderQuote {
     qty: number;
   }[];
   subtotal: number;
-  /** One per delivery area (in the seller's order), then pickup when it's on. */
+  /**
+   * One per delivery area (in the seller's order), then pickup when it's on. A shop with
+   * neither offers buyers only `arranged` (fee 0); manual orders always have it too (#110 b).
+   */
   options: {
-    kind: 'delivery' | 'pickup';
+    kind: 'delivery' | 'pickup' | 'arranged';
     areaId: string | null;
     deliveryFee: number;
     total: number;
@@ -365,6 +385,16 @@ export async function quoteOrder(
           freeDeliveryApplied: false,
         });
       }
+      if (options.length === 0 || opts.manual) {
+        const arranged = price({ kind: 'arranged' });
+        options.push({
+          kind: 'arranged',
+          areaId: null,
+          deliveryFee: arranged.deliveryFee,
+          total: arranged.total,
+          freeDeliveryApplied: false,
+        });
+      }
       return {
         lines: lines.map((l) => ({
           productId: l.product.id,
@@ -382,6 +412,16 @@ export async function quoteOrder(
     if (error instanceof PricingError) throw new ValidationError(error.message);
     throw error;
   }
+}
+
+/** Does the shop list at least one (non-deleted) delivery area? */
+async function hasArea(tx: Pick<Db, 'select'>, shopId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: t.deliveryAreas.id })
+    .from(t.deliveryAreas)
+    .where(and(eq(t.deliveryAreas.shopId, shopId), isNull(t.deliveryAreas.deletedAt)))
+    .limit(1);
+  return !!row;
 }
 
 export async function findByIdempotencyKey(db: Db, shopId: string, key: string) {

@@ -17,7 +17,7 @@ import { getDb } from './db';
 import { parseInput } from './errors';
 import { insertOrder, quoteOrder, transitionOrder } from './orders';
 import { reviewLink } from './orderLink';
-import { sellerOrdersRepo } from './repos/sellerOrders';
+import { forSellerApp, sellerOrdersRepo } from './repos/sellerOrders';
 import { body, handle } from './routeHandler';
 
 // The seller's orders (M6 CP2): GET /api/orders, GET /api/orders/:id and the one actions
@@ -39,7 +39,10 @@ export const listOrders = handle(async (request) => {
 /** GET /api/orders/:id */
 export const getOrder = handle(async (request, id) => {
   const db = getDb();
-  return sellerOrdersRepo(db, await requireSeller(request, db)).detail(id!);
+  return forSellerApp(
+    await sellerOrdersRepo(db, await requireSeller(request, db)).detail(id!),
+    request,
+  );
 });
 
 /** POST /api/orders/:id/actions — body: one seller action of the machine. */
@@ -66,6 +69,7 @@ export function postOrderAction(defer: Defer) {
             link: detail.link,
             reviewLink: order.source === 'manual' ? null : reviewLink(order.publicToken),
             paymentStatus: order.paymentStatus,
+            fulfilment: order.fulfilment,
             sentMethod: order.sentMethod,
             riderPhone: order.riderPhone,
             pickupLocation: detail.shop.pickupLocation,
@@ -74,7 +78,10 @@ export function postOrderAction(defer: Defer) {
           order.cancelReason,
         )
       : null;
-    return { order: detail, whatsapp: text ? { url: waLink(order.buyerPhone, text), text } : null };
+    return {
+      order: forSellerApp(detail, request),
+      whatsapp: text ? { url: waLink(order.buyerPhone, text), text } : null,
+    };
   });
 }
 
@@ -94,7 +101,11 @@ export const quoteManualOrder = handle(async (request) => {
     ...quote,
     options: quote.options.map((o) => ({
       ...o,
-      name: o.areaId ? (names[o.areaId] ?? '') : 'Pickup',
+      name: o.areaId
+        ? (names[o.areaId] ?? '')
+        : o.kind === 'arranged'
+          ? 'Arrange with buyer'
+          : 'Pickup',
     })),
   };
 });
@@ -125,5 +136,5 @@ export const createManualOrder = handle(async (request) => {
       ? { deliveryFeeOverride: input.deliveryFeeOverride }
       : {}),
   });
-  return sellerOrdersRepo(db, ctx).detail(order.id);
+  return forSellerApp(await sellerOrdersRepo(db, ctx).detail(order.id), request);
 }, 201);

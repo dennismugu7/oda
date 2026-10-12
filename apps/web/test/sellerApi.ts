@@ -13,12 +13,18 @@ export async function newUser() {
   const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
   async function call(
     handler: Handler,
-    opts: { method?: string; body?: unknown; id?: string; query?: string } = {},
+    opts: {
+      method?: string;
+      body?: unknown;
+      id?: string;
+      query?: string;
+      headers?: Record<string, string>;
+    } = {},
   ) {
     const res = await handler(
       new Request(`http://localhost:3000/api/x${opts.query ?? ''}`, {
         method: opts.method ?? (opts.body === undefined ? 'GET' : 'POST'),
-        headers,
+        headers: { ...headers, ...opts.headers },
         body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
       }),
       { params: Promise.resolve({ id: opts.id ?? '' }) },

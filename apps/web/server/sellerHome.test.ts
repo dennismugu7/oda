@@ -69,6 +69,13 @@ describe('manual orders', () => {
       }),
       // Pickup is always offered on a manual order, even when the shop's pickup is off.
       expect.objectContaining({ kind: 'pickup', name: 'Pickup', deliveryFee: 0, total: 4500 }),
+      // And arranging delivery with the buyer (decision #110 b).
+      expect.objectContaining({
+        kind: 'arranged',
+        name: 'Arrange with buyer',
+        deliveryFee: 0,
+        total: 4500,
+      }),
     ]);
     const over = await w.call(quoteManualOrder, {
       body: { lines: manual(w).lines, deliveryFeeOverride: 0 },
@@ -203,15 +210,11 @@ describe('Home', () => {
     expect(await anonCall(getHome)).toBe(401);
   });
 
-  it('lists what stops buyers ordering, with the buyer web’s rule (decision #109)', async () => {
+  it('lists what stops buyers ordering, with the buyer web’s rule (#109 c, #110 a)', async () => {
     const s = await newSeller();
     const blockers = async () => (await s.call(getHome)).json.ordering.blockers;
-    // A new shop: no delivery option, no payment account (pay before needs one).
-    expect(await blockers()).toEqual(['delivery', 'payment']);
-
-    await db
-      .insert(t.deliveryAreas)
-      .values({ shopId: s.shopId, name: 'Kilimani', fee: 200, method: 'rider' });
+    // A new shop: no payment account (pay before needs one). No delivery option either, but
+    // delivery is optional (decision #110), so it's never a blocker.
     expect(await blockers()).toEqual(['payment']);
 
     await db.insert(t.paymentAccounts).values({

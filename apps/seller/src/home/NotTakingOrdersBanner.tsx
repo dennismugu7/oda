@@ -1,7 +1,9 @@
 // "Your shop isn't taking orders yet" (decision #109): on top of Home while buyers can't order,
 // with one button per missing item straight to the screen that fixes it. The items come from
 // GET /api/home (`ordering.blockers`), worked out with the buyer web's own rule
-// (`orderingBlockers` in @oda/shared), so the app and the shop page always agree.
+// (`orderingBlockers` in @oda/shared), so the app and the shop page always agree. Delivery
+// options are optional (decision #110 a): a blocker this app doesn't know (an older server's
+// "delivery") is skipped.
 import type { OrderingBlocker } from '@oda/shared';
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,12 +11,12 @@ import { colors, radii, spacing, text } from '@/theme';
 import { Icon } from '@/ui/icon';
 
 export const BLOCKER_ACTIONS: Record<OrderingBlocker, { label: string; href: Href }> = {
-  delivery: { label: 'Add a delivery area or turn on pickup', href: '/delivery' },
   payment: { label: 'Add a way to get paid', href: '/payments' },
   paused: { label: 'Turn off Pause shop', href: '/settings' },
 };
 
-export function NotTakingOrdersBanner({ blockers }: { blockers: OrderingBlocker[] }) {
+export function NotTakingOrdersBanner({ blockers: sent }: { blockers: readonly string[] }) {
+  const blockers = sent.filter((b): b is OrderingBlocker => Object.hasOwn(BLOCKER_ACTIONS, b));
   if (blockers.length === 0) return null;
   return (
     <View style={styles.banner} accessibilityRole="summary">

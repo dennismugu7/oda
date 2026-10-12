@@ -51,6 +51,18 @@ describe('WhatsApp prefills', () => {
         pickupHours: 'Mon–Sat 9am–6pm',
       }),
     ).toContain('is ready for pickup at Kilimani stall, Mon–Sat 9am–6pm');
+    // Arranged orders (decision #110 d): never the shop's pickup place.
+    expect(
+      whatsappMessage('markSent', {
+        ...order,
+        fulfilment: 'arranged',
+        sentMethod: 'pickup',
+        pickupLocation: 'Kilimani stall',
+        pickupHours: null,
+      }),
+    ).toBe(
+      'Hi Wanjiku, your order #1042 from Amani Styles is ready to collect, as we arranged. Details: https://oda.example/o/abcdefghijkl',
+    );
     expect(whatsappMessage('markDelivered', order)).toContain(order.link);
     // M7: buyer-placed orders get the review link; manual orders keep the order link (#73 i).
     expect(whatsappMessage('markDelivered', { ...order, reviewLink: `${order.link}/review` })).toBe(

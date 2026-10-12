@@ -59,7 +59,12 @@ export const SELLER_CANCEL_REASONS = [
 ] as const satisfies readonly CancelReason[];
 export type SellerCancelReason = (typeof SELLER_CANCEL_REASONS)[number];
 
-export type Fulfilment = 'delivery' | 'pickup';
+/**
+ * How the order reaches the buyer: a delivery area, pickup, or arranged between buyer and
+ * seller when the shop lists neither (decision #110: delivery options are optional).
+ */
+export const FULFILMENTS = ['delivery', 'pickup', 'arranged'] as const;
+export type Fulfilment = (typeof FULFILMENTS)[number];
 
 export type OrderTimestamp =
   | 'placed_at'
@@ -538,15 +543,18 @@ export interface StepperStep {
 /**
  * The four stepper steps shared by both apps (order-lifecycle.md → Stepper labels).
  * A cancelled order keeps only "Order placed" done; callers show the cancelled state.
+ * Step 3 is "Ready for pickup" for pickup orders, and "Ready to collect" for an arranged order
+ * the seller marked "Buyer collects" (decision #110 d).
  */
 export function stepperSteps(
-  order: Pick<OrderState, 'status' | 'paymentMethod'>,
+  order: Pick<OrderState, 'status' | 'paymentMethod'> & { sentMethod?: SentMethod | null },
   fulfilment: Fulfilment,
   shopName: string,
 ): StepperStep[] {
   const rank = order.status === 'cancelled' ? 1 : STATUS_RANK[order.status];
   const pod = order.paymentMethod === 'pay_on_delivery';
   const pickup = fulfilment === 'pickup';
+  const collect = fulfilment === 'arranged' && order.sentMethod === 'pickup';
   const steps: Omit<StepperStep, 'state'>[] = [
     { step: 1, buyerLabel: 'Order placed', sellerLabel: 'Received' },
     {
@@ -556,8 +564,8 @@ export function stepperSteps(
     },
     {
       step: 3,
-      buyerLabel: pickup ? 'Ready for pickup' : 'Sent out',
-      sellerLabel: pickup ? 'Ready for pickup' : 'Sent',
+      buyerLabel: pickup ? 'Ready for pickup' : collect ? 'Ready to collect' : 'Sent out',
+      sellerLabel: pickup ? 'Ready for pickup' : collect ? 'Ready to collect' : 'Sent',
     },
     { step: 4, buyerLabel: 'Delivered', sellerLabel: 'Delivered' },
   ];

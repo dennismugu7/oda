@@ -372,12 +372,16 @@ describe('step 6: shop is live', () => {
     await s.call(postPayment, TILL);
     const before = await s.call(getOnboarding);
     expect(before.json.checklist).toMatchObject({ done: 1, total: 7 });
-    // No delivery option yet, so delivery is listed first (decision #109 c).
-    expect(before.json.checklist.items[0]).toMatchObject({ id: 'delivery', done: false });
-    expect(before.json.checklist.items[1]).toMatchObject({ id: 'basics', done: true });
+    // Delivery is optional and stays in its place (decision #110 e).
+    expect(before.json.checklist.items[0]).toMatchObject({ id: 'basics', done: true });
+    expect(before.json.checklist.items[5]).toMatchObject({ id: 'delivery', done: false });
 
     const ticked = await s.call(postChecklist, { item: 'tested_whatsapp' });
     expect(ticked.json.checklist.done).toBe(2);
+    // "I'll arrange delivery with buyers" ticks the delivery item without an area or pickup.
+    const arranged = await s.call(postChecklist, { item: 'arrange_delivery' });
+    expect(arranged.json.checklist.done).toBe(3);
+    expect(arranged.json.checklist.items[5]).toMatchObject({ id: 'delivery', done: true });
     expect((await s.call(postChecklist, { item: 'logo' })).status).toBe(422);
 
     const done = await s.call(postComplete, {});
@@ -390,7 +394,7 @@ describe('step 6: shop is live', () => {
     const s = await newSeller();
     await throughStep4(s);
     const res = await s.call(postPayment, { skip: true });
-    expect(res.json.checklist.items[1]).toMatchObject({ id: 'basics', done: false });
+    expect(res.json.checklist.items[0]).toMatchObject({ id: 'basics', done: false });
   });
 
   it('cannot complete before step 6, and onboarding writes stop once complete', async () => {

@@ -37,6 +37,24 @@ describe('priceOrder', () => {
     expect(r).toMatchObject({ deliveryFee: 0, total: 2500, freeDeliveryApplied: false });
   });
 
+  it('an arranged order has no fee, even over the free-delivery threshold (#110 c)', () => {
+    const r = priceOrder({
+      lines: [{ unitPrice: 2500, qty: 3 }],
+      delivery: { kind: 'arranged' },
+      freeDeliveryThreshold: 5000,
+    });
+    expect(r).toEqual({ subtotal: 7500, deliveryFee: 0, total: 7500, freeDeliveryApplied: false });
+    // A manual arranged order may carry the seller's fee.
+    expect(
+      priceOrder({
+        lines: [{ unitPrice: 2500, qty: 1 }],
+        delivery: { kind: 'arranged' },
+        freeDeliveryThreshold: null,
+        deliveryFeeOverride: 300,
+      }),
+    ).toMatchObject({ deliveryFee: 300, total: 2800 });
+  });
+
   it('free delivery applies at exactly the threshold, not one shilling below', () => {
     const at = priceOrder({
       lines: [{ unitPrice: 5000, qty: 1 }],

@@ -284,14 +284,13 @@ describe('POST /api/shops/:slug/orders', () => {
     expect(line.status).toBe(422);
   });
 
-  it('needs a way to pay and a way to deliver (decision #61 c), and a shop that is open', async () => {
+  it('needs a way to pay and a shop that is open; delivery options are optional (#110 a)', async () => {
     const noDelivery = await world({ areas: false, pickup: false });
     const r1 = await place(
       noDelivery,
-      checkout(noDelivery, { fulfilment: { kind: 'pickup' }, expectedTotal: 2500 }),
+      checkout(noDelivery, { fulfilment: { kind: 'arranged' }, expectedTotal: 2500 }),
     );
-    expect(r1.status).toBe(409);
-    expect(r1.body.error.code).toBe('not_taking_orders');
+    expect(r1.status).toBe(201);
 
     const noPay = await world({ payOnDelivery: false, account: false });
     expect((await place(noPay, checkout(noPay))).body.error.code).toBe('not_taking_orders');
@@ -306,6 +305,82 @@ describe('POST /api/shops/:slug/orders', () => {
     const paused = await world();
     await db.update(t.shops).set({ isPaused: true }).where(eq(t.shops.id, paused.shopId));
     expect((await place(paused, checkout(paused))).body.error.code).toBe('shop_paused');
+  });
+
+  it('arranged orders (decision #110): no fee, the note kept, the seller told to arrange', async () => {
+    const w = await world({ areas: false });
+    const { status, body } = await place(
+      w,
+      checkout(w, {
+        payment: 'pay_on_delivery',
+        fulfilment: { kind: 'arranged', note: '  Near Yaya Centre www.spam.example after 5pm ' },
+        expectedTotal: 2500,
+        buyer: { name: 'Wanjiku', phone: '0712345678', whatsapp: true, email: 'w@example.test' },
+      }),
+    );
+    expect(status).toBe(201);
+    const order = await orderBy(body.token);
+    expect(order).toMatchObject({
+      fulfilment: 'arranged',
+      deliveryAreaId: null,
+      deliveryAreaName: null,
+      addressText: 'Near Yaya Centre after 5pm',
+      subtotal: 2500,
+      deliveryFee: 0,
+      total: 2500,
+    });
+    const [note] = await notificationsOf(w.shopId);
+    expect(note!.body).toBe('Wanjiku · KSh 2,500 · Pay on delivery · Arrange delivery');
+    const mail = testOutbox.last('w@example.test')!;
+    expect(mail.text).toContain('Delivery (arranged with Amani Styles): Not included');
+    expect(mail.text).toContain(
+      'Amani Styles will contact you to arrange delivery. You pay KSh 2,500 when you get your order.',
+    );
+    expect(mail.html).toContain('Delivery · arranged with Amani Styles');
+
+    // Pay now works the same; the receipt says delivery is arranged. No note is fine.
+    const payNow = await place(
+      w,
+      checkout(w, {
+        fulfilment: { kind: 'arranged' },
+        expectedTotal: 2500,
+        buyer: { name: 'Akinyi', phone: '0722000111', email: 'a@example.test' },
+      }),
+    );
+    expect(payNow.status).toBe(201);
+    expect(await orderBy(payNow.body.token)).toMatchObject({
+      status: 'awaiting_payment',
+      fulfilment: 'arranged',
+      addressText: null,
+    });
+    expect(testOutbox.last('a@example.test')!.text).toContain(
+      'The exact steps are on your order page. Amani Styles will contact you to arrange delivery.',
+    );
+
+    // A note over 300 characters is refused.
+    const long = await place(
+      w,
+      checkout(w, { fulfilment: { kind: 'arranged', note: 'x'.repeat(301) }, expectedTotal: 2500 }),
+    );
+    expect(long.status).toBe(422);
+  });
+
+  it('a shop with areas or pickup offers only those: no arranged buyer orders (#110 b)', async () => {
+    for (const w of [await world(), await world({ areas: false, pickup: true })]) {
+      const r = await place(
+        w,
+        checkout(w, { fulfilment: { kind: 'arranged' }, expectedTotal: 2500 }),
+      );
+      expect(r.status).toBe(422);
+      expect(r.body.error.fields).toEqual({ 'fulfilment.areaId': 'Choose delivery or pickup.' });
+    }
+    // Pickup that is off is still refused.
+    const noPickup = await world({ areas: false });
+    const r = await place(
+      noPickup,
+      checkout(noPickup, { fulfilment: { kind: 'pickup' }, expectedTotal: 2500 }),
+    );
+    expect(r.status).toBe(422);
   });
 
   it('another shop’s delivery area, hidden or sold-out products, and unknown shops are refused', async () => {
@@ -413,6 +488,18 @@ describe('POST /api/shops/:slug/quote', () => {
       { kind: 'pickup', areaId: null, deliveryFee: 0, total: 5000 },
     ]);
     expect((await quote([{ productId: w.dress.id, qty: 1 }])).status).toBe(422);
+  });
+
+  it('a shop with no delivery option is quoted only "arranged", without a fee (#110 b)', async () => {
+    const w = await world({ areas: false, threshold: 1000 });
+    const res = await postQuote(
+      req(`/api/shops/${w.slug}/quote`, { lines: [{ productId: w.dress.id, qty: 1, size: 'M' }] }),
+      { params: Promise.resolve({ slug: w.slug }) },
+    );
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as Json).options).toEqual([
+      { kind: 'arranged', areaId: null, deliveryFee: 0, total: 2500, freeDeliveryApplied: false },
+    ]);
   });
 
   it('never prices another shop’s product (M10 CP1)', async () => {

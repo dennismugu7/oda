@@ -514,6 +514,22 @@ describe('helpers', () => {
     });
   });
 
+  it('stepper: arranged orders are "Sent", or "Ready to collect" when the buyer collects', () => {
+    const order = { status: 'sent', paymentMethod: 'pay_on_delivery' } as const;
+    const step3 = (sentMethod: 'rider' | 'parcel' | 'pickup' | null) =>
+      stepperSteps({ ...order, sentMethod }, 'arranged', 'X')[2];
+    expect(step3(null)).toMatchObject({ buyerLabel: 'Sent out', sellerLabel: 'Sent' });
+    expect(step3('rider')).toMatchObject({ buyerLabel: 'Sent out', sellerLabel: 'Sent' });
+    expect(step3('pickup')).toMatchObject({
+      buyerLabel: 'Ready to collect',
+      sellerLabel: 'Ready to collect',
+    });
+    // A delivery order the seller handed over in person keeps its labels.
+    expect(stepperSteps({ ...order, sentMethod: 'pickup' }, 'delivery', 'X')[2]).toMatchObject({
+      buyerLabel: 'Sent out',
+    });
+  });
+
   it('stepper: a claimed payment shows step 2 in progress; cancelled keeps only step 1', () => {
     const claimed = stepperSteps(
       { status: 'payment_claimed', paymentMethod: 'pay_before' },

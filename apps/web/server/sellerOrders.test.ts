@@ -7,7 +7,13 @@ import { requireOrderToken } from './authz';
 import { postOrderCode, type Defer } from './checkout';
 import { getDb } from './db';
 import { testOutbox } from './email/transport';
-import { getOrder, listOrders, postOrderAction } from './orderRoutes';
+import {
+  createManualOrder,
+  getOrder,
+  listOrders,
+  postOrderAction,
+  quoteManualOrder,
+} from './orderRoutes';
 import { insertOrder, transitionOrder, type NewOrder } from './orders';
 
 // The seller's orders (M6 CP2): the list (tabs, groups, search, pages), the detail, and every
@@ -423,6 +429,94 @@ describe('seller actions', () => {
     const o = await w.order({ buyer: { name: 'Brian', phone: '0722 000 111' } });
     await act(w, o.id, { type: 'markPaid' });
     expect(testOutbox.all()).toHaveLength(0);
+  });
+});
+
+describe('arranged orders (decision #110)', () => {
+  const NEW_APP = { 'x-oda-app-features': 'arranged' };
+
+  it('old seller apps get a delivery "Arranged with buyer"; apps that know arranged get it', async () => {
+    const w = await shopWorld();
+    const o = await w.order({
+      kind: 'manual_pay_on_delivery',
+      fulfilment: { kind: 'arranged', note: 'Call before 5pm' },
+    });
+    // 0.4.0 shows anything but pickup as "Delivery" with the area's name (decision #110 f).
+    const old = await w.call(getOrder, { id: o.id });
+    expect(old.json).toMatchObject({
+      fulfilment: 'delivery',
+      deliveryAreaName: 'Arranged with buyer',
+      addressText: 'Call before 5pm',
+      deliveryFee: 0,
+    });
+    const fresh = await w.call(getOrder, { id: o.id, headers: NEW_APP });
+    expect(fresh.json).toMatchObject({
+      fulfilment: 'arranged',
+      deliveryAreaName: null,
+      addressText: 'Call before 5pm',
+    });
+    // Other headers, or other features, are the old shape.
+    const other = await w.call(getOrder, {
+      id: o.id,
+      headers: { 'x-oda-app-features': 'something-else' },
+    });
+    expect(other.json.fulfilment).toBe('delivery');
+    // Actions answer with the same shape as the detail.
+    const sent = await w.call(postAction, {
+      id: o.id,
+      body: { type: 'markSent', sentMethod: 'rider' },
+    });
+    await settle();
+    expect(sent.json.order).toMatchObject({
+      fulfilment: 'delivery',
+      deliveryAreaName: 'Arranged with buyer',
+    });
+    // Delivery and pickup orders are never changed.
+    const delivery = await w.order();
+    expect((await w.call(getOrder, { id: delivery.id })).json.deliveryAreaName).toBe('Kilimani');
+  });
+
+  it('Buyer collects: "ready to collect", never the shop’s pickup place', async () => {
+    const w = await shopWorld();
+    const o = await w.order({ kind: 'manual_pay_on_delivery', fulfilment: { kind: 'arranged' } });
+    const res = await act(w, o.id, { type: 'markSent', sentMethod: 'pickup' });
+    expect(res.json.whatsapp.text).toBe(
+      `Hi Wanjiku, your order #${o.number} from Amani Styles is ready to collect, as we arranged. Details: ${res.json.order.link}`,
+    );
+    const mail = testOutbox.last()!;
+    expect(mail.subject).toBe(`Your order #${o.number} from Amani Styles is ready to collect`);
+    expect(mail.text).toContain('ready to collect');
+    expect(mail.text).toContain('Have KSh 3,700 ready to pay when you get your order.');
+    expect(mail.text).not.toContain('Kilimani stall');
+  });
+
+  it('New order: "Arrange with buyer" is always an option, with the seller’s fee if any', async () => {
+    const w = await shopWorld();
+    const lines = [{ productId: w.dress.id, qty: 1, size: 'M' }];
+    const quote = await w.call(quoteManualOrder, { body: { lines } });
+    expect(quote.json.options.map((o: Json) => [o.kind, o.name, o.deliveryFee])).toEqual([
+      ['delivery', 'Kilimani', 200],
+      ['pickup', 'Pickup', 0],
+      ['arranged', 'Arrange with buyer', 0],
+    ]);
+    const created = await w.call(createManualOrder, {
+      headers: NEW_APP,
+      body: {
+        idempotencyKey: 'arranged-manual-order-1',
+        buyer: { name: 'Akinyi', phone: '0722000111' },
+        lines,
+        fulfilment: { kind: 'arranged', note: 'Meets at Sarit' },
+        deliveryFeeOverride: 300,
+        payment: 'not_paid',
+      },
+    });
+    expect(created.status).toBe(201);
+    expect(created.json).toMatchObject({
+      fulfilment: 'arranged',
+      addressText: 'Meets at Sarit',
+      deliveryFee: 300,
+      total: 2800,
+    });
   });
 });
 

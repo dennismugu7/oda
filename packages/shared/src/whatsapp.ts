@@ -1,5 +1,5 @@
 import { formatKsh } from './money';
-import type { SentMethod, SideEffect } from './orderMachine';
+import type { Fulfilment, SentMethod, SideEffect } from './orderMachine';
 import { formatKePhone } from './phone';
 import { firstName, type SellerActionType } from './sellerOrders';
 
@@ -25,6 +25,8 @@ export interface WhatsAppOrder {
   /** The review page; null for manual orders, which can't be reviewed (decision #73 i). */
   reviewLink?: string | null;
   paymentStatus: 'unpaid' | 'claimed' | 'paid' | 'refund_due' | 'refunded';
+  /** Arranged orders never mention the shop's pickup place (decision #110 d). */
+  fulfilment?: Fulfilment;
   sentMethod: SentMethod | null;
   riderPhone: string | null;
   pickupLocation: string | null;
@@ -57,6 +59,9 @@ export function whatsappMessage(
     case 'paymentNotFound':
       return `${hi} I can’t find your M-Pesa payment of ${formatKsh(order.total)} for ${ref} in my messages. Please check the code and send it again here: ${order.link}`;
     case 'markSent': {
+      if (order.sentMethod === 'pickup' && order.fulfilment === 'arranged') {
+        return `${hi} your ${ref} is ready to collect, as we arranged. Details: ${order.link}`;
+      }
       if (order.sentMethod === 'pickup') {
         const where = [order.pickupLocation, order.pickupHours].filter(Boolean).join(', ');
         return `${hi} your ${ref} is ready for pickup${where ? ` at ${where}` : ''}. Details: ${order.link}`;

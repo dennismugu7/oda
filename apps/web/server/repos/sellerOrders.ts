@@ -202,6 +202,27 @@ export function sellerOrdersRepo(db: Db, ctx: SellerCtx) {
   };
 }
 
+/** Sent by seller apps that know arranged orders (decision #110 f): `arranged` in the list. */
+export const APP_FEATURES_HEADER = 'x-oda-app-features';
+
+/**
+ * Old seller apps (0.4.0) know only delivery and pickup: they show anything but pickup as
+ * "Delivery" with the area's name. So an arranged order goes to them as a delivery whose
+ * "area" says "Arranged with buyer" (the buyer's note stays the address line); apps that send
+ * `X-Oda-App-Features: arranged` get the real value (decision #110 f).
+ */
+export function forSellerApp<T extends { fulfilment: string; deliveryAreaName: string | null }>(
+  detail: T,
+  request: Request,
+): T {
+  if (detail.fulfilment !== 'arranged') return detail;
+  const features = (request.headers.get(APP_FEATURES_HEADER) ?? '')
+    .split(',')
+    .map((f) => f.trim().toLowerCase());
+  if (features.includes('arranged')) return detail;
+  return { ...detail, fulfilment: 'delivery', deliveryAreaName: 'Arranged with buyer' };
+}
+
 function toDetail(
   o: OrderRow,
   extra: {

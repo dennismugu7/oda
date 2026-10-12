@@ -71,6 +71,13 @@
       "when": 1791523586479,
       "tag": "0009_m11_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791777100694,
+      "tag": "0010_optional_delivery",
+      "breakpoints": true
     }
   ]
 }

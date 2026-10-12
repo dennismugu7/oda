@@ -1,6 +1,7 @@
 import 'server-only';
 import { colors } from '@oda/ui-tokens';
 import {
+  type Fulfilment,
   BUYER_CANCEL_LABELS,
   clock24,
   shortDate,
@@ -319,7 +320,7 @@ export interface OrderEmailData {
   number: number;
   buyerName: string;
   paymentMethod: 'pay_before' | 'pay_on_delivery';
-  fulfilment: 'delivery' | 'pickup';
+  fulfilment: Fulfilment;
   deliveryAreaName: string | null;
   items: {
     name: string;
@@ -344,18 +345,28 @@ function itemRows(o: OrderEmailData): { html: string; text: string } {
       .join(' — ');
   const row = (left: string, right: string, strong = false) =>
     `<tr><td style="padding:6px 0;font-size:15px;line-height:22px;${strong ? 'font-weight:700;' : `color:${colors.textSecondary};`}">${left}</td><td align="right" style="padding:6px 0;font-size:15px;line-height:22px;white-space:nowrap;${strong ? 'font-weight:700;' : ''}">${right}</td></tr>`;
-  const delivery =
-    o.fulfilment === 'pickup'
+  // Arranged orders: the delivery cost, if any, is outside the total (decision #110 c); a
+  // manual arranged order may still carry the seller's fee.
+  const arranged = o.fulfilment === 'arranged';
+  const fee =
+    arranged && o.deliveryFee === 0
+      ? 'Not included'
+      : o.deliveryFee === 0
+        ? 'Free'
+        : formatKsh(o.deliveryFee);
+  const delivery = arranged
+    ? `Delivery · arranged with ${escapeHtml(o.shopName)}`
+    : o.fulfilment === 'pickup'
       ? 'Pickup'
       : `Delivery${o.deliveryAreaName ? ` · ${escapeHtml(o.deliveryAreaName)}` : ''}`;
   const html = `<tr><td style="padding-bottom:24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 ${o.items.map((i) => row(`${escapeHtml(label(i))} × ${i.qty}`, formatKsh(i.unitPrice * i.qty))).join('\n')}
-${row(delivery, o.deliveryFee === 0 ? 'Free' : formatKsh(o.deliveryFee))}
+${row(delivery, fee)}
 ${row('Total', formatKsh(o.total), true)}
 </table></td></tr>`;
   const text = [
     ...o.items.map((i) => `${label(i)} × ${i.qty}: ${formatKsh(i.unitPrice * i.qty)}`),
-    `${o.fulfilment === 'pickup' ? 'Pickup' : `Delivery${o.deliveryAreaName ? ` (${o.deliveryAreaName})` : ''}`}: ${o.deliveryFee === 0 ? 'Free' : formatKsh(o.deliveryFee)}`,
+    `${arranged ? `Delivery (arranged with ${o.shopName})` : o.fulfilment === 'pickup' ? 'Pickup' : `Delivery${o.deliveryAreaName ? ` (${o.deliveryAreaName})` : ''}`}: ${fee}`,
     `Total: ${formatKsh(o.total)}`,
   ].join('\n');
   return { html, text };
@@ -372,10 +383,15 @@ function orderButton(link: string, label: string): string {
 /** The buyer's receipt when the order is placed (order-lifecycle.md: "email receipt"). */
 export function orderReceiptEmail(o: OrderEmailData): Email {
   const shop = escapeHtml(o.shopName);
+  const arranged = o.fulfilment === 'arranged';
   const nextStep =
     o.paymentMethod === 'pay_on_delivery'
-      ? `${o.shopName} will accept your order and get it to you. You pay ${formatKsh(o.total)} on delivery.`
-      : `Pay ${formatKsh(o.total)} to ${o.shopName} on M-Pesa. The exact steps are on your order page.`;
+      ? arranged
+        ? `${o.shopName} will contact you to arrange delivery. You pay ${formatKsh(o.total)} when you get your order.`
+        : `${o.shopName} will accept your order and get it to you. You pay ${formatKsh(o.total)} on delivery.`
+      : `Pay ${formatKsh(o.total)} to ${o.shopName} on M-Pesa. The exact steps are on your order page.${
+          arranged ? ` ${o.shopName} will contact you to arrange delivery.` : ''
+        }`;
   const items = itemRows(o);
   const html = layout(
     `Your order #${o.number} from ${o.shopName}`,
@@ -497,7 +513,13 @@ export function orderUpdateEmail(
       button = 'Track your order';
       break;
     case 'sent':
-      if (f.sentMethod === 'pickup') {
+      if (f.sentMethod === 'pickup' && o.fulfilment === 'arranged') {
+        heading = 'Ready to collect';
+        subject = `Your order ${n} from ${o.shopName} is ready to collect`;
+        lines = [
+          `Your order ${n} is ready to collect. ${o.shopName} will tell you where, if they haven't already.`,
+        ];
+      } else if (f.sentMethod === 'pickup') {
         heading = 'Ready for pickup';
         subject = `Your order ${n} from ${o.shopName} is ready for pickup`;
         const where = [f.pickupLocation, f.pickupHours].filter(Boolean).join(', ');
@@ -513,7 +535,11 @@ export function orderUpdateEmail(
         ];
       }
       if (o.paymentMethod === 'pay_on_delivery' && f.paymentStatus !== 'paid') {
-        lines.push(`Have ${total} ready to pay on delivery.`);
+        lines.push(
+          o.fulfilment === 'arranged'
+            ? `Have ${total} ready to pay when you get your order.`
+            : `Have ${total} ready to pay on delivery.`,
+        );
       }
       button = 'Track your order';
       break;

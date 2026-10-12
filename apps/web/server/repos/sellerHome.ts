@@ -98,7 +98,7 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
       const ordersThisWeek = sources.reduce((sum, s) => sum + s.n, 0);
       const top = sources.find((s) => TAGGED_SOURCES.includes(s.source as OrderSource));
 
-      const [[anyOrder], [unread], [profile], [shop], [active], [area]] = await Promise.all([
+      const [[anyOrder], [unread], [profile], [shop], [active]] = await Promise.all([
         db.select({ id: t.orders.id }).from(t.orders).where(eq(t.orders.shopId, shopId)).limit(1),
         db
           .select({ n: count() })
@@ -108,13 +108,13 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
           .select({ firstName: t.profiles.firstName })
           .from(t.profiles)
           .where(eq(t.profiles.id, ctx.userId)),
-        // Can buyers order? The buyer web's rule (decision #109): the Home banner lists what's missing.
+        // Can buyers order? The buyer web's rule (decisions #109 c, #110 a): the Home banner
+        // lists what's missing. Delivery options are optional, so they aren't read here.
         db
           .select({
             isPaused: t.shops.isPaused,
             acceptsPayBefore: t.shops.acceptsPayBefore,
             acceptsPayOnDelivery: t.shops.acceptsPayOnDelivery,
-            pickupEnabled: t.shops.pickupEnabled,
           })
           .from(t.shops)
           .where(eq(t.shops.id, shopId)),
@@ -123,16 +123,9 @@ export function sellerHomeRepo(db: Db, ctx: SellerCtx) {
           .from(t.paymentAccounts)
           .where(and(eq(t.paymentAccounts.shopId, shopId), eq(t.paymentAccounts.isActive, true)))
           .limit(1),
-        db
-          .select({ id: t.deliveryAreas.id })
-          .from(t.deliveryAreas)
-          .where(and(eq(t.deliveryAreas.shopId, shopId), isNull(t.deliveryAreas.deletedAt)))
-          .limit(1),
       ]);
       const blockers = shop
-        ? orderingBlockers(
-            orderingFacts({ ...shop, hasActivePaymentAccount: !!active, hasDeliveryArea: !!area }),
-          )
+        ? orderingBlockers(orderingFacts({ ...shop, hasActivePaymentAccount: !!active }))
         : [];
 
       return {

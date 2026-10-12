@@ -17,9 +17,10 @@ export function notificationText(order: OrderRow, type: PushType): { title: stri
     case 'new_order':
       return {
         title: `New order ${n}`,
+        // Arranged orders tell the seller to message the buyer (decision #110 d).
         body: `${buyer} · ${total} · ${
           order.paymentMethod === 'pay_on_delivery' ? 'Pay on delivery' : 'Pay now with M-Pesa'
-        }`,
+        }${order.fulfilment === 'arranged' ? ' · Arrange delivery' : ''}`,
       };
     case 'payment_claimed':
       return {
