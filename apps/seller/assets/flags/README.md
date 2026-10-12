@@ -13,5 +13,5 @@
   line endings as published; `.gitattributes` keeps it byte for byte). Tests check both copies.
 - Unmodified: black, white, red, white, green with the Maasai shield and spears. The app embeds
   the same text in `src/ui/flagSvgs.ts` (a test checks it is identical) and draws it with
-  react-native-svg at 20 × 14 dp, rounded 3; the 4:3 flag fills that box (only a sliver of the
-  top and bottom stripes is outside it). The web shows the file with `<img>` at the same size.
+  react-native-svg at 20 × 15 dp (the file's 4:3: the whole flag, nothing cut off; decision
+  #110 h), rounded 3. The web shows the file with `<img>` at the same size.

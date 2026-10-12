@@ -546,8 +546,8 @@ export function CheckoutForm({
               src="/flags/ke.svg"
               alt=""
               width={20}
-              height={14}
-              className="h-3.5 w-5 shrink-0 rounded-[3px] object-cover"
+              height={15}
+              className="h-[15px] w-5 shrink-0 rounded-[3px] object-contain"
             />
             +254
           </span>

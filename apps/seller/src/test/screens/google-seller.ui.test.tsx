@@ -145,7 +145,8 @@ describe('no name yet (§1.5)', () => {
   it('Your details: the recovery phone shows Kenya’s flag before +254 (decision #109 b)', async () => {
     await render(<YourDetails />);
     await screen.findByText('wanjiku.kamau');
-    expect(screen.getByTestId('kenya-flag', { includeHiddenElements: true })).toBeTruthy();
+    const flag = screen.getByTestId('kenya-flag', { includeHiddenElements: true });
+    expect(flag).toHaveStyle({ width: 20, height: 15, borderRadius: 3 });
     expect(screen.getByText('+254')).toBeTruthy();
   });
 

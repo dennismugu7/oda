@@ -18,11 +18,11 @@ test('pay on delivery: cart → checkout → order placed', async ({ page, reque
   await page.getByRole('link', { name: 'Checkout' }).click();
   await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible();
   await expect(page.getByText('2 items ·')).toBeVisible();
-  // Kenya's flag before +254 (decision #109 b): the real file, loaded, 20 × 14.
+  // Kenya's flag before +254 (decision #109 b): the real file, loaded, the whole flag at 20 × 15.
   const flag = page.locator('img[src="/flags/ke.svg"]');
   await expect(flag).toBeVisible();
   expect(await flag.evaluate((img: HTMLImageElement) => img.naturalWidth > 0)).toBe(true);
-  expect(await flag.boundingBox()).toMatchObject({ width: 20, height: 14 });
+  expect(await flag.boundingBox()).toMatchObject({ width: 20, height: 15 });
 
   // Nothing chosen yet: the button asks for everything, without placing anything.
   await expect(page.getByRole('button', { name: 'Place order' })).toBeEnabled();
