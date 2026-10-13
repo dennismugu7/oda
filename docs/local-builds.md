@@ -22,9 +22,9 @@ Run them one at a time, never together.
 
 ## 3. Release signing (Play upload key)
 
-The upload key is EAS-managed (credentials `wZQg7G2ndc`). A copy downloaded with
-`eas credentials` is at `C:\Users\denni\oda-keystore-backup\` (`keystore.jks` +
-`credentials.json`, outside the repo). If it is gone (launch checklist L3), download it again:
+The upload key is EAS-managed. The laptop may already hold a copy downloaded with
+`eas credentials` (`keystore.jks` + `credentials.json`, in a folder outside the repo). If not
+(launch checklist L3), download it:
 
 1. `cd apps/seller`, `pnpm exec eas credentials -p android`
 2. Build profile **production** → **credentials.json: Upload/Download credentials** →
@@ -35,7 +35,7 @@ The upload key is EAS-managed (credentials `wZQg7G2ndc`). A copy downloaded with
 Signing reads that file in place (`plugins/withLocalSigning.js`), so the passwords are never copied:
 
 ```
-export ODA_LOCAL_SIGNING='C:\Users\denni\oda-keystore-backup\credentials.json'
+export ODA_LOCAL_SIGNING='<folder outside the repo>/credentials.json'
 ```
 
 `*.jks`, `*.keystore`, `credentials.json` and `.env.*` are gitignored.
