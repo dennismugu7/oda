@@ -36,6 +36,13 @@ Newest entries at the top.
 - Carried-forward list: in the M8 gate entry below.
 - Owner rules: `CLAUDE.md` → Working style.
 
+## 2026-10-13 · Terms line as small print (decision #112; branch `terms-small-print`)
+
+- **Done:** the owner approved a before/after mockup. Sign in: the Terms line moved from under "Continue with Google" to the very bottom, under "New here?". Sign up: "Already have a shop? Sign in" and the Terms line at the bottom too. New shared `TermsNote` (12 px muted grey); `Link` takes `small` (the sentence's size and weight, underlined only), so the links no longer outsize the sentence. Other links unchanged.
+- **Tests:** `google-signin.ui.test.tsx`: the Terms come after "New here?" on Sign in and after "Already have a shop?" (after the footer button) on Sign up; Terms and Privacy still open `/terms` and `/privacy`.
+- **Deviation:** "Already have a shop? Sign in" now sits in the footer note, so it hides while the keyboard is open, like Sign in's "New here?".
+- **Next:** merge, EAS Update to preview (runtime 0.5.0), owner's phone check.
+
 ## 2026-10-12 · Drafts 7 days, unsaved photos 8 days (decision #111; branch `drafts-7-days`, draft PR #117 on #116, not merged)
 
 - **Review stop D passed** (CP4, PR #116). Merge plan corrected: `GOOGLE_WEB_CLIENT_ID` is already set on Vercel `oda` and `oda-production`, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` on EAS (preview and production). The 0.5.0 APK is built once, from `main`, after #116 and #117 are merged (owner).

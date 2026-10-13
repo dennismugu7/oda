@@ -18,10 +18,10 @@ The PNGs in `design/` are the **visual reference** (layout, spacing, colours, ty
 | File | Screen | Changes |
 |---|---|---|
 | 01-welcome | Welcome | Static in M0. **M2: new card content + animation, approved**: see "01-welcome: animated illustration (M2, approved)" below and the HTML preview in `design/app/welcome-animation/`. |
-| 02-sign-up | Sign up | **Remove the Facebook button** and "or continue with". **Keep Google** (decision #107; was removed until then): "Sign up with Google" full width at the top (white, the official Google "G" unmodified), a thin "or" divider, then the email form. |
+| 02-sign-up | Sign up | **Remove the Facebook button** and "or continue with". **Keep Google** (decision #107; was removed until then): "Sign up with Google" full width at the top (white, the official Google "G" unmodified), a thin "or" divider, then the email form. "Already have a shop? Sign in" and the Terms small print at the very bottom (decision #112). |
 | 03-verify-email | Enter code | 6-digit code (Better Auth email OTP plugin). Add a 60s resend cooldown. |
 | 04-email-verification-code | Email template (OTP) | This is an **email**, not an app screen. The code is **6 digits** (image shows 8). Build it as a React Email / HTML template sent via Resend from the Better Auth OTP hook. |
-| 05-sign-in | Sign in | **Remove the Facebook button.** **Keep Google** (decision #107): "Continue with Google" at the top, "By continuing, you agree to oda's Terms and Privacy notice." under it, an "or" divider, then the email form. |
+| 05-sign-in | Sign in | **Remove the Facebook button.** **Keep Google** (decision #107): "Continue with Google" at the top, an "or" divider, then the email form; "By continuing, you agree to oda's Terms and Privacy notice." as small print at the very bottom, under "New here?" (decision #112). |
 | 06-email-reset-password | Email template (reset) | Email template with a link to the web `/reset-password`. |
 | 07-reset-password-page | Reset password | **Web page** at `/reset-password` (apps/web). Include the rules (8+ chars, a number). |
 | 08-password-changed | Success | Web page after reset, plus an "Open oda app" button (deep link `oda://`). |
