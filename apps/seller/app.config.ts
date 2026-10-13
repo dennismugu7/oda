@@ -11,6 +11,14 @@ const easProjectId = '10f06155-8e5f-441e-b95e-7af4f4c86d38';
 // (production, development, local) is the real app.
 const preview = process.env.APP_VARIANT === 'preview';
 
+// Local release builds only (decision #113; scripts/build-release.mjs sets both). EAS builds set
+// the versionCode (remote counter, eas.json) and the update channel themselves, so these stay
+// unset there and in everyday dev builds.
+const localVersionCode = process.env.ODA_VERSION_CODE
+  ? Number(process.env.ODA_VERSION_CODE)
+  : undefined;
+const localChannel = process.env.ODA_UPDATES_CHANNEL;
+
 // Native colours come from the shared tokens (decision #88: #C44323), never written here.
 const brand = colors.primary;
 
@@ -31,6 +39,7 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   android: {
     package: preview ? 'com.mugulabs.oda.preview' : 'com.mugulabs.oda',
+    ...(localVersionCode ? { versionCode: localVersionCode } : {}),
     // Firebase config for push (FCM). Never committed (the repo is public): the laptop keeps
     // apps/seller/google-services.json; EAS builds get it from the file variable
     // GOOGLE_SERVICES_JSON (decision #70).
@@ -89,7 +98,11 @@ const config: ExpoConfig = {
   // (`deps:check` fails otherwise). Fingerprints can't be used: pnpm names its folders
   // differently on Windows and on EAS's Linux builders, so the two never match.
   runtimeVersion: { policy: 'appVersion' },
-  updates: { url: `https://u.expo.dev/${easProjectId}` },
+  updates: {
+    url: `https://u.expo.dev/${easProjectId}`,
+    // Without a channel a build asks EAS Update for nothing and runs its own JS.
+    ...(localChannel ? { requestHeaders: { 'expo-channel-name': localChannel } } : {}),
+  },
   owner: 'dennisxenonxavier',
   extra: { eas: { projectId: easProjectId } },
 };

@@ -12,7 +12,9 @@
     "deps:check": "node scripts/expo-offline.mjs expo install --check && node scripts/check-native-deps.mjs && node scripts/check-native-runtime.mjs",
     "test": "vitest run && jest",
     "update:preview": "node scripts/eas-update.mjs",
-    "eas-build-pre-install": "node scripts/public-urls.mjs"
+    "eas-build-pre-install": "node scripts/public-urls.mjs",
+    "build:apk": "node scripts/build-release.mjs apk",
+    "build:aab": "node scripts/build-release.mjs aab"
   },
   "dependencies": {
     "@better-auth/expo": "1.7.6",

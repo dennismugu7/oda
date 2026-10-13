@@ -31,3 +31,8 @@ apps/web/regression-output/
 
 # Claude Code agent worktrees (local only)
 .claude/worktrees/
+
+# Signing keys and EAS credentials never enter the repo (decision #113)
+*.jks
+*.keystore
+credentials.json
