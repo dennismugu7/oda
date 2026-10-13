@@ -250,11 +250,15 @@ describe('e) one message, and the button works again', () => {
 });
 
 describe('the screens', () => {
-  it('Sign in: Google first, the Terms line under it, then "or" and the email form', async () => {
+  it('Sign in: Google first, then "or" and the email form; the Terms at the very bottom', async () => {
     await render(<SignIn />);
     expect(googleButton()).toBeTruthy();
-    expect(screen.getByText(/By continuing, you agree to oda.s/)).toBeTruthy();
     expect(screen.getByLabelText('or')).toBeTruthy();
+    // Small print after "New here?", the last thing on the screen (decision #112).
+    const json = JSON.stringify(screen.toJSON());
+    expect(json.indexOf('By continuing, you agree to oda')).toBeGreaterThan(
+      json.indexOf('Open your free shop'),
+    );
     await fireEvent.press(screen.getByRole('link', { name: 'Terms' }));
     await fireEvent.press(screen.getByRole('link', { name: 'Privacy notice' }));
     expect(WebBrowser.openBrowserAsync).toHaveBeenNthCalledWith(
@@ -265,6 +269,17 @@ describe('the screens', () => {
       2,
       expect.stringMatching(/\/privacy$/),
     );
+  });
+
+  it('Sign up: "Sign in" and the same Terms small print at the very bottom', async () => {
+    await render(<SignUp />);
+    const json = JSON.stringify(screen.toJSON());
+    expect(json.indexOf('By continuing, you agree to oda')).toBeGreaterThan(
+      json.indexOf('Already have a shop?'),
+    );
+    expect(json.indexOf('Already have a shop?')).toBeGreaterThan(json.indexOf('Create my account'));
+    await fireEvent.press(screen.getByRole('link', { name: 'Terms' }));
+    expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(expect.stringMatching(/\/terms$/));
   });
 
   it('no Google client ID in this build: no Google button and no "or"', async () => {

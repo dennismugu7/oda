@@ -1,7 +1,7 @@
-// 05 Sign in. Changes from the image: no Facebook button; "Continue with Google" at the top with
-// the Terms line under it, then "or" and the email form (decision #107); oda's fonts and brand
-// colours. Also opened by the web page 08's "Open oda app" link (oda://sign-in).
-import * as WebBrowser from 'expo-web-browser';
+// 05 Sign in. Changes from the image: no Facebook button; "Continue with Google" at the top, then
+// "or" and the email form (decision #107); the Terms as small print at the very bottom (#112);
+// oda's fonts and brand colours. Also opened by the web page 08's "Open oda app" link
+// (oda://sign-in).
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
@@ -12,7 +12,6 @@ import { friendlyAuthError } from '@/auth/errors';
 import { finishSignIn } from '@/auth/finishSignIn';
 import { googleAvailable } from '@/auth/google';
 import { useGoogleSignIn } from '@/auth/useGoogleSignIn';
-import { API_URL } from '@/config';
 import { GoogleMark } from '@/ui/brandIcons';
 import {
   AuthScreen,
@@ -24,6 +23,7 @@ import {
   PasswordField,
   SigningInOverlay,
   Subtitle,
+  TermsNote,
   Title,
   Wordmark,
 } from '@/ui/auth';
@@ -87,12 +87,16 @@ export default function SignIn() {
       overlay={<SigningInOverlay visible={google.phase === 'signing-in'} />}
       footer={<Button title="Continue" onPress={submit} loading={busy} disabled={google.busy} />}
       note={
-        <Text style={styles.switch}>
-          New here?{' '}
-          <Link disabled={locked} onPress={() => router.replace('/sign-up')}>
-            Open your free shop
-          </Link>
-        </Text>
+        <>
+          <Text style={styles.switch}>
+            New here?{' '}
+            <Link disabled={locked} onPress={() => router.replace('/sign-up')}>
+              Open your free shop
+            </Link>
+          </Text>
+          {/* The Google button can create an account, so it brings the Terms (#107, #112). */}
+          {withGoogle ? <TermsNote disabled={locked} /> : null}
+        </>
       }
     >
       <Wordmark />
@@ -113,21 +117,6 @@ export default function SignIn() {
             loading={google.busy}
             disabled={busy}
           />
-          {/* This button can create an account, so it carries the Terms (owner, #107). */}
-          <Text style={styles.terms}>
-            By continuing, you agree to oda&apos;s{' '}
-            <Link disabled={locked} onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}>
-              Terms
-            </Link>{' '}
-            and{' '}
-            <Link
-              disabled={locked}
-              onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}
-            >
-              Privacy notice
-            </Link>
-            .
-          </Text>
           {google.error ? <ErrorMessage>{google.error}</ErrorMessage> : null}
           <OrDivider />
         </View>
@@ -188,7 +177,6 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   google: { marginTop: spacing.lg, gap: spacing.sm },
-  terms: { ...text('small'), color: colors.textSecondary, textAlign: 'center' },
   form: { marginTop: spacing.md },
   formAfterGoogle: { marginTop: spacing.xs },
   tick: { marginRight: spacing.md },

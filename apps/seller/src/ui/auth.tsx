@@ -1,6 +1,7 @@
 // Building blocks for the auth screens (designs 02, 03, 05 and the new forgot-password
 // screen): page layout, wordmark, fields, buttons and notices. Brand colours and oda's fonts
 // everywhere (docs/design-changes.md).
+import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
 import {
   createContext,
@@ -30,6 +31,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { passwordChecks } from '@oda/shared';
+import { API_URL } from '@/config';
 import { colors, radii, sizes, spacing, text } from '@/theme';
 import { revealOffset } from './reveal';
 import { Icon } from '@/ui/icon';
@@ -386,25 +388,58 @@ export function Button({
   );
 }
 
-/** Underlined inline link inside a sentence. */
+/**
+ * Underlined inline link inside a sentence. `small` takes the sentence's own size and weight
+ * (the Terms small print) instead of standing out from it.
+ */
 export function Link({
   children,
   onPress,
   disabled = false,
+  small = false,
 }: {
   children: ReactNode;
   onPress: () => void;
   disabled?: boolean;
+  small?: boolean;
 }) {
   return (
     <Text
       accessibilityRole="link"
       accessibilityState={{ disabled }}
       onPress={disabled ? undefined : onPress}
-      style={[styles.link, disabled && styles.linkDisabled]}
+      style={[small ? styles.linkSmall : styles.link, disabled && styles.linkDisabled]}
       suppressHighlighting
     >
       {children}
+    </Text>
+  );
+}
+
+/**
+ * Small print at the very bottom of Sign in and Sign up (decision #112): both screens can create
+ * an account, so both carry the Terms.
+ */
+export function TermsNote({ disabled = false }: { disabled?: boolean }) {
+  return (
+    <Text style={styles.terms}>
+      By continuing, you agree to oda&apos;s{' '}
+      <Link
+        small
+        disabled={disabled}
+        onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}
+      >
+        Terms
+      </Link>{' '}
+      and{' '}
+      <Link
+        small
+        disabled={disabled}
+        onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}
+      >
+        Privacy notice
+      </Link>
+      .
     </Text>
   );
 }
@@ -634,7 +669,16 @@ const styles = StyleSheet.create({
     color: colors.navy,
     textDecorationLine: 'underline',
   },
+  linkSmall: { color: colors.textSecondary, textDecorationLine: 'underline' },
   linkDisabled: { opacity: 0.6 },
+  terms: {
+    ...text('small'),
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+  },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
   dividerLine: { flex: 1, height: sizes.borderWidth, backgroundColor: colors.border },
   dividerText: { ...text('body'), color: colors.textSecondary },

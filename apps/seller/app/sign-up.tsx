@@ -1,7 +1,7 @@
 // 02 Sign up. Changes from the image (design-changes.md): no Facebook button and no "or continue
 // with"; "Sign up with Google" at the top, then "or" and the email form (decision #107); oda's
-// fonts and brand colours; lowercase "oda"; password rules shown.
-import * as WebBrowser from 'expo-web-browser';
+// fonts and brand colours; lowercase "oda"; password rules shown; "Sign in" and the Terms small
+// print at the very bottom, as on Sign in (decision #112).
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, Text, type TextInput, View } from 'react-native';
@@ -10,7 +10,6 @@ import { startSignup } from '@/auth/signup';
 import { friendlyAuthError, type FriendlyError } from '@/auth/errors';
 import { googleAvailable } from '@/auth/google';
 import { useGoogleSignIn } from '@/auth/useGoogleSignIn';
-import { API_URL } from '@/config';
 import { GoogleMark } from '@/ui/brandIcons';
 import {
   AuthScreen,
@@ -23,6 +22,7 @@ import {
   PasswordField,
   PasswordRules,
   SigningInOverlay,
+  TermsNote,
   Title,
   Wordmark,
 } from '@/ui/auth';
@@ -89,20 +89,13 @@ export default function SignUp() {
       note={
         <>
           <InfoNote icon="shield">Your money never passes through oda.</InfoNote>
-          <Text style={styles.terms}>
-            By continuing you agree to oda&apos;s{' '}
-            <Link disabled={locked} onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/terms`)}>
-              Terms
-            </Link>{' '}
-            and{' '}
-            <Link
-              disabled={locked}
-              onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}
-            >
-              Privacy notice
+          <Text style={styles.switch}>
+            Already have a shop?{' '}
+            <Link disabled={locked} onPress={() => router.replace('/sign-in')}>
+              Sign in
             </Link>
-            .
           </Text>
+          <TermsNote disabled={locked} />
         </>
       }
     >
@@ -177,13 +170,6 @@ export default function SignUp() {
           ) : null}
         </ErrorMessage>
       ) : null}
-
-      <Text style={styles.switch}>
-        Already have a shop?{' '}
-        <Link disabled={locked} onPress={() => router.replace('/sign-in')}>
-          Sign in
-        </Link>
-      </Text>
     </AuthScreen>
   );
 }
@@ -192,6 +178,5 @@ const styles = StyleSheet.create({
   google: { marginTop: spacing.lg, gap: spacing.sm },
   form: { marginTop: spacing.md },
   formAfterGoogle: { marginTop: spacing.xs },
-  switch: { ...text('body'), color: colors.textSecondary, marginTop: spacing.xl },
-  terms: { ...text('small'), color: colors.textSecondary, textAlign: 'center' },
+  switch: { ...text('body'), color: colors.textSecondary, textAlign: 'center' },
 });
